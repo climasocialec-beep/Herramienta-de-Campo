@@ -16,16 +16,25 @@ app.use(compression());
 // CONFIGURACIÓN
 // =======================================
 
+function limpiarVar(val) {
+    if (!val) return "";
+    let s = String(val).trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+        s = s.slice(1, -1).trim();
+    }
+    return s;
+}
+
 const PORT = Number(process.env.PORT) || 3001;
-const ASSET_ID = process.env.ASSET_ID || "";
-const API_TOKEN = process.env.API_TOKEN || "";
+const ASSET_ID = limpiarVar(process.env.ASSET_ID);
+const API_TOKEN = limpiarVar(process.env.API_TOKEN);
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
 
 if (!ASSET_ID || !API_TOKEN) {
     console.error("[SUPERVISOR] ⚠  Faltan variables de entorno: ASSET_ID y/o API_TOKEN.");
-    console.error("[SUPERVISOR]    Copia .env.example a .env y completa los valores.");
+    console.error("[SUPERVISOR]    Verifica las variables de entorno en Render o archivo .env.");
 }
 
 // =======================================
@@ -214,7 +223,7 @@ app.get("/api/encuestas", async (req, res) => {
                 ? "Kobo tardó demasiado en responder"
                 : error.message;
         console.error(`[${new Date().toLocaleTimeString("es-EC")}] Error al consultar Kobo: ${mensaje}`);
-        res.status(502).json({ error: "No fue posible acceder a Kobo." });
+        res.status(502).json({ error: "No fue posible acceder a Kobo.", detalle: mensaje });
     }
 });
 
