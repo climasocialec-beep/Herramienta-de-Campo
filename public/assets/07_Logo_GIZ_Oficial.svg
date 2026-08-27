@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" width="100%" height="100%" fill="none">
+  <!-- GIZ Official Red Rectangle Mark -->
+  <g transform="translate(0, 5)">
+    <rect width="90" height="60" rx="3" fill="#E2001A"/>
+    
+    <!-- Official GIZ Lettering 'giz' -->
+    <g fill="#FFFFFF">
+      <!-- 'g' -->
+      <path d="M33 34.5C33 28.5 29 25 24 25C19 25 15 28.5 15 34.5C15 40.5 19 44 24 44C29 44 33 40.5 33 34.5ZM33 48.5C33 53 29.5 55 24 55C19.5 55 16.5 53.5 15.5 51.8L12.5 54.8C14.8 57.8 19 59.5 24 59.5C33 59.5 38 55 38 46.5V26H33V28.2C31 26.2 27.8 25 24 25C16 25 10 30.5 10 39C10 47.5 16 53 24 53C27.8 53 31 51.8 33 49.8V48.5Z" transform="translate(0, -6) scale(0.92)"/>
+      <!-- 'i' -->
+      <circle cx="44.5" cy="20" r="3"/>
+      <rect x="41.5" y="26" width="6" height="20" rx="1"/>
+      <!-- 'z' -->
+      <path d="M54 26H71V31L60 41.5H71.5V46H53.5V41L64.5 30.5H54V26Z"/>
+    </g>
+  </g>
+
+  <!-- Official GIZ Full Name (German International Cooperation) -->
+  <g transform="translate(102, 16)">
+    <text x="0" y="10" font-family="'Plus Jakarta Sans', Arial, Helvetica, sans-serif" font-size="8.8" font-weight="700" fill="#1E293B" letter-spacing="-0.01em">Deutsche Gesellschaft</text>
+    <text x="0" y="21" font-family="'Plus Jakarta Sans', Arial, Helvetica, sans-serif" font-size="8.8" font-weight="700" fill="#1E293B" letter-spacing="-0.01em">für Internationale</text>
+    <text x="0" y="32" font-family="'Plus Jakarta Sans', Arial, Helvetica, sans-serif" font-size="8.8" font-weight="700" fill="#1E293B" letter-spacing="-0.01em">Zusammenarbeit (GIZ) GmbH</text>
+    <text x="0" y="44" font-family="'Plus Jakarta Sans', Arial, Helvetica, sans-serif" font-size="7.5" font-weight="600" fill="#E2001A" letter-spacing="0.04em">Cooperación Alemana</text>
+  </g>
+</svg>

@@ -1,0 +1,1505 @@
+/* ==========================================================================
+   DASHBOARD DE SUPERVISIÓN DE CAMPO · CLIMA SOCIAL
+   Sistema de Diseño Profesional, Moderno y Premium (UI/UX Refinado)
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. IDENTIDAD VISUAL: MORADOS INSTITUCIONALES CLIMA SOCIAL
+     ------------------------------------------------------------------------ */
+  --cs-purple-dark: #24072b;      /* Morado Noche Profundo (Header & Canvas Oscuro) */
+  --cs-purple-primary: #370e44;   /* Morado Institucional Principal (Cabeceras de Panel) */
+  --cs-purple-medium: #4c185c;    /* Morado Medio Acento */
+  --cs-purple-light: #f6f0f8;     /* Fondo Morado Pastel */
+  --cs-purple-border: #ebdff0;    /* Borde Morado Suave */
+
+  /* ------------------------------------------------------------------------
+     2. PALETA DE ESTADOS SEMÁNTICOS (SUTILES, NO SATURADOS)
+     ------------------------------------------------------------------------ */
+  --cs-green: #059669;            /* Verde Esmeralda / Positivo / Completado */
+  --cs-green-light: #ecfdf5;      /* Fondo Verde Suave */
+  --cs-green-border: #a7f3d0;
+
+  --cs-amber: #d97706;            /* Ámbar / Pendientes / En Proceso */
+  --cs-amber-light: #fffbeb;      /* Fondo Ámbar Suave */
+  --cs-amber-border: #fde68a;
+
+  --cs-coral: #dc2626;            /* Rojo Coral Sutil para Alertas */
+  --cs-coral-light: #fef2f2;
+  --cs-coral-border: #fecaca;
+
+  --cs-teal: #028090;             /* Azul Petróleo / Cartografía */
+  --cs-teal-light: #f0fdfa;
+  --cs-teal-border: #99f6e4;
+
+  --cs-gold: #f59e0b;             /* Ocre Dorado Vivo */
+
+  /* ------------------------------------------------------------------------
+     3. SUPERFICIES Y FONDOS (MODERNO, LIMPIO, PROFESIONAL)
+     ------------------------------------------------------------------------ */
+  --bg-canvas: #f1f4f8;           /* Gris Muy Claro Profesional (Canvas de Fondo) */
+  --bg-surface: #ffffff;          /* Blanco Puro para Módulos y Tarjetas */
+  --bg-subtle: #f8fafc;           /* Gris Suave para Inputs, Cabeceras de Tabla */
+  --bg-card-hover: #f8fafc;
+
+  /* ------------------------------------------------------------------------
+     4. TIPOGRAFÍA Y CONTRASTES
+     ------------------------------------------------------------------------ */
+  --text-main: #0f172a;           /* Texto Principal de Alto Contraste */
+  --text-soft: #334155;           /* Texto Secundario y Etiquetas */
+  --text-muted: #64748b;          /* Subtítulos, Metadatos y Placeholders */
+  --text-inverse: #ffffff;        /* Blanco sobre Morado */
+
+  /* ------------------------------------------------------------------------
+     5. BORDES MUY SUTILES (SIN LÍNEAS GRUESAS NI NEGRAS)
+     ------------------------------------------------------------------------ */
+  --border-subtle: #e2e8f0;       /* Borde 1px muy sutil */
+  --border-medium: #cbd5e1;       /* Borde para inputs y controles */
+  --border-focus: var(--cs-purple-medium);
+
+  /* ------------------------------------------------------------------------
+     6. SOMBRAS SUAVES Y DIFUSAS
+     ------------------------------------------------------------------------ */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.10), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+
+  /* ------------------------------------------------------------------------
+     7. RADIOS DE CURVATURA CONSISTENTES (10px - 12px)
+     ------------------------------------------------------------------------ */
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --cs-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --cs-header-height: 52px;
+}
+
+/* Modo Oscuro Elegante (Alto Contraste y Cero Texto Blanco sobre Blanco) */
+body.modo-oscuro {
+  --bg-canvas: #0e0513;
+  --bg-surface: #1a0c20;
+  --bg-subtle: #24122d;
+  --bg-card-hover: #2d1837;
+
+  --text-main: #f8fafc;
+  --text-soft: #e2e8f0;
+  --text-muted: #94a3b8;
+
+  --border-subtle: #381e44;
+  --border-medium: #4c285c;
+  --border-focus: #c084fc;
+
+  --cs-teal-light: rgba(2, 128, 144, 0.25);
+  --cs-green-light: rgba(5, 150, 105, 0.25);
+  --cs-amber-light: rgba(217, 119, 6, 0.25);
+  --cs-purple-light: rgba(168, 85, 247, 0.25);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.65);
+}
+
+body.modo-oscuro .cs-select {
+  background-color: #24122d;
+  color: #f8fafc;
+  border-color: #4c285c;
+}
+
+body.modo-oscuro .cs-select:focus {
+  background-color: #2d1837 !important;
+  color: #ffffff !important;
+  border-color: #c084fc !important;
+}
+
+body.modo-oscuro .cs-select option {
+  background-color: #1a0c20 !important;
+  color: #f8fafc !important;
+}
+
+body.modo-oscuro .cs-locate-btn {
+  background-color: #1a0c20;
+  color: #c084fc;
+  border-color: #381e44;
+}
+
+body.modo-oscuro .cs-locate-btn:hover {
+  background-color: #381e44;
+  color: #ffffff;
+}
+
+body.modo-oscuro .cs-mini-card textarea {
+  background-color: #24122d;
+  color: #f8fafc;
+  border-color: #4c285c;
+}
+
+body.modo-oscuro .cs-mini-card textarea:focus {
+  background-color: #2d1837 !important;
+  color: #ffffff !important;
+  border-color: #c084fc !important;
+}
+
+body.modo-oscuro .cs-data-table tbody tr:hover {
+  background-color: #261630;
+}
+
+/* Invertir sutilmente los tiles de OpenStreetMap en modo oscuro para comodidad visual */
+body.modo-oscuro .leaflet-tile-pane {
+  filter: brightness(0.75) invert(1) contrast(1.6) hue-rotate(200deg) saturate(0.4);
+}
+
+/* ==========================================================================
+   Reset & Estructura Base (Fit Viewport)
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-main);
+  transition: background-color var(--cs-transition), color var(--cs-transition);
+  font-size: 13px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.015em;
+}
+
+/* ==========================================================================
+   Franja Textil Andina Clima Social (Sutil & Elegante)
+   ========================================================================== */
+.franja-textil {
+  height: 3px;
+  width: 100%;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(-45deg,
+      #370e44 0 10px,
+      #c23b49 10px 20px,
+      #028090 20px 30px,
+      #f0a200 30px 40px);
+}
+
+/* ==========================================================================
+   Sistema de Iconos SVG
+   ========================================================================== */
+svg.cs-icon, .cs-icon {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none !important;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+svg.cs-icon--sm, .cs-icon--sm {
+  width: 13px !important;
+  height: 13px !important;
+  min-width: 13px !important;
+  min-height: 13px !important;
+}
+
+svg.cs-icon--lg, .cs-icon--lg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+}
+
+svg.cs-icon *, .cs-icon * {
+  fill: none !important;
+  stroke: inherit;
+  stroke-width: inherit;
+}
+
+/* ==========================================================================
+   Header Component (Elegante & Alineado)
+   ========================================================================== */
+.cs-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, #380f45 100%);
+  height: var(--cs-header-height);
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(15, 7, 18, 0.35);
+  color: #ffffff;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.cs-header__inner {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cs-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cs-brand__logo-box {
+  background: #ffffff;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.cs-brand__logo {
+  height: 28px;
+  max-width: 145px;
+  object-fit: contain;
+  display: block;
+}
+
+.cs-header__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cs-header__title {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.cs-header__live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 0.12rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.cs-header__live-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--cs-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--cs-gold);
+  animation: cs-pulse 2s infinite;
+}
+
+@keyframes cs-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.cs-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.cs-header__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  padding-left: 0.75rem;
+}
+
+.cs-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cs-date {
+  font-size: 0.65rem;
+  opacity: 0.75;
+}
+
+.cs-btn-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================================================
+   Contenedor Principal
+   ========================================================================== */
+.cs-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.5rem 0.85rem 0.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Tarjetas de Indicadores (KPIs Modernos & Compactos)
+   ========================================================================== */
+.cs-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.cs-kpi-card {
+  position: relative;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+  overflow: hidden;
+  transition: transform var(--cs-transition), box-shadow var(--cs-transition), border-color var(--cs-transition);
+}
+
+.cs-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.cs-kpi-card__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+/* Iconos Circulares Sutiles */
+.cs-kpi-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-kpi-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.cs-kpi-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-kpi-sub {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cs-kpi-figure {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cs-kpi-card__value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1;
+  font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+  letter-spacing: -0.03em;
+}
+
+/* Variantes de Color para KPIs */
+.cs-kpi-card--teal .cs-kpi-icon-wrap { background-color: var(--cs-teal-light); color: var(--cs-teal); }
+.cs-kpi-card--teal .cs-kpi-card__value { color: var(--cs-teal); }
+
+.cs-kpi-card--green .cs-kpi-icon-wrap { background-color: var(--cs-green-light); color: var(--cs-green); }
+.cs-kpi-card--green .cs-kpi-card__value { color: var(--cs-green); }
+
+.cs-kpi-card--amber .cs-kpi-icon-wrap { background-color: var(--cs-amber-light); color: var(--cs-amber); }
+.cs-kpi-card--amber .cs-kpi-card__value { color: var(--cs-amber); }
+
+.cs-kpi-card--purple .cs-kpi-icon-wrap { background-color: var(--cs-purple-light); color: var(--cs-purple-primary); }
+.cs-kpi-card--purple .cs-kpi-card__value { color: var(--cs-purple-primary); }
+
+/* Barra de Progreso Elegante */
+.cs-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--border-subtle);
+  overflow: hidden;
+}
+
+.cs-progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cs-teal), var(--cs-purple-medium));
+  transition: width 0.8s ease;
+}
+
+/* ==========================================================================
+   Grilla Principal 2 Columnas (Mapa Protagonista & Panel Derecho)
+   ========================================================================== */
+.cs-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 0.6rem;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Cabeceras de Panel (Morado Institucional Refinado)
+   ========================================================================== */
+.cs-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  flex-shrink: 0;
+}
+
+.cs-panel-header--navy {
+  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, var(--cs-purple-primary) 100%);
+  color: #ffffff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.cs-panel-header--navy h3 {
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cs-panel-header--map {
+  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, var(--cs-purple-primary) 100%);
+  color: #ffffff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.cs-panel-header--map h2 {
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* ==========================================================================
+   Sección del Mapa (Columna Izquierda Protagonista)
+   ========================================================================== */
+.cs-map-section {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Segmented Control Moderno */
+.cs-view-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.cs-toggle-btn {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-toggle-btn.active {
+  background: #ffffff;
+  color: var(--cs-purple-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.cs-btn-label-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  font-family: inherit;
+}
+
+.cs-btn-label-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.cs-btn-label-toggle.active {
+  background: #ffffff;
+  color: var(--cs-purple-primary);
+  border-color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Contenedor del Mapa */
+.cs-map-wrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bg-surface);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.maplibregl-canvas {
+  outline: none;
+}
+
+/* Modo Oscuro en MapLibre Tiles */
+body.modo-oscuro .maplibregl-map .maplibregl-canvas {
+  filter: brightness(0.78) invert(1) contrast(1.5) hue-rotate(200deg) saturate(0.35);
+}
+
+/* Popups personalizados de MapLibre */
+.maplibregl-popup {
+  z-index: 500;
+}
+
+.maplibregl-popup-content {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 12px 14px !important;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: var(--bg-surface) !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--bg-surface) !important;
+}
+
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--bg-surface) !important;
+}
+
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--bg-surface) !important;
+}
+
+.maplibregl-popup-close-button {
+  font-size: 1.1rem !important;
+  color: var(--text-muted) !important;
+  padding: 4px 8px !important;
+  outline: none !important;
+}
+
+/* Barra Flotante de Navegación del Sector Censal Activo */
+.cs-sector-active-bar {
+  position: absolute;
+  top: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  background: rgba(13, 33, 55, 0.94);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid rgba(242, 100, 25, 0.6);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideDownBar 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDownBar {
+  from {
+    transform: translateX(-50%) translateY(-25px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.cs-sector-active-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cs-btn-gmaps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cs-btn-gmaps:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45);
+}
+
+.cs-btn-gmaps svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Botón GPS Flotante */
+.cs-locate-btn {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 400;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--cs-purple-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.15);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-locate-btn:hover {
+  background-color: var(--cs-purple-primary);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* Pie del Mapa */
+.cs-map-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.cs-live-pulse-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--cs-green);
+}
+
+.cs-live-mini-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--cs-green);
+  border-radius: 50%;
+  animation: cs-pulse 2s infinite;
+}
+
+/* ==========================================================================
+   Panel Derecho (Filtros & Encuestadores)
+   ========================================================================== */
+.cs-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Card de Filtros Rápidos */
+.cs-filter-panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cs-filter-body {
+  padding: 0.55rem 0.8rem;
+  background-color: var(--bg-surface);
+}
+
+.cs-btn-reset {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.16rem 0.48rem;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-btn-reset:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.cs-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.cs-form-group--full {
+  grid-column: span 2;
+}
+
+.cs-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.cs-form-group label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.cs-select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.cs-select {
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  padding: 0.32rem 0.55rem;
+  font-size: 0.73rem;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--cs-transition), box-shadow var(--cs-transition), background-color var(--cs-transition);
+  width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.cs-select:hover {
+  border-color: var(--border-focus);
+}
+
+.cs-select:focus {
+  border-color: var(--border-focus);
+  background-color: var(--bg-surface);
+  box-shadow: 0 0 0 2px rgba(76, 24, 92, 0.15);
+}
+
+/* Card de Tabla de Encuestadores */
+.cs-table-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cs-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  width: 140px;
+}
+
+.cs-search-bar input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.71rem;
+  color: #ffffff;
+  outline: none;
+  font-family: inherit;
+}
+
+.cs-search-bar input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tabla Estilizada */
+.cs-table-responsive {
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-surface);
+  min-height: 0;
+}
+
+.cs-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.73rem;
+  table-layout: fixed;
+}
+
+.cs-data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cs-data-table th:nth-child(1) { width: 38%; }
+.cs-data-table th:nth-child(2) { width: 18%; text-align: center; }
+.cs-data-table th:nth-child(3) { width: 16%; text-align: center; }
+.cs-data-table th:nth-child(4) { width: 28%; text-align: center; }
+
+.cs-data-table th {
+  padding: 0.5rem 0.45rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  user-select: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cs-data-table th:hover {
+  color: var(--cs-purple-primary);
+}
+
+.cs-sort-icon {
+  font-size: 0.65rem;
+  opacity: 0.4;
+  margin-left: 0.1rem;
+}
+
+.cs-data-table td {
+  padding: 0.5rem 0.55rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.cs-data-table tbody tr {
+  transition: background-color var(--cs-transition);
+  cursor: pointer;
+}
+
+.cs-data-table tbody tr:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.cs-data-table tbody tr.selected {
+  background-color: var(--cs-purple-light) !important;
+  outline: 2px solid var(--cs-orange);
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   Fila de Encuestadores Compacta & Sin Redundancia
+   ========================================================================== */
+.cs-data-table td {
+  padding: 0.38rem 0.55rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.cs-enc-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.cs-enc-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background-color: var(--enc-color, #3e0f49);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.cs-enc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.cs-enc-name {
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+
+.cs-enc-sub {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  line-height: 1.1;
+}
+
+.cs-enc-total-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--cs-purple-primary);
+  background-color: var(--cs-purple-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  display: inline-block;
+  letter-spacing: -0.02em;
+}
+
+body.modo-oscuro .cs-enc-total-pill {
+  color: #c084fc;
+  background-color: rgba(168, 85, 247, 0.2);
+}
+
+/* Badges Semánticos */
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-full);
+  font-size: 0.63rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cs-badge--ok {
+  background-color: var(--cs-green-light);
+  color: var(--cs-green);
+  border: 1px solid var(--cs-green-border);
+}
+
+.cs-badge--warning {
+  background-color: var(--cs-amber-light);
+  color: var(--cs-amber);
+  border: 1px solid var(--cs-amber-border);
+}
+
+.cs-badge--danger {
+  background-color: var(--cs-coral-light);
+  color: var(--cs-coral);
+  border: 1px solid var(--cs-coral-border);
+}
+
+/* Empty State Elegante */
+.cs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  gap: 0.5rem;
+}
+
+.cs-empty-state__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.cs-empty-state p {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Marcadores de Encuesta de Alta Visibilidad (Sobresalen en cualquier zoom)
+   ========================================================================== */
+.cs-point-wrapper {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.cs-point-pin {
+  display: block;
+  width: 14px;
+  height: 14px;
+  pointer-events: auto;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.cs-point-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--point-color, #f26419);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.4), 0 2px 6px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-point-core {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  pointer-events: none;
+}
+
+.cs-point-pin:hover .cs-point-dot {
+  box-shadow: 0 0 0 3px rgba(242, 100, 25, 0.8), 0 3px 10px rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+}
+
+/* Micro-Etiqueta (Tipología / Sector) anclada absolutamente */
+.cs-point-badge {
+  display: none;
+  position: absolute;
+  left: 17px;
+  top: -2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 1;
+  color: #0f172a;
+  background: #ffffff;
+  padding: 2px 4.5px;
+  border-radius: 4px;
+  border: 1.5px solid var(--point-color, #0f172a);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  pointer-events: none !important;
+  z-index: 1002;
+}
+
+/* Mostrar la etiqueta ÚNICAMENTE cuando el botón 'Activadas' está activo */
+.cs-mostrar-etiquetas .cs-point-badge {
+  display: block !important;
+}
+
+/* Modo Oscuro para Marcadores y Micro-Etiquetas */
+body.modo-oscuro .cs-point-dot {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+body.modo-oscuro .cs-point-badge {
+  color: #f8fafc;
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Drawer (Detalle Encuestador)
+   ========================================================================== */
+.cs-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 7, 18, 0.5);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--cs-transition), visibility var(--cs-transition);
+}
+
+.cs-drawer-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cs-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--bg-surface);
+  z-index: 201;
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-drawer.open {
+  transform: translateX(0);
+}
+
+.cs-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, var(--cs-purple-primary) 100%);
+  color: #ffffff;
+}
+
+.cs-drawer__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cs-drawer__body {
+  padding: 0.9rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cs-mini-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.cs-mini-card textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
+  font-size: 0.74rem;
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.cs-mini-card textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background-color: #ffffff;
+}
+
+/* ==========================================================================
+   Toast Notification & Loading
+   ========================================================================== */
+.cs-toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: var(--cs-purple-primary);
+  color: #ffffff;
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 300;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cs-toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.cs-loading {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 7, 18, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  color: #ffffff;
+}
+
+.cs-loading__spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--cs-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.cs-footer {
+  display: none;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints & Low-End Mobile Optimization
+   ========================================================================== */
+@media (max-width: 1024px) {
+  html, body {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .cs-main-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .cs-map-wrapper {
+    height: 460px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cs-header__inner {
+    padding: 0 0.65rem;
+  }
+
+  .cs-header__title {
+    font-size: 0.85rem;
+  }
+
+  .cs-header__clock {
+    display: none;
+  }
+
+  .cs-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .cs-map-wrapper {
+    height: 380px;
+  }
+
+  .cs-panel-header--map {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .cs-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-sector-active-bar {
+    width: 92%;
+    justify-content: space-between;
+    padding: 0.35rem 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --cs-header-height: 48px;
+  }
+
+  .cs-container {
+    padding: 0.5rem 0.4rem;
+  }
+
+  .cs-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-map-wrapper {
+    height: 340px;
+  }
+
+  .cs-toggle-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .cs-btn-gmaps {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .cs-brand__logo {
+    height: 22px;
+  }
+
+  .cs-header__title {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

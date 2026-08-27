@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2c0b36">
+  <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social">
+  <title>Clima Social · Supervisión de Campo</title>
+  <link rel="icon" type="image/png" href="assets/icono.png">
+
+  <!-- Fuentes Tipográficas Optimizadas (Solo pesos necesarios + display=swap) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+
+  <!-- Preload de activos críticos del mapa -->
+  <link rel="preload" href="assets/sectores_censales.geojson" as="fetch" crossorigin>
+  <link rel="preload" href="assets/parroquias.geojson" as="fetch" crossorigin>
+
+  <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
+  <link rel="stylesheet" href="libs/maplibre-gl.css" />
+
+  <!-- Estilos del Dashboard -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div class="cs-loading" id="cargaOverlay">
+    <div class="cs-loading__spinner"></div>
+    <p class="cs-loading__text">Conectando con KoboToolbox…</p>
+  </div>
+
+  <!-- ===== ERROR BANNER ===== -->
+  <div class="cs-error-banner" id="errorBanner" role="alert" style="display:none;">
+    <svg class="cs-icon cs-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>No fue posible cargar los datos. Verifica la conexión con Kobo.</span>
+    <button type="button" class="cs-btn-sm" id="botonReintentar" style="background:#fff;color:var(--cs-coral);margin-left:auto;">Reintentar</button>
+  </div>
+
+  <!-- ===== HEADER PRINCIPAL ===== -->
+  <header class="cs-header">
+    <div class="cs-header__inner">
+      <div class="cs-header__brand">
+        <div class="cs-brand__logo-box">
+          <img src="assets/04_Logo_Equipo_Tecnico_Horizontal.svg" alt="Clima Social · Equipo Técnico" class="cs-brand__logo" onerror="this.src='assets/01_ClimaSocial_EquipoTecnico_Horizontal_Transparente.png'">
+        </div>
+        <div class="cs-header__title-group">
+          <h1 class="cs-header__title" id="tituloProyecto">Supervisión de Campo</h1>
+          <span class="cs-header__live-badge" id="badgeConexion">
+            <span class="cs-header__live-dot"></span>
+            <span id="badgeTexto">En espera</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="cs-header__actions">
+        <!-- Reloj / Fecha -->
+        <div class="cs-header__clock">
+          <span class="cs-clock" id="hora">--:--:--</span>
+          <span class="cs-date" id="fecha">--</span>
+        </div>
+
+        <!-- Acciones Minimalistas -->
+        <button type="button" class="cs-btn-icon" id="botonSync" title="Sincronizar con Kobo" aria-label="Sincronizar datos">
+          <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <button type="button" class="cs-btn-icon" id="botonModoOscuro" title="Modo oscuro" aria-label="Cambiar tema visual">
+          <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== FRANJA TEXTIL ANDINA (FIRMA IDENTITARIA CLIMA SOCIAL) ===== -->
+  <div class="franja-textil"></div>
+
+  <!-- ===== MAIN CONTAINER ===== -->
+  <main class="cs-container">
+
+    <!-- ===== FILA DE INDICADORES CLAVE (KPIS MODERNOS · CLIMA SOCIAL) ===== -->
+    <section class="cs-kpi-grid" aria-label="Indicadores clave">
+
+      <div class="cs-kpi-card cs-kpi-card--teal">
+        <div class="cs-kpi-card__main">
+          <div class="cs-kpi-icon-wrap">
+            <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="cs-kpi-info">
+            <span class="cs-kpi-badge">Total Recolectadas</span>
+            <span class="cs-kpi-sub" id="kpiMeta">Meta: 2,500</span>
+          </div>
+          <div class="cs-kpi-figure">
+            <span class="cs-kpi-card__value" id="kpiTotal">0</span>
+          </div>
+        </div>
+        <div class="cs-progress-bar"><div class="cs-progress-bar__fill" id="barraAvance" style="width:0%"></div></div>
+      </div>
+
+      <div class="cs-kpi-card cs-kpi-card--green">
+        <div class="cs-kpi-card__main">
+          <div class="cs-kpi-icon-wrap">
+            <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="cs-kpi-info">
+            <span class="cs-kpi-badge">Encuestas Hoy</span>
+            <span class="cs-kpi-sub">Jornada actual</span>
+          </div>
+          <div class="cs-kpi-figure">
+            <span class="cs-kpi-card__value" id="kpiHoy">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cs-kpi-card cs-kpi-card--amber">
+        <div class="cs-kpi-card__main">
+          <div class="cs-kpi-icon-wrap">
+            <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="cs-kpi-info">
+            <span class="cs-kpi-badge">Pendientes</span>
+            <span class="cs-kpi-sub">Faltan para la meta</span>
+          </div>
+          <div class="cs-kpi-figure">
+            <span class="cs-kpi-card__value" id="kpiPendientes">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cs-kpi-card cs-kpi-card--purple">
+        <div class="cs-kpi-card__main">
+          <div class="cs-kpi-icon-wrap">
+            <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="cs-kpi-info">
+            <span class="cs-kpi-badge">Avance General</span>
+            <span class="cs-kpi-sub">Cumplimiento del proyecto</span>
+          </div>
+          <div class="cs-kpi-figure">
+            <span class="cs-kpi-card__value" id="kpiAvance">0%</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== MAIN 2-COLUMN GRID (MAPA A LA IZQUIERDA, FILTROS Y TABLA A LA DERECHA) ===== -->
+    <div class="cs-main-grid">
+
+      <!-- COLUMNA IZQUIERDA: MAPA PROTAGONISTA -->
+      <section class="cs-map-section" aria-label="Mapa de campo">
+        <div class="cs-panel-header cs-panel-header--map">
+          <h2>
+            <svg class="cs-icon cs-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Mapa de Cobertura de Campo
+          </h2>
+          <!-- Modo de visualización: Segmented Controls -->
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+            <div class="cs-view-toggle" role="group" aria-label="Modo de visualización geográfica">
+              <button type="button" class="cs-toggle-btn active" id="btnModoPuntos" title="Ver cada encuesta como un punto independiente">Puntos individuales</button>
+              <button type="button" class="cs-toggle-btn" id="btnModoCluster" title="Ver densidad agrupada">Agrupado</button>
+            </div>
+            <div class="cs-view-toggle" role="group" aria-label="Modo de etiquetas">
+              <button type="button" class="cs-toggle-btn" id="btnEtiquetasOn" title="Mostrar todas las etiquetas en el mapa">Activadas</button>
+              <button type="button" class="cs-toggle-btn active" id="btnEtiquetasOff" title="Ocultar etiquetas en vista general">Desactivadas</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cs-map-wrapper">
+          <div id="map"></div>
+          
+          <!-- Barra flotante de navegación para Sector Censal activo -->
+          <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
+            <div class="cs-sector-active-info">
+              <span class="cs-sector-active-icon">📍</span>
+              <span class="cs-sector-active-title" id="sectorActivoTitulo">Sector Censal #14</span>
+            </div>
+            <a id="btnRutaGoogleMaps" class="cs-btn-gmaps" href="#" target="_blank" rel="noopener noreferrer">
+              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              Cómo llegar (Google Maps)
+            </a>
+          </div>
+
+          <button type="button" class="cs-locate-btn" id="locateBtn" title="Centrar en mi ubicación GPS" aria-label="Centrar ubicación GPS">
+            <svg class="cs-icon cs-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          </button>
+        </div>
+
+        <div class="cs-map-stats">
+          <span id="mapStats"><strong>0</strong> encuestas mapeadas</span>
+          <span class="cs-live-pulse-label">
+            <span class="cs-live-mini-dot"></span> Sincronización activa
+          </span>
+        </div>
+      </section>
+
+      <!-- COLUMNA DERECHA: FILTROS + TABLA DE ENCUESTADORES -->
+      <section class="cs-right-panel" aria-label="Filtros y Encuestadores">
+
+        <!-- BLOQUE DE FILTROS RÁPIDOS -->
+        <div class="cs-filter-panel">
+          <div class="cs-panel-header cs-panel-header--navy">
+            <h3>
+              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filtros Rápidos
+            </h3>
+            <button type="button" class="cs-btn-reset" id="btnLimpiarFiltros" title="Limpiar todos los filtros">
+              Limpiar
+            </button>
+          </div>
+
+          <div class="cs-filter-body">
+            <div class="cs-filter-grid">
+              <!-- Fila 1: Supervisor + Fecha -->
+              <div class="cs-form-group">
+                <label for="supervisorFilter">Supervisor:</label>
+                <div class="cs-select-wrap">
+                  <select id="supervisorFilter" class="cs-select">
+                    <option value="Todos">Todos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="cs-form-group">
+                <label for="fechaFilter">Fecha:</label>
+                <div class="cs-select-wrap">
+                  <select id="fechaFilter" class="cs-select">
+                    <option value="Todas">Todas</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Fila 2: Parroquia + Sector Censal -->
+              <div class="cs-form-group">
+                <label for="parroquiaFilter">Parroquia:</label>
+                <div class="cs-select-wrap">
+                  <select id="parroquiaFilter" class="cs-select">
+                    <option value="Todas">Todas</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="cs-form-group">
+                <label for="sectorFilter">Sector Censal:</label>
+                <div class="cs-select-wrap">
+                  <select id="sectorFilter" class="cs-select">
+                    <option value="Todos">Todos</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA DE ENCUESTADORES -->
+        <div class="cs-table-card">
+          <div class="cs-panel-header cs-panel-header--navy">
+            <h3>
+              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Encuestadores
+            </h3>
+            <div class="cs-search-bar">
+              <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="searchInput" placeholder="Buscar encuestador…" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="cs-table-responsive cs-table-scroll-container">
+            <table class="cs-data-table" id="tablaEncuestadores">
+              <thead>
+                <tr>
+                  <th data-sort="encuestador" style="width:72%;">Encuestador <span class="cs-sort-icon">↕</span></th>
+                  <th data-sort="encuestas" style="width:28%;text-align:right;">Total <span class="cs-sort-icon">↕</span></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="cs-empty-state" id="emptyState" style="display:none;">
+            <div class="cs-empty-state__icon">
+              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <p>No se encontraron encuestadores con ese filtro</p>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ===== FOOTER (Discreto) ===== -->
+    <footer class="cs-footer">
+      <span>Clima Social · Sistema de Gestión y Supervisión de Campo</span>
+      <span id="ultimaActualizacion">Sincronizado</span>
+    </footer>
+
+  </main>
+
+  <!-- ===== TOAST ===== -->
+  <div class="cs-toast" id="toast"></div>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="libs/maplibre-gl.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
