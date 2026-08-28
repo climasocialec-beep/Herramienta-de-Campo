@@ -580,18 +580,39 @@ svg.cs-icon *, .cs-icon * {
   overflow: hidden;
 }
 
-/* Segmented Control Moderno */
+/* Segmented Control & Grupo de Etiquetas */
+.cs-label-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.15rem 0.45rem 0.15rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.cs-label-toggle-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
 .cs-view-toggle {
   display: flex;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
   padding: 2px;
+  gap: 2px;
 }
 
 .cs-toggle-btn {
-  padding: 0.2rem 0.6rem;
-  font-size: 0.68rem;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.7rem;
   font-weight: 600;
   border-radius: 4px;
   border: none;
@@ -604,37 +625,13 @@ svg.cs-icon *, .cs-icon * {
 .cs-toggle-btn.active {
   background: #ffffff;
   color: var(--cs-purple-primary);
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-.cs-btn-label-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.88);
-  cursor: pointer;
-  transition: all var(--cs-transition);
-  font-family: inherit;
-}
-
-.cs-btn-label-toggle:hover {
+.cs-toggle-btn:hover:not(.active) {
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-}
-
-.cs-btn-label-toggle.active {
-  background: #ffffff;
-  color: var(--cs-purple-primary);
-  border-color: #ffffff;
-  font-weight: 700;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Contenedor del Mapa */
@@ -851,42 +848,51 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
 }
 
 .cs-btn-reset {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.16rem 0.48rem;
+  padding: 0.2rem 0.55rem;
   border-radius: var(--radius-xs);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   transition: all var(--cs-transition);
 }
 
 .cs-btn-reset:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.cs-btn-reset.has-active {
+  background: #e11d48;
+  border-color: #f43f5e;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.45);
 }
 
 .cs-filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
-}
-
-.cs-form-group--full {
-  grid-column: span 2;
+  gap: 0.55rem;
 }
 
 .cs-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.25rem;
 }
 
 .cs-form-group label {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .cs-select-wrap {
@@ -897,15 +903,15 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
 .cs-select {
   background-color: var(--bg-subtle);
   color: var(--text-main);
-  border: 1px solid var(--border-medium);
-  border-radius: 6px;
-  padding: 0.32rem 0.55rem;
-  font-size: 0.73rem;
-  font-weight: 500;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 7px;
+  padding: 0.38rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 600;
   font-family: inherit;
   outline: none;
   cursor: pointer;
-  transition: border-color var(--cs-transition), box-shadow var(--cs-transition), background-color var(--cs-transition);
+  transition: all var(--cs-transition);
   width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -913,13 +919,28 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
 }
 
 .cs-select:hover {
-  border-color: var(--border-focus);
+  border-color: var(--cs-purple-medium);
 }
 
 .cs-select:focus {
-  border-color: var(--border-focus);
+  border-color: var(--cs-purple-primary);
   background-color: var(--bg-surface);
-  box-shadow: 0 0 0 2px rgba(76, 24, 92, 0.15);
+  box-shadow: 0 0 0 2.5px rgba(76, 24, 92, 0.2);
+}
+
+.cs-select.is-active {
+  border-color: var(--cs-purple-primary);
+  background-color: #faf5ff;
+  color: var(--cs-purple-dark);
+  font-weight: 700;
+  box-shadow: 0 0 0 1.5px var(--cs-purple-primary);
+}
+
+body.modo-oscuro .cs-select.is-active {
+  border-color: #c084fc;
+  background-color: #3b1847;
+  color: #f5d0fe;
+  box-shadow: 0 0 0 1.5px #c084fc;
 }
 
 /* Card de Tabla de Encuestadores */
@@ -1401,21 +1422,54 @@ body.modo-oscuro .cs-point-badge {
 }
 
 /* ==========================================================================
-   Responsive Breakpoints & Low-End Mobile Optimization
+   Responsive Breakpoints & Mobile Optimization (iPhone / Teléfonos)
    ========================================================================== */
 @media (max-width: 1024px) {
   html, body {
-    height: auto;
-    overflow-y: auto;
+    height: auto !important;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .cs-container {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0.5rem 0.65rem 2rem;
   }
 
   .cs-main-grid {
-    grid-template-columns: 1fr;
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    gap: 0.75rem;
+  }
+
+  .cs-map-section {
+    height: auto !important;
   }
 
   .cs-map-wrapper {
-    height: 460px;
+    height: 420px !important;
+    min-height: 420px !important;
+  }
+
+  .cs-right-panel {
+    height: auto !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cs-table-card {
+    height: auto !important;
+    min-height: 360px;
+  }
+
+  .cs-table-scroll-container {
+    max-height: 420px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -1432,13 +1486,24 @@ body.modo-oscuro .cs-point-badge {
     display: none;
   }
 
+  /* Tarjetas KPI en 2 Columnas x 2 Líneas en Móvil */
   .cs-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem;
+  }
+
+  .cs-kpi-card {
+    padding: 0.4rem 0.6rem;
+    min-height: 44px;
+  }
+
+  .cs-kpi-card__value {
+    font-size: 1.15rem;
   }
 
   .cs-map-wrapper {
-    height: 380px;
+    height: 360px !important;
+    min-height: 360px !important;
   }
 
   .cs-panel-header--map {
@@ -1447,8 +1512,14 @@ body.modo-oscuro .cs-point-badge {
     gap: 0.5rem;
   }
 
+  .cs-label-toggle-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .cs-filter-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
   }
 
   .cs-sector-active-bar {
@@ -1464,25 +1535,68 @@ body.modo-oscuro .cs-point-badge {
   }
 
   .cs-container {
-    padding: 0.5rem 0.4rem;
+    padding: 0.4rem 0.4rem 2rem;
   }
 
+  /* Mantener estrictamente 2 columnas x 2 filas en iPhone */
   .cs-kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.4rem;
+  }
+
+  .cs-kpi-card {
+    padding: 0.35rem 0.5rem;
+    min-height: 42px;
+  }
+
+  .cs-kpi-icon-wrap {
+    width: 26px;
+    height: 26px;
+  }
+
+  .cs-kpi-badge {
+    font-size: 0.6rem;
+  }
+
+  .cs-kpi-sub {
+    font-size: 0.52rem;
+  }
+
+  .cs-kpi-card__value {
+    font-size: 1.05rem;
   }
 
   .cs-map-wrapper {
-    height: 340px;
+    height: 330px !important;
+    min-height: 330px !important;
+  }
+
+  .cs-filter-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+
+  .cs-select {
+    padding: 0.32rem 0.45rem;
+    font-size: 0.7rem;
   }
 
   .cs-toggle-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.68rem;
   }
 
   .cs-btn-gmaps {
     padding: 0.25rem 0.5rem;
     font-size: 0.7rem;
+  }
+
+  .cs-table-card {
+    min-height: 320px;
+  }
+
+  .cs-table-scroll-container {
+    max-height: 380px;
   }
 }
 

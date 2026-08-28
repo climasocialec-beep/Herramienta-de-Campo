@@ -73,12 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
         parroquiaFilter: document.getElementById('parroquiaFilter'),
         fechaFilter: document.getElementById('fechaFilter'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
+        txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
         
         // Mapa y Modos
         mapContainer: document.getElementById('map'),
         locateBtn: document.getElementById('locateBtn'),
-        btnModoPuntos: document.getElementById('btnModoPuntos'),
-        btnModoCluster: document.getElementById('btnModoCluster'),
         btnEtiquetasOn: document.getElementById('btnEtiquetasOn'),
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
@@ -298,8 +297,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // FILTROS CRUZADOS INTELIGENTES Y DINÁMICOS (Single-Pass O(N) Ultra-Rápido)
+    // FILTROS CRUZADOS INTELIGENTES Y DINÁMICOS
     // =========================================================================
+    function actualizarFiltrosUI() {
+        let activeCount = 0;
+
+        if (UI.supervisorFilter) {
+            const isAct = AppState.supervisorSeleccionado !== 'Todos';
+            UI.supervisorFilter.classList.toggle('is-active', isAct);
+            if (isAct) activeCount++;
+        }
+        if (UI.fechaFilter) {
+            const isAct = AppState.fechaSeleccionada !== 'Todas';
+            UI.fechaFilter.classList.toggle('is-active', isAct);
+            if (isAct) activeCount++;
+        }
+        if (UI.parroquiaFilter) {
+            const isAct = AppState.parroquiaSeleccionada !== 'Todas';
+            UI.parroquiaFilter.classList.toggle('is-active', isAct);
+            if (isAct) activeCount++;
+        }
+        if (UI.sectorFilter) {
+            const isAct = AppState.sectorSeleccionado !== 'Todos';
+            UI.sectorFilter.classList.toggle('is-active', isAct);
+            if (isAct) activeCount++;
+        }
+        if (AppState.encuestadorSeleccionado) {
+            activeCount++;
+        }
+        if (AppState.filtroTabla) {
+            activeCount++;
+        }
+
+        if (UI.btnLimpiarFiltros) {
+            UI.btnLimpiarFiltros.classList.toggle('has-active', activeCount > 0);
+            const txt = document.getElementById('txtLimpiarFiltros');
+            if (txt) {
+                txt.textContent = activeCount > 0 ? `Limpiar (${activeCount})` : 'Limpiar';
+            }
+        }
+    }
+
     function poblarFiltros() {
         if (!AppState.encuestas || AppState.encuestas.length === 0) return;
 
@@ -333,22 +371,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 matchPar = (uParr.includes(targetPar) || targetPar.includes(uParr));
             }
 
-            // Opciones de Supervisores (coincide con Sector + Parroquia + Fecha)
+            // Supervisores
             if (sup && matchSec && matchPar && matchFec) {
                 supervisores.set(sup, (supervisores.get(sup) || 0) + 1);
             }
 
-            // Opciones de Sectores (coincide con Supervisor + Parroquia + Fecha)
+            // Sectores
             if (sc && matchSup && matchPar && matchFec) {
                 sectores.set(sc, (sectores.get(sc) || 0) + 1);
             }
 
-            // Opciones de Parroquias (coincide con Supervisor + Sector + Fecha)
+            // Parroquias
             if (parr && matchSup && matchSec && matchFec) {
                 parroquias.set(parr, (parroquias.get(parr) || 0) + 1);
             }
 
-            // Opciones de Fechas (coincide con Supervisor + Sector + Parroquia)
+            // Fechas
             if (fec && matchSup && matchSec && matchPar) {
                 fechas.set(fec, (fechas.get(fec) || 0) + 1);
             }
@@ -357,13 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Selector Supervisores
         if (UI.supervisorFilter) {
             const actualSup = AppState.supervisorSeleccionado || 'Todos';
-            UI.supervisorFilter.innerHTML = '<option value="Todos">Todos</option>';
+            UI.supervisorFilter.innerHTML = '<option value="Todos">Todos los supervisores</option>';
             const supList = Array.from(supervisores.keys()).sort((a, b) => (parseInt(a, 10) || a) - (parseInt(b, 10) || b));
             const frag = document.createDocumentFragment();
             supList.forEach(sup => {
                 const opt = document.createElement('option');
                 opt.value = sup;
-                opt.textContent = `Supervisor #${sup} (${supervisores.get(sup)})`;
+                opt.textContent = `Supervisor #${sup} (${supervisores.get(sup)} enc.)`;
                 frag.appendChild(opt);
             });
             UI.supervisorFilter.appendChild(frag);
@@ -374,30 +412,45 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Selector Sectores Censales
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
-            UI.sectorFilter.innerHTML = '<option value="Todos">Todos</option>';
-            const secList = Array.from(sectores.keys()).sort((a, b) => (parseInt(a, 10) || a) - (parseInt(b, 10) || b));
+            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores</option>';
+            
+            // Combinar sectores de encuestas con todos los sectores conocidos del mapa
+            const todosSectoresKeys = new Set([...sectores.keys(), ...AppState.sectoresMap.keys()]);
+            const secList = Array.from(todosSectoresKeys).filter(k => /^\d+$/.test(k)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            
             const frag = document.createDocumentFragment();
             secList.forEach(sc => {
+                const meta = AppState.sectoresMap.get(sc);
+                const etiqueta = meta ? (meta.etiquetaSC || sc) : sc;
+                const count = sectores.get(sc) || 0;
+                const parroquiaName = meta && meta.feature && meta.feature.properties ? (meta.feature.properties.PARROQUIA || '') : '';
+                
+                // Si hay parroquia seleccionada, filtrar sectores a los de esa parroquia
+                if (targetPar && parroquiaName && !parroquiaName.toUpperCase().includes(targetPar) && !targetPar.includes(parroquiaName.toUpperCase()) && count === 0) {
+                    return;
+                }
+
                 const opt = document.createElement('option');
                 opt.value = sc;
-                opt.textContent = `${sc} (${sectores.get(sc)})`;
+                opt.textContent = count > 0 
+                    ? `Sector ${etiqueta}${parroquiaName ? ` (${parroquiaName})` : ''} - ${count} enc.`
+                    : `Sector ${etiqueta}${parroquiaName ? ` (${parroquiaName})` : ''}`;
                 frag.appendChild(opt);
             });
             UI.sectorFilter.appendChild(frag);
-            UI.sectorFilter.value = sectores.has(actualSec) ? actualSec : 'Todos';
-            if (!sectores.has(actualSec) && actualSec !== 'Todos') AppState.sectorSeleccionado = 'Todos';
+            UI.sectorFilter.value = (actualSec && actualSec !== 'Todos') ? actualSec : 'Todos';
         }
 
         // 3. Selector Parroquias
         if (UI.parroquiaFilter) {
             const actualPar = AppState.parroquiaSeleccionada || 'Todas';
-            UI.parroquiaFilter.innerHTML = '<option value="Todas">Todas</option>';
+            UI.parroquiaFilter.innerHTML = '<option value="Todas">Todas las parroquias</option>';
             const parList = Array.from(parroquias.keys()).sort((a, b) => a.localeCompare(b, 'es'));
             const frag = document.createDocumentFragment();
             parList.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p;
-                opt.textContent = `${p} (${parroquias.get(p)})`;
+                opt.textContent = `${p} (${parroquias.get(p)} enc.)`;
                 frag.appendChild(opt);
             });
             UI.parroquiaFilter.appendChild(frag);
@@ -408,19 +461,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Selector Fechas
         if (UI.fechaFilter) {
             const actualFec = AppState.fechaSeleccionada || 'Todas';
-            UI.fechaFilter.innerHTML = '<option value="Todas">Todas</option>';
+            UI.fechaFilter.innerHTML = '<option value="Todas">Todas las fechas</option>';
             const fecList = Array.from(fechas.keys()).sort().reverse();
             const frag = document.createDocumentFragment();
             fecList.forEach(f => {
                 const opt = document.createElement('option');
                 opt.value = f;
-                opt.textContent = `${f} (${fechas.get(f)})`;
+                opt.textContent = `${f} (${fechas.get(f)} enc.)`;
                 frag.appendChild(opt);
             });
             UI.fechaFilter.appendChild(frag);
             UI.fechaFilter.value = fechas.has(actualFec) ? actualFec : 'Todas';
             if (!fechas.has(actualFec) && actualFec !== 'Todas') AppState.fechaSeleccionada = 'Todas';
         }
+
+        actualizarFiltrosUI();
     }
 
     function obtenerEncuestasFiltradas() {
@@ -451,7 +506,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Encuestador (al hacer clic en la tabla)
+        // Filtro por Fecha
+        if (AppState.fechaSeleccionada !== 'Todas') {
+            filtradas = filtradas.filter(e => {
+                const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
+                return fec === AppState.fechaSeleccionada;
+            });
+        }
+
+        // Filtro por Encuestador seleccionado en tabla
         if (AppState.encuestadorSeleccionado) {
             filtradas = filtradas.filter(e => {
                 const enc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
@@ -459,20 +522,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Fecha
-        if (AppState.fechaSeleccionada !== 'Todas') {
-            filtradas = filtradas.filter(e => {
-                if (!e._submission_time) return false;
-                return e._submission_time.substring(0, 10) === AppState.fechaSeleccionada;
-            });
-        }
-        
         return filtradas;
     }
 
     function renderizarVista(actualizarSelects = false, ajustarCamara = false) {
         if (actualizarSelects) {
             poblarFiltros();
+        } else {
+            actualizarFiltrosUI();
         }
         actualizarPoligonosMapa(ajustarCamara);
         const encuestas = obtenerEncuestasFiltradas();
@@ -719,26 +776,15 @@ document.addEventListener('DOMContentLoaded', () => {
             map.getSource('sectores-source').setData(AppState.sectoresGeojson);
         }
 
-        // 3. Capas de Encuestas: Modo Puntos y Modo Clúster
+        // 3. Capas de Encuestas: Puntos Individuales y Etiquetas
         if (!map.getSource('encuestas-puntos-source')) {
-            // Fuente para Modo Puntos Individuales (Sin agrupar)
             map.addSource('encuestas-puntos-source', {
                 type: 'geojson',
                 data: { type: 'FeatureCollection', features: [] },
                 cluster: false
             });
 
-            // Fuente para Modo Clúster
-            map.addSource('encuestas-cluster-source', {
-                type: 'geojson',
-                data: { type: 'FeatureCollection', features: [] },
-                cluster: true,
-                clusterMaxZoom: 14,
-                clusterRadius: 35
-            });
-
-            // --- MODO PUNTOS INDIVIDUALES ---
-            // 1. Capa de Etiquetas (debajo de los puntos para que nunca tapen los círculos)
+            // 1. Capa de Etiquetas de Encuestas
             map.addLayer({
                 id: 'puntos-label-layer',
                 type: 'symbol',
@@ -768,109 +814,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 2. Círculos de Puntos (Encima de las etiquetas)
+            // 2. Círculos de Puntos Individuales (Siempre visibles y destacados)
             map.addLayer({
                 id: 'puntos-layer',
                 type: 'circle',
                 source: 'encuestas-puntos-source',
-                paint: {
-                    'circle-color': [
-                        'match',
-                        ['get', 'supervisor'],
-                        '1', '#028090',
-                        '2', '#e11d48',
-                        '3', '#d97706',
-                        '4', '#7c3aed',
-                        '5', '#059669',
-                        '6', '#2563eb',
-                        '7', '#ea580c',
-                        '#f26419'
-                    ],
-                    'circle-radius': 7.0,
-                    'circle-stroke-width': 2.5,
-                    'circle-stroke-color': '#ffffff',
-                    'circle-opacity': 1.0
-                }
-            });
-
-            // --- MODO CLÚSTER ---
-            map.addLayer({
-                id: 'clusters-circle',
-                type: 'circle',
-                source: 'encuestas-cluster-source',
-                filter: ['has', 'point_count'],
-                layout: {
-                    'visibility': 'none'
-                },
-                paint: {
-                    'circle-color': '#0d2137',
-                    'circle-radius': [
-                        'step',
-                        ['get', 'point_count'],
-                        16,
-                        10, 19,
-                        30, 23,
-                        75, 28
-                    ],
-                    'circle-stroke-width': 2.5,
-                    'circle-stroke-color': '#f26419',
-                    'circle-opacity': 0.95
-                }
-            });
-
-            map.addLayer({
-                id: 'clusters-count',
-                type: 'symbol',
-                source: 'encuestas-cluster-source',
-                filter: ['has', 'point_count'],
-                layout: {
-                    'text-field': '{point_count_abbreviated}',
-                    'text-font': ['Open Sans Bold'],
-                    'text-size': 13,
-                    'visibility': 'none'
-                },
-                paint: {
-                    'text-color': '#ffffff'
-                }
-            });
-
-            map.addLayer({
-                id: 'cluster-unclustered-label',
-                type: 'symbol',
-                source: 'encuestas-cluster-source',
-                filter: ['!', ['has', 'point_count']],
-                layout: {
-                    'text-field': ['get', 'microEtiqueta'],
-                    'text-font': ['Open Sans Bold'],
-                    'text-size': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        12, 11,
-                        15, 14,
-                        17, 18
-                    ],
-                    'text-offset': [0, -1.6],
-                    'text-anchor': 'bottom',
-                    'text-allow-overlap': true,
-                    'visibility': 'none'
-                },
-                paint: {
-                    'text-color': '#0f172a',
-                    'text-halo-color': '#ffffff',
-                    'text-halo-width': 3.0,
-                    'text-halo-blur': 0.5
-                }
-            });
-
-            map.addLayer({
-                id: 'cluster-unclustered-point',
-                type: 'circle',
-                source: 'encuestas-cluster-source',
-                filter: ['!', ['has', 'point_count']],
-                layout: {
-                    'visibility': 'none'
-                },
                 paint: {
                     'circle-color': [
                         'match',
@@ -958,45 +906,25 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         map.on('click', 'puntos-layer', abrirPopupEncuesta);
-        map.on('click', 'cluster-unclustered-point', abrirPopupEncuesta);
-
-        // Clic en Clúster (Zoom expansivo suave)
-        map.on('click', 'clusters-circle', (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['clusters-circle'] });
-            if (!features.length) return;
-            const clusterId = features[0].properties.cluster_id;
-            map.getSource('encuestas-cluster-source').getClusterExpansionZoom(clusterId, (err, zoom) => {
-                if (err) return;
-                map.easeTo({
-                    center: features[0].geometry.coordinates,
-                    zoom: zoom + 0.5
-                });
-            });
-        });
 
         // Cursores
         map.on('mouseenter', 'sectores-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'sectores-fill', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'puntos-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
-        map.on('mouseenter', 'cluster-unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'cluster-unclustered-point', () => { map.getCanvas().style.cursor = ''; });
-        map.on('mouseenter', 'clusters-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'clusters-circle', () => { map.getCanvas().style.cursor = ''; });
 
         actualizarPoligonosMapa(false);
     }
 
     function actualizarClaseZoom() {
         if (!map || !AppState.mapLoaded) return;
-        const isCluster = (AppState.modoVisualizacion === 'cluster');
         const show = AppState.mostrarEtiquetas ? 'visible' : 'none';
 
         if (map.getLayer('puntos-label-layer')) {
-            map.setLayoutProperty('puntos-label-layer', 'visibility', !isCluster ? show : 'none');
+            map.setLayoutProperty('puntos-label-layer', 'visibility', show);
         }
-        if (map.getLayer('cluster-unclustered-label')) {
-            map.setLayoutProperty('cluster-unclustered-label', 'visibility', isCluster ? show : 'none');
+        if (map.getLayer('sectores-label')) {
+            map.setLayoutProperty('sectores-label', 'visibility', show);
         }
     }
 
@@ -1328,30 +1256,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const srcPuntos = map.getSource('encuestas-puntos-source');
         if (srcPuntos) srcPuntos.setData(geojsonFC);
 
-        const srcCluster = map.getSource('encuestas-cluster-source');
-        if (srcCluster) srcCluster.setData(geojsonFC);
-
-        // Modos: Puntos vs Clústeres
-        const isCluster = (AppState.modoVisualizacion === 'cluster');
         const showLabels = AppState.mostrarEtiquetas ? 'visible' : 'none';
 
         if (map.getLayer('puntos-layer')) {
-            map.setLayoutProperty('puntos-layer', 'visibility', !isCluster ? 'visible' : 'none');
+            map.setLayoutProperty('puntos-layer', 'visibility', 'visible');
         }
         if (map.getLayer('puntos-label-layer')) {
-            map.setLayoutProperty('puntos-label-layer', 'visibility', !isCluster ? showLabels : 'none');
+            map.setLayoutProperty('puntos-label-layer', 'visibility', showLabels);
         }
-        if (map.getLayer('clusters-circle')) {
-            map.setLayoutProperty('clusters-circle', 'visibility', isCluster ? 'visible' : 'none');
-        }
-        if (map.getLayer('clusters-count')) {
-            map.setLayoutProperty('clusters-count', 'visibility', isCluster ? 'visible' : 'none');
-        }
-        if (map.getLayer('cluster-unclustered-point')) {
-            map.setLayoutProperty('cluster-unclustered-point', 'visibility', isCluster ? 'visible' : 'none');
-        }
-        if (map.getLayer('cluster-unclustered-label')) {
-            map.setLayoutProperty('cluster-unclustered-label', 'visibility', isCluster ? showLabels : 'none');
+        if (map.getLayer('sectores-label')) {
+            map.setLayoutProperty('sectores-label', 'visibility', showLabels);
         }
 
         if (UI.mapStats) {
@@ -1632,33 +1546,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 5. Conmutador de Modo: Puntos vs Agrupado
-        if (UI.btnModoPuntos && UI.btnModoCluster) {
-            UI.btnModoPuntos.addEventListener('click', () => {
-                UI.btnModoPuntos.classList.add('active');
-                UI.btnModoCluster.classList.remove('active');
-                AppState.modoVisualizacion = 'puntos';
-                const encuestas = obtenerEncuestasFiltradas();
-                actualizarMapa(encuestas);
-            });
-
-            UI.btnModoCluster.addEventListener('click', () => {
-                UI.btnModoCluster.classList.add('active');
-                UI.btnModoPuntos.classList.remove('active');
-                AppState.modoVisualizacion = 'cluster';
-                const encuestas = obtenerEncuestasFiltradas();
-                actualizarMapa(encuestas);
-            });
-        }
-
-        // 6. Conmutador de Etiquetas: Activadas vs Desactivadas
+        // 5. Conmutador de Etiquetas: Mostrar vs Ocultar
         if (UI.btnEtiquetasOn && UI.btnEtiquetasOff) {
             UI.btnEtiquetasOn.addEventListener('click', () => {
                 AppState.mostrarEtiquetas = true;
                 UI.btnEtiquetasOn.classList.add('active');
                 UI.btnEtiquetasOff.classList.remove('active');
                 actualizarClaseZoom();
-                mostrarToast('Etiquetas activadas en el mapa', 'info');
+                mostrarToast('Etiquetas visibles en el mapa', 'info');
             });
 
             UI.btnEtiquetasOff.addEventListener('click', () => {
@@ -1666,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 UI.btnEtiquetasOff.classList.add('active');
                 UI.btnEtiquetasOn.classList.remove('active');
                 actualizarClaseZoom();
-                mostrarToast('Etiquetas desactivadas (modo inteligente)', 'info');
+                mostrarToast('Etiquetas ocultadas', 'info');
             });
         }
 
