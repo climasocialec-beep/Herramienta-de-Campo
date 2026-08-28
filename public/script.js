@@ -1370,8 +1370,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // TABLA DE RENDIMIENTO POR ENCUESTADOR
+    // TABLA DE RENDIMIENTO POR ENCUESTADOR & MÉTRICAS DE TIEMPO
     // =========================================================================
+    function formatearMinutos(m) {
+        if (m === null || isNaN(m) || m <= 0) return '-';
+        if (m < 1) return `${Math.round(m * 60)}s`;
+        if (m >= 60) {
+            const h = Math.floor(m / 60);
+            const rem = Math.round(m % 60);
+            return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+        }
+        return m % 1 === 0 ? `${m}m` : `${m.toFixed(1)}m`;
+    }
+
     function agruparPorEncuestador(encuestas) {
         const grupos = new Map();
         const total = encuestas.length;
@@ -1385,37 +1396,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 g = {
                     id: codEnc,
                     encuestas: [],
+                    duraciones: [],
                     totalMins: 0,
-                    validDurCount: 0,
                     supervisor: enc.supervisor || enc.C_digo_Supervisor || '',
-                    promDuracion: 'Sin registro'
+                    promStr: 'Sin datos',
+                    minStr: '-',
+                    maxStr: '-'
                 };
                 grupos.set(codEnc, g);
             }
 
             g.encuestas.push(enc);
 
-            // Cálculo O(1) de duración por encuesta
+            // Duración por encuesta (filtrando outliers <30s o >3h)
             const s = enc.start;
             const end = enc.end;
             if (s && end) {
                 const d1 = new Date(s).getTime();
                 const d2 = new Date(end).getTime();
-                const diff = (d2 - d1) / 60000;
-                if (diff > 0.3 && diff < 300) {
-                    g.totalMins += diff;
-                    g.validDurCount++;
+                if (!isNaN(d1) && !isNaN(d2) && d2 > d1) {
+                    const diff = (d2 - d1) / 60000;
+                    if (diff >= 0.5 && diff <= 180) {
+                        g.totalMins += diff;
+                        g.duraciones.push(diff);
+                    }
                 }
             }
         }
 
         const resultado = [];
         for (const g of grupos.values()) {
-            if (g.validDurCount > 0) {
-                const prom = g.totalMins / g.validDurCount;
-                g.promDuracion = prom < 1 ? `${Math.round(prom * 60)} seg prom.` : `${prom.toFixed(1)} min prom.`;
-            } else {
-                g.promDuracion = 'Sin registro de tiempo';
+            if (g.duraciones.length > 0) {
+                const prom = g.totalMins / g.duraciones.length;
+                const min = Math.min(...g.duraciones);
+                const max = Math.max(...g.duraciones);
+                g.promStr = formatearMinutos(prom);
+                g.minStr = formatearMinutos(min);
+                g.maxStr = formatearMinutos(max);
             }
             resultado.push(g);
         }
@@ -1482,8 +1499,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="cs-enc-meta">
                             <div class="cs-enc-name">Encuestador #${grupo.id}</div>
                             <div class="cs-enc-sub">
-                                <svg class="cs-icon cs-icon--sm" style="width:11px;height:11px;opacity:0.7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                <span>${grupo.promDuracion}</span>
+                                <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio">⏱️ ${grupo.promStr}</span>
+                                <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo">⬇️ ${grupo.minStr}</span>
+                                <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo">⬆️ ${grupo.maxStr}</span>
                             </div>
                         </div>
                     </div>
@@ -1504,12 +1522,58 @@ document.addEventListener('DOMContentLoaded', () => {
     function seleccionarEncuestador(id) {
         if (AppState.encuestadorSeleccionado === id) {
             AppState.encuestadorSeleccionado = null;
-            mostrarToast('Mostrando todos los encuestadores', 'info');
-        } else {
-            AppState.encuestadorSeleccionado = id;
-            mostrarToast(`Filtrado por Encuestador #${id}`, 'info');
+            mostrarToast('Mostrando todo el equipo', 'info');
+            renderizarVista(false, true);
+            return;
         }
-        renderizarVista();
+
+        AppState.encuestadorSeleccionado = id;
+
+        // Auto-adaptar filtros a este encuestador
+        const encuestasDelEnc = AppState.encuestas.filter(e => {
+            const cod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
+            return cod === String(id);
+        });
+
+        let supId = '';
+        const coords = [];
+        encuestasDelEnc.forEach(e => {
+            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
+            if (sup && !supId) supId = sup;
+            const c = extraerCoordenadas(e);
+            if (c) coords.push(c);
+        });
+
+        if (supId && UI.supervisorFilter) {
+            AppState.supervisorSeleccionado = supId;
+            UI.supervisorFilter.value = supId;
+        }
+
+        mostrarToast(`Encuestador #${id} (Sup #${supId || 'S/N'}) · ${encuestasDelEnc.length} encuestas`, 'info');
+        renderizarVista(true, false);
+
+        // Enfocar mapa a sus puntos
+        if (coords.length > 0 && map) {
+            let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+            coords.forEach(([lat, lng]) => {
+                if (lng < minLng) minLng = lng;
+                if (lat < minLat) minLat = lat;
+                if (lng > maxLng) maxLng = lng;
+                if (lat > maxLat) maxLat = lat;
+            });
+
+            if (minLng !== Infinity) {
+                if (minLng === maxLng && minLat === maxLat) {
+                    map.flyTo({ center: [minLng, minLat], zoom: 15, duration: 700 });
+                } else {
+                    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+                        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+                        maxZoom: 16,
+                        duration: 700
+                    });
+                }
+            }
+        }
     }
 
     // =========================================================================
