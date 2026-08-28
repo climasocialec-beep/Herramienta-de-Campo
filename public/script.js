@@ -357,9 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = encuestas.length;
 
         for (let i = 0; i < total; i++) {
-            const e = encuestas[i];
-            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
-            const sc = String(e.sc || campo(e, 'sc') || '');
+            const rawSc = String(e.sc || campo(e, 'sc') || '');
+            const sc = rawSc.replace(/[^0-9]/g, '') || rawSc;
             const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
             const etiq = `${sc}${tip}`;
             const parr = obtenerParroquiaEncuesta(e);
@@ -367,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
-            const matchSec = (selSec === 'Todos' || sc === selSec || etiq === selSec);
+            const matchSec = (selSec === 'Todos' || sc === selSec || rawSc === selSec || etiq === selSec);
             const matchFec = (selFec === 'Todas' || fec === selFec);
             const matchEnc = (!selEnc || encCod === String(selEnc));
             let matchPar = true;
@@ -384,9 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Sectores disponibles (filtrado por Supervisor, Parroquia, Fecha, Encuestador)
             if (sc && matchSup && matchPar && matchFec && matchEnc) {
                 sectores.set(sc, (sectores.get(sc) || 0) + 1);
-                if (etiq && etiq !== sc) {
-                    sectores.set(etiq, (sectores.get(etiq) || 0) + 1);
-                }
             }
 
             // 3. Parroquias disponibles (filtrado por Supervisor, Sector, Fecha, Encuestador)
@@ -448,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sectoresValidos = new Set();
 
             listaSectores.forEach(item => {
-                const count = (sectores.get(item.sc) || 0) + (item.etiqueta !== item.sc ? (sectores.get(item.etiqueta) || 0) : 0);
+                const count = sectores.get(item.sc) || 0;
                 
                 // Si hay filtro activo (supervisor, encuestador, parroquia, fecha), SOLO mostrar sectores con encuestas en ese contexto
                 if (hayFiltroActivo && count === 0) {
