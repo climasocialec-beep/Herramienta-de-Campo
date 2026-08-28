@@ -10,7 +10,10 @@ const app = express();
 // =======================================
 // MIDDLEWARE DE COMPRESIÓN GZIP (ALTO RENDIMIENTO)
 // =======================================
-app.use(compression());
+app.use(compression({
+    threshold: 1024,
+    level: 6
+}));
 
 // =======================================
 // CONFIGURACIÓN
@@ -57,11 +60,11 @@ app.use(express.static(path.join(__dirname, "public"), {
     etag: true,
     setHeaders: (res, filePath) => {
         if (/\.(?:geojson|svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
-            // Activos pesados (GeoJSON, fuentes e imágenes): 7 días de caché
+            // Activos pesados (GeoJSON, fuentes e imágenes): 7 días de caché inmutable
             res.setHeader("Cache-Control", "public, max-age=604800, immutable");
         } else if (/\.(?:html|css|js)$/i.test(filePath)) {
-            // Archivos de código: revalidación ETag ligera
-            res.setHeader("Cache-Control", "no-cache, must-revalidate");
+            // Archivos de código: revalidación rápida con ETag
+            res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         }
     }
 }));
@@ -78,11 +81,15 @@ let cache = {
 
 function extraerValor(obj, claves) {
     if (!obj || typeof obj !== "object") return "";
-    for (const k of claves) {
+    for (let i = 0; i < claves.length; i++) {
+        const k = claves[i];
         if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return String(obj[k]).trim();
     }
-    for (const key of Object.keys(obj)) {
-        for (const k of claves) {
+    const keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        for (let j = 0; j < claves.length; j++) {
+            const k = claves[j];
             if (key.endsWith("/" + k) && obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
                 return String(obj[key]).trim();
             }
@@ -134,6 +141,22 @@ function normalizarEncuesta(raw) {
     };
 }
 
+async function fetchConReintento(url, opciones, maxReintentos = 2) {
+    for (let intento = 0; intento <= maxReintentos; intento++) {
+        try {
+            return await axios.get(url, opciones);
+        } catch (err) {
+            const esTransitorio = !err.response || err.response.status >= 500 || err.code === "ECONNABORTED";
+            if (intento < maxReintentos && esTransitorio) {
+                const espera = (intento + 1) * 1200;
+                await new Promise(r => setTimeout(r, espera));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
 async function obtenerDatosKobo() {
     const ahora = Date.now();
 
@@ -153,7 +176,7 @@ async function obtenerDatosKobo() {
         let total = 0;
 
         while (url) {
-            const respuesta = await axios.get(url, {
+            const respuesta = await fetchConReintento(url, {
                 headers: { Authorization: `Token ${API_TOKEN}` },
                 timeout: TIMEOUT_MS,
                 maxRedirects: 5
@@ -195,6 +218,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/config", (req, res) => {
+    res.set("Cache-Control", "public, max-age=300");
     res.json({
         nombreProyecto: process.env.NOMBRE_PROYECTO || "Supervisión de Campo",
         metaEncuestas: Number(process.env.META_ENCUESTAS) || 1600,
@@ -214,7 +238,7 @@ app.get("/api/encuestas", async (req, res) => {
             });
         }
         const datos = await obtenerDatosKobo();
-        res.set("Cache-Control", "no-store");
+        res.set("Cache-Control", "no-cache");
         res.json(datos);
     } catch (error) {
         const mensaje = error.response

@@ -565,21 +565,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function animarNumero(elemento, valorFinal) {
         if (!elemento) return;
-        const duracion = 400;
-        const pasos = 15;
-        const incremento = valorFinal / pasos;
-        let actual = 0;
-        const pasoTiempo = duracion / pasos;
+        const valorInicial = parseInt(elemento.textContent.replace(/[^\d]/g, ''), 10) || 0;
+        if (valorInicial === valorFinal) {
+            elemento.textContent = valorFinal.toLocaleString();
+            return;
+        }
+        const duracion = 350;
+        const inicio = performance.now();
 
-        const timer = setInterval(() => {
-            actual += incremento;
-            if (actual >= valorFinal) {
-                elemento.textContent = valorFinal.toLocaleString();
-                clearInterval(timer);
+        function frame(ahora) {
+            const progreso = Math.min((ahora - inicio) / duracion, 1);
+            const easeOut = 1 - (1 - progreso) * (1 - progreso);
+            const actual = Math.round(valorInicial + (valorFinal - valorInicial) * easeOut);
+            elemento.textContent = actual.toLocaleString();
+            if (progreso < 1) {
+                requestAnimationFrame(frame);
             } else {
-                elemento.textContent = Math.floor(actual).toLocaleString();
+                elemento.textContent = valorFinal.toLocaleString();
             }
-        }, pasoTiempo);
+        }
+        requestAnimationFrame(frame);
     }
 
     // =========================================================================
@@ -751,7 +756,12 @@ document.addEventListener('DOMContentLoaded', () => {
             center: [-78.9983, -2.9334],
             zoom: 12.0,
             minZoom: 8,
-            maxZoom: 19
+            maxZoom: 19,
+            fadeDuration: 0,
+            maxTileCacheSize: 60,
+            trackResize: true,
+            preserveDrawingBuffer: false,
+            localIdeographFontFamily: false
         });
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
