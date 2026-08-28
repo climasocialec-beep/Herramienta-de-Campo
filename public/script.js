@@ -528,14 +528,74 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // MAPA WEBGL MAPLIBRE (Aceleración GPU 100% Nativa - Cero Glitches)
     // =========================================================================
-    function inicializarMapa() {
+    async function inicializarMapa() {
         if (!UI.mapContainer || !window.maplibregl) return;
 
+        // Pre-cargar ambos GeoJSONs antes de crear el mapa
+        // Esto elimina cualquier condición de carrera con las capas WebGL
+        let sectoresData = { type: 'FeatureCollection', features: [] };
+        let parroquiasData = { type: 'FeatureCollection', features: [] };
+
+        try {
+            const [resSec, resPar] = await Promise.all([
+                fetch('assets/sectores_censales.geojson'),
+                fetch('assets/parroquias.geojson')
+            ]);
+            if (resSec.ok) sectoresData = await resSec.json();
+            if (resPar.ok) parroquiasData = await resPar.json();
+        } catch (e) {
+            console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
+        }
+
+        // Enriquecer sectores con etiquetaSC, bbox y centroid
+        if (sectoresData.features) {
+            sectoresData.features.forEach(f => {
+                const p = f.properties || {};
+                const sc = String(p.sc || '').trim();
+                const tipologia = String(p.tipologia || '').trim().toUpperCase();
+                f.properties.etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
+                if (f.geometry) {
+                    const bbox = calcularBBOX(f.geometry);
+                    f.properties._bbox_w = bbox[0][0];
+                    f.properties._bbox_s = bbox[0][1];
+                    f.properties._bbox_e = bbox[1][0];
+                    f.properties._bbox_n = bbox[1][1];
+                    f.properties._cx = (bbox[0][0] + bbox[1][0]) / 2;
+                    f.properties._cy = (bbox[0][1] + bbox[1][1]) / 2;
+                    if (sc) {
+                        AppState.sectoresMap.set(sc, f);
+                        AppState.sectoresMap.set(f.properties.etiquetaSC, f);
+                        const n = parseInt(sc, 10);
+                        if (!isNaN(n)) AppState.sectoresMap.set(String(n), f);
+                    }
+                }
+            });
+            AppState.sectoresGeojson = sectoresData;
+        }
+
+        // Enriquecer parroquias con bbox
+        if (parroquiasData.features) {
+            parroquiasData.features.forEach(f => {
+                const p = f.properties || {};
+                const nombre = (p.nombre || p.PARROQUIA || p.name || '').toUpperCase();
+                if (f.geometry) f.properties.bbox = calcularBBOX(f.geometry);
+                if (nombre) AppState.parroquiasMap.set(nombre, f);
+            });
+            AppState.parroquiasGeojson = parroquiasData;
+            poblarFiltroParroquias(parroquiasData.features.map(f => ({
+                nombre: f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '',
+                tipo: f.properties.ESTADO || 'Parroquia',
+                canton: f.properties.CANTON || 'Cuenca',
+                cod: f.properties.CODPAR || ''
+            })));
+        }
+
+        // Crear el mapa con sectores y parroquias YA incluidos en el estilo
         map = new maplibregl.Map({
             container: 'map',
             style: {
                 version: 8,
-                glyphs: 'fonts/{fontstack}/{range}.pbf',
+                glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
                     'osm-hot-tiles': {
                         type: 'raster',
@@ -545,6 +605,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         ],
                         tileSize: 256,
                         attribution: '&copy; OpenStreetMap contributors · Humanitarian map style · Clima Social'
+                    },
+                    'parroquias-source': {
+                        type: 'geojson',
+                        data: parroquiasData
+                    },
+                    'sectores-source': {
+                        type: 'geojson',
+                        data: sectoresData
                     }
                 },
                 layers: [
@@ -554,6 +622,72 @@ document.addEventListener('DOMContentLoaded', () => {
                         source: 'osm-hot-tiles',
                         minzoom: 0,
                         maxzoom: 19
+                    },
+                    {
+                        id: 'parroquias-fill',
+                        type: 'fill',
+                        source: 'parroquias-source',
+                        paint: {
+                            'fill-color': '#8b5cf6',
+                            'fill-opacity': 0.0
+                        }
+                    },
+                    {
+                        id: 'parroquias-line',
+                        type: 'line',
+                        source: 'parroquias-source',
+                        paint: {
+                            'line-color': '#7c3aed',
+                            'line-width': 1.5,
+                            'line-opacity': 0.65
+                        }
+                    },
+                    {
+                        id: 'sectores-fill',
+                        type: 'fill',
+                        source: 'sectores-source',
+                        paint: {
+                            'fill-color': '#028090',
+                            'fill-opacity': 0.18
+                        }
+                    },
+                    {
+                        id: 'sectores-line',
+                        type: 'line',
+                        source: 'sectores-source',
+                        paint: {
+                            'line-color': '#028090',
+                            'line-width': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 2.5,
+                                14, 4.0,
+                                17, 6.0
+                            ],
+                            'line-opacity': 1.0
+                        }
+                    },
+                    {
+                        id: 'sectores-label',
+                        type: 'symbol',
+                        source: 'sectores-source',
+                        layout: {
+                            'text-field': ['get', 'etiquetaSC'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 12,
+                                13, 16,
+                                16, 22
+                            ],
+                            'text-allow-overlap': true,
+                            'text-ignore-placement': true,
+                            'visibility': 'none'
+                        },
+                        paint: {
+                            'text-color': '#0a3d62',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 3.5
+                        }
                     }
                 ]
             },
@@ -565,120 +699,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
         window.map = map;
-        function alCargarMapa() {
+
+        map.on('load', () => {
             AppState.mapLoaded = true;
             configurarCapasWebGL();
             renderizarVista(false, false);
-        }
-
-        map.on('load', alCargarMapa);
-        map.on('style.load', alCargarMapa);
-        map.on('styledata', () => {
-            configurarCapasWebGL();
         });
-        setTimeout(alCargarMapa, 200);
     }
 
     function configurarCapasWebGL() {
         if (!map) return;
 
-        // 1. Capa de Parroquias
-        if (AppState.parroquiasGeojson) {
-            if (!map.getSource('parroquias-source')) {
-                map.addSource('parroquias-source', {
-                    type: 'geojson',
-                    data: AppState.parroquiasGeojson
-                });
-
-                map.addLayer({
-                    id: 'parroquias-fill',
-                    type: 'fill',
-                    source: 'parroquias-source',
-                    paint: {
-                        'fill-color': '#8b5cf6',
-                        'fill-opacity': 0.0
-                    }
-                });
-
-                map.addLayer({
-                    id: 'parroquias-line',
-                    type: 'line',
-                    source: 'parroquias-source',
-                    paint: {
-                        'line-color': '#7c3aed',
-                        'line-width': 1.5,
-                        'line-opacity': 0.65
-                    }
-                });
-            } else {
-                map.getSource('parroquias-source').setData(AppState.parroquiasGeojson);
-            }
+        // Las capas de parroquias y sectores se crean en el estilo inicial del mapa.
+        // Solo actualizamos la data si llega nueva (no re-creamos fuentes ni capas).
+        if (AppState.parroquiasGeojson && map.getSource('parroquias-source')) {
+            map.getSource('parroquias-source').setData(AppState.parroquiasGeojson);
         }
-
-        // 2. Capa de Sectores Censales
-        if (AppState.sectoresGeojson) {
-            if (!map.getSource('sectores-source')) {
-                map.addSource('sectores-source', {
-                    type: 'geojson',
-                    data: AppState.sectoresGeojson
-                });
-
-                map.addLayer({
-                    id: 'sectores-fill',
-                    type: 'fill',
-                    source: 'sectores-source',
-                    paint: {
-                        'fill-color': '#028090',
-                        'fill-opacity': 0.18
-                    }
-                });
-
-                map.addLayer({
-                    id: 'sectores-line',
-                    type: 'line',
-                    source: 'sectores-source',
-                    paint: {
-                        'line-color': '#028090',
-                        'line-width': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            10, 2.5,
-                            14, 4.0,
-                            17, 6.0
-                        ],
-                        'line-opacity': 1.0
-                    }
-                });
-
-                map.addLayer({
-                    id: 'sectores-label',
-                    type: 'symbol',
-                    source: 'sectores-source',
-                    layout: {
-                        'text-field': ['get', 'etiquetaSC'],
-                        'text-font': ['Open Sans Bold'],
-                        'text-size': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            10, 13,
-                            13, 16,
-                            16, 24
-                        ],
-                        'text-allow-overlap': true,
-                        'text-ignore-placement': true
-                    },
-                    paint: {
-                        'text-color': '#0f172a',
-                        'text-halo-color': '#ffffff',
-                        'text-halo-width': 4.0,
-                        'text-halo-blur': 0.5
-                    }
-                });
-            } else {
-                map.getSource('sectores-source').setData(AppState.sectoresGeojson);
-            }
+        if (AppState.sectoresGeojson && map.getSource('sectores-source')) {
+            map.getSource('sectores-source').setData(AppState.sectoresGeojson);
         }
 
         // 3. Capas de Encuestas: Modo Puntos y Modo Clúster
@@ -712,19 +750,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        12, 11,
-                        15, 14,
-                        17, 18
+                        12, 10,
+                        15, 13,
+                        17, 16
                     ],
-                    'text-offset': [0, -1.6],
+                    'text-offset': [0, -1.4],
                     'text-anchor': 'bottom',
-                    'text-allow-overlap': true,
+                    'text-allow-overlap': false,
+                    'text-optional': true,
                     'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
                 },
                 paint: {
                     'text-color': '#0f172a',
                     'text-halo-color': '#ffffff',
-                    'text-halo-width': 3.0,
+                    'text-halo-width': 2.5,
                     'text-halo-blur': 0.5
                 }
             });
@@ -983,6 +1022,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function cargarLimitesParroquiales() {
         try {
+            if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
+                return; // Ya cargado en inicializarMapa
+            }
             const res = await fetch('assets/parroquias.geojson');
             if (!res.ok) return;
             const geojsonData = await res.json();
@@ -1000,11 +1042,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cod = p.CODPAR || '';
 
                     listaParroquias.push({ nombre, canton, tipo, cod });
-                    AppState.parroquiasMap.set(nombre.toUpperCase(), f);
-
-                    if (f.geometry) {
-                        f.properties.bbox = calcularBBOX(f.geometry);
-                    }
+                    const bbox = f.geometry ? calcularBBOX(f.geometry) : null;
+                    AppState.parroquiasMap.set(nombre.toUpperCase(), { feature: f, bbox });
                 });
             }
 
@@ -1018,6 +1057,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function cargarSectoresCensales() {
         try {
+            if (AppState.sectoresGeojson && AppState.sectoresGeojson.features && AppState.sectoresGeojson.features.length > 0) {
+                return; // Ya cargado en inicializarMapa
+            }
             const res = await fetch('assets/sectores_censales.geojson');
             if (!res.ok) return;
             const geojsonData = await res.json();
@@ -1030,20 +1072,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     const p = f.properties || {};
                     const sc = String(p.sc || p.codigo_sc || p.sc_cuenca_sc || '').trim();
                     const tipologia = String(p.tipologia || p.tipologia_sc || '').trim().toUpperCase();
-                    const etiquetaSC = `${sc}${tipologia}`;
+                    const etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
                     f.properties.etiquetaSC = etiquetaSC;
 
+                    let bbox = null;
+                    let centroid = null;
                     if (f.geometry) {
-                        const bbox = calcularBBOX(f.geometry);
-                        f.properties.bbox = bbox;
-                        f.properties.centroid = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
+                        bbox = calcularBBOX(f.geometry);
+                        centroid = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
                     }
 
+                    const meta = { feature: f, bbox, centroid, etiquetaSC };
                     if (sc) {
-                        AppState.sectoresMap.set(sc, f);
+                        AppState.sectoresMap.set(sc, meta);
                         const numSc = parseInt(sc, 10);
-                        if (!isNaN(numSc)) AppState.sectoresMap.set(String(numSc), f);
-                        AppState.sectoresMap.set(etiquetaSC, f);
+                        if (!isNaN(numSc)) AppState.sectoresMap.set(String(numSc), meta);
+                        AppState.sectoresMap.set(etiquetaSC, meta);
                     }
                 });
             }
@@ -1084,8 +1128,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (map.getLayer('parroquias-fill') && map.getLayer('parroquias-line')) {
             if (AppState.parroquiaSeleccionada === 'Todas') {
                 map.setPaintProperty('parroquias-fill', 'fill-opacity', 0.0);
-                map.setPaintProperty('parroquias-line', 'line-width', 1.2);
-                map.setPaintProperty('parroquias-line', 'line-opacity', 0.6);
+                map.setPaintProperty('parroquias-line', 'line-width', 1.5);
+                map.setPaintProperty('parroquias-line', 'line-opacity', 0.7);
+                map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
             } else {
                 const targetNom = AppState.parroquiaSeleccionada.toUpperCase();
                 map.setPaintProperty('parroquias-fill', 'fill-opacity', [
@@ -1102,9 +1147,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]);
 
                 if (ajustarCamara && AppState.sectorSeleccionado === 'Todos') {
-                    const feat = AppState.parroquiasMap.get(targetNom);
-                    if (feat && feat.properties && feat.properties.bbox) {
-                        map.fitBounds(feat.properties.bbox, {
+                    const featMeta = AppState.parroquiasMap.get(targetNom);
+                    const bbox = featMeta ? (featMeta.bbox || (featMeta.feature && featMeta.feature.properties && featMeta.feature.properties.bbox)) : null;
+                    if (bbox) {
+                        map.fitBounds(bbox, {
                             padding: { top: 70, bottom: 50, left: 50, right: 50 },
                             maxZoom: 15,
                             duration: 1000
@@ -1124,22 +1170,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetSC = String(AppState.sectorSeleccionado).trim();
 
             if (isTodos) {
-                // Mostrar todos los sectores en estilo normal
+                // Mostrar todos los sectores censales con bordes ámbar/naranja de alto contraste
                 map.setFilter('sectores-fill', null);
                 map.setLayoutProperty('sectores-fill', 'visibility', 'visible');
-                map.setPaintProperty('sectores-fill', 'fill-color', '#028090');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.18);
+                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.15);
 
                 map.setFilter('sectores-line', null);
                 map.setLayoutProperty('sectores-line', 'visibility', 'visible');
-                map.setPaintProperty('sectores-line', 'line-color', '#028090');
+                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
                 map.setPaintProperty('sectores-line', 'line-width', [
                     'interpolate',
                     ['linear'],
                     ['zoom'],
-                    10, 2.5,
-                    14, 4.0,
-                    17, 6.0
+                    10, 2.0,
+                    13, 3.2,
+                    16, 5.0
                 ]);
                 map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
 
@@ -1149,11 +1195,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     'interpolate',
                     ['linear'],
                     ['zoom'],
-                    10, 13,
-                    13, 16,
-                    16, 24
+                    10, 11,
+                    13, 15,
+                    16, 22
                 ]);
-                map.setPaintProperty('sectores-label', 'text-color', '#0f172a');
+                map.setPaintProperty('sectores-label', 'text-color', '#7c2d12');
                 map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
                 map.setPaintProperty('sectores-label', 'text-halo-width', 4.0);
 
@@ -1163,12 +1209,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const filterSC = ['==', ['to-string', ['get', 'sc']], targetSC];
 
                 map.setFilter('sectores-fill', filterSC);
-                map.setPaintProperty('sectores-fill', 'fill-color', '#f26419');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.25);
+                map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.30);
 
                 map.setFilter('sectores-line', filterSC);
-                map.setPaintProperty('sectores-line', 'line-color', '#f26419');
-                map.setPaintProperty('sectores-line', 'line-width', 4.5);
+                map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
+                map.setPaintProperty('sectores-line', 'line-width', 5.0);
                 map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
 
                 map.setFilter('sectores-label', filterSC);
@@ -1181,23 +1227,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     15, 26,
                     17, 32
                 ]);
-                map.setPaintProperty('sectores-label', 'text-color', '#c2410c');
+                map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
                 map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
-                map.setPaintProperty('sectores-label', 'text-halo-width', 4.5);
+                map.setPaintProperty('sectores-label', 'text-halo-width', 5.0);
 
-                const sectorFeat = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
-                if (sectorFeat && sectorFeat.properties) {
-                    const p = sectorFeat.properties;
-                    const etiqueta = p.etiquetaSC || `${p.sc || ''}${p.tipologia || ''}`;
+                const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                if (sectorMeta) {
+                    const etiqueta = sectorMeta.etiquetaSC || targetSC;
+                    const centroid = sectorMeta.centroid;
+                    const bbox = sectorMeta.bbox;
 
-                    if (barraSector && sectorTitulo && btnGmaps && p.centroid) {
+                    if (barraSector && sectorTitulo && btnGmaps && centroid) {
                         sectorTitulo.textContent = `Sector ${etiqueta}`;
-                        btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${p.centroid[1].toFixed(6)},${p.centroid[0].toFixed(6)}`;
+                        btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${centroid[1].toFixed(6)},${centroid[0].toFixed(6)}`;
                         barraSector.style.display = 'flex';
                     }
 
-                    if (ajustarCamara && p.bbox) {
-                        map.fitBounds(p.bbox, {
+                    if (ajustarCamara && bbox) {
+                        map.fitBounds(bbox, {
                             padding: { top: 80, bottom: 60, left: 60, right: 60 },
                             maxZoom: 16,
                             duration: 1000
