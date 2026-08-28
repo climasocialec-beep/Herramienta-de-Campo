@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selSec = AppState.sectorSeleccionado;
         const selPar = AppState.parroquiaSeleccionada;
         const selFec = AppState.fechaSeleccionada;
+        const selEnc = AppState.encuestadorSeleccionado;
         const targetPar = selPar !== 'Todas' ? selPar.toUpperCase() : '';
 
         const supervisores = new Map();
@@ -359,38 +360,47 @@ document.addEventListener('DOMContentLoaded', () => {
             const e = encuestas[i];
             const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
             const sc = String(e.sc || campo(e, 'sc') || '');
+            const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
+            const etiq = `${sc}${tip}`;
             const parr = obtenerParroquiaEncuesta(e);
             const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
+            const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
-            const matchSec = (selSec === 'Todos' || sc === selSec);
+            const matchSec = (selSec === 'Todos' || sc === selSec || etiq === selSec);
             const matchFec = (selFec === 'Todas' || fec === selFec);
+            const matchEnc = (!selEnc || encCod === String(selEnc));
             let matchPar = true;
             if (targetPar) {
                 const uParr = parr.toUpperCase();
                 matchPar = (uParr.includes(targetPar) || targetPar.includes(uParr));
             }
 
-            // Supervisores
-            if (sup && matchSec && matchPar && matchFec) {
+            // 1. Supervisores disponibles (filtrado por Sector, Parroquia, Fecha, Encuestador)
+            if (sup && matchSec && matchPar && matchFec && matchEnc) {
                 supervisores.set(sup, (supervisores.get(sup) || 0) + 1);
             }
 
-            // Sectores
-            if (sc && matchSup && matchPar && matchFec) {
+            // 2. Sectores disponibles (filtrado por Supervisor, Parroquia, Fecha, Encuestador)
+            if (sc && matchSup && matchPar && matchFec && matchEnc) {
                 sectores.set(sc, (sectores.get(sc) || 0) + 1);
+                if (etiq && etiq !== sc) {
+                    sectores.set(etiq, (sectores.get(etiq) || 0) + 1);
+                }
             }
 
-            // Parroquias
-            if (parr && matchSup && matchSec && matchFec) {
+            // 3. Parroquias disponibles (filtrado por Supervisor, Sector, Fecha, Encuestador)
+            if (parr && matchSup && matchSec && matchFec && matchEnc) {
                 parroquias.set(parr, (parroquias.get(parr) || 0) + 1);
             }
 
-            // Fechas
-            if (fec && matchSup && matchSec && matchPar) {
+            // 4. Fechas disponibles (filtrado por Supervisor, Sector, Parroquia, Encuestador)
+            if (fec && matchSup && matchSec && matchPar && matchEnc) {
                 fechas.set(fec, (fechas.get(fec) || 0) + 1);
             }
         }
+
+        const hayFiltroActivo = (selSup !== 'Todos' || !!selEnc || !!targetPar || selFec !== 'Todas');
 
         // 1. Selector Supervisores
         if (UI.supervisorFilter) {
@@ -409,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        // 2. Selector Sectores Censales (Único, Ultracompacto & Orden Natural)
+        // 2. Selector Sectores Censales (Universal & Dinámico)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
             UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores</option>';
@@ -435,23 +445,37 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             const frag = document.createDocumentFragment();
+            const sectoresValidos = new Set();
+
             listaSectores.forEach(item => {
                 const count = (sectores.get(item.sc) || 0) + (item.etiqueta !== item.sc ? (sectores.get(item.etiqueta) || 0) : 0);
                 
-                // Si hay parroquia seleccionada, filtrar sectores a los de esa parroquia
+                // Si hay filtro activo (supervisor, encuestador, parroquia, fecha), SOLO mostrar sectores con encuestas en ese contexto
+                if (hayFiltroActivo && count === 0) {
+                    return;
+                }
+
+                // Si hay filtro de parroquia y no coincide
                 if (targetPar && item.parroquia && !item.parroquia.toUpperCase().includes(targetPar) && !targetPar.includes(item.parroquia.toUpperCase()) && count === 0) {
                     return;
                 }
 
+                sectoresValidos.add(item.sc);
+
                 const opt = document.createElement('option');
                 opt.value = item.sc;
-                // Formato ultracompacto para máxima legibilidad sin truncamiento
                 opt.textContent = count > 0 ? `Sector ${item.etiqueta} (${count})` : `Sector ${item.etiqueta}`;
                 opt.title = `Sector ${item.etiqueta}${item.parroquia ? ` — ${item.parroquia}` : ''}${count > 0 ? ` (${count} encuestas)` : ''}`;
                 frag.appendChild(opt);
             });
             UI.sectorFilter.appendChild(frag);
-            UI.sectorFilter.value = (actualSec && actualSec !== 'Todos') ? actualSec : 'Todos';
+
+            if (actualSec !== 'Todos' && !sectoresValidos.has(actualSec)) {
+                AppState.sectorSeleccionado = 'Todos';
+                UI.sectorFilter.value = 'Todos';
+            } else {
+                UI.sectorFilter.value = actualSec;
+            }
         }
 
         // 3. Selector Parroquias
@@ -1523,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (AppState.encuestadorSeleccionado === id) {
             AppState.encuestadorSeleccionado = null;
             mostrarToast('Mostrando todo el equipo', 'info');
-            renderizarVista(false, true);
+            renderizarVista(true, true);
             return;
         }
 
@@ -1584,6 +1608,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.supervisorFilter) {
             UI.supervisorFilter.addEventListener('change', (e) => {
                 AppState.supervisorSeleccionado = e.target.value;
+                if (AppState.encuestadorSeleccionado) {
+                    const enc = AppState.encuestas.find(x => {
+                        const cod = String(x.encuestador || x.C_digo_encuestador || campo(x, AppState.config.campoEncuestador) || '');
+                        return cod === String(AppState.encuestadorSeleccionado);
+                    });
+                    const sup = enc ? String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '') : '';
+                    if (AppState.supervisorSeleccionado !== 'Todos' && sup !== AppState.supervisorSeleccionado) {
+                        AppState.encuestadorSeleccionado = null;
+                    }
+                }
                 renderizarVista(true, true);
             });
         }
