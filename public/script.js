@@ -357,6 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = encuestas.length;
 
         for (let i = 0; i < total; i++) {
+            const e = encuestas[i];
+            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
             const rawSc = String(e.sc || campo(e, 'sc') || '');
             const sc = rawSc.replace(/[^0-9]/g, '') || rawSc;
             const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
@@ -811,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function configurarCapasWebGL() {
-        if (!map) return;
+        if (!map || !map.isStyleLoaded()) return;
 
         // Las capas de parroquias y sectores se crean en el estilo inicial del mapa.
         // Solo actualizamos la data si llega nueva (no re-creamos fuentes ni capas).
