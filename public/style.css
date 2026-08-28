@@ -72,10 +72,16 @@
   --radius-sm: 8px;
   --radius-md: 11px;
   --radius-lg: 14px;
-  --radius-full: 9999px;
-
   --cs-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  --cs-header-height: 52px;
+  
+  /* Safe-Area Insets para iPhone Notch / Dynamic Island / Barra inferior */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  --cs-header-content-h: 50px;
+  --cs-header-height: calc(var(--cs-header-content-h) + var(--sat));
 }
 
 /* Modo Oscuro Elegante (Alto Contraste y Cero Texto Blanco sobre Blanco) */
@@ -243,12 +249,16 @@ svg.cs-icon *, .cs-icon * {
 .cs-header {
   position: sticky;
   top: 0;
-  z-index: 100;
-  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, #380f45 100%);
+  z-index: 1000;
+  background: linear-gradient(135deg, #1d0523 0%, #300a3c 50%, #3a0e49 100%);
   height: var(--cs-header-height);
+  min-height: var(--cs-header-height);
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(15, 7, 18, 0.35);
+  box-shadow: 0 4px 16px rgba(10, 2, 14, 0.45);
   color: #ffffff;
   flex-shrink: 0;
   width: 100%;
@@ -256,31 +266,39 @@ svg.cs-icon *, .cs-icon * {
 
 .cs-header__inner {
   width: 100%;
-  max-width: 100%;
-  padding: 0 1rem;
+  height: var(--cs-header-content-h);
+  padding: 0 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  box-sizing: border-box;
 }
 
 .cs-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .cs-brand__logo-box {
   background: #ffffff;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 24px;
 }
 
 .cs-brand__logo {
-  height: 28px;
-  max-width: 145px;
+  height: 18px;
+  max-width: 84px;
+  width: auto;
   object-fit: contain;
   display: block;
 }
@@ -288,36 +306,45 @@ svg.cs-icon *, .cs-icon * {
 .cs-header__title-group {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .cs-header__title {
-  font-size: 0.96rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .cs-header__live-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 0.12rem 0.5rem;
+  gap: 0.28rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 0.1rem 0.45rem;
   border-radius: var(--radius-full);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .cs-header__live-dot {
-  width: 6px;
-  height: 6px;
-  background-color: var(--cs-gold);
+  width: 5px;
+  height: 5px;
+  background-color: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--cs-gold);
+  box-shadow: 0 0 6px #10b981;
   animation: cs-pulse 2s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes cs-pulse {
@@ -329,7 +356,8 @@ svg.cs-icon *, .cs-icon * {
 .cs-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .cs-header__clock {
@@ -339,7 +367,8 @@ svg.cs-icon *, .cs-icon * {
   font-size: 0.72rem;
   color: #cbd5e1;
   border-left: 1px solid rgba(255, 255, 255, 0.15);
-  padding-left: 0.75rem;
+  padding-left: 0.65rem;
+  margin-right: 0.2rem;
 }
 
 .cs-clock {
@@ -349,22 +378,36 @@ svg.cs-icon *, .cs-icon * {
 }
 
 .cs-date {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   opacity: 0.75;
 }
 
 .cs-btn-icon {
   width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #e2e8f0;
   cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
   transition: all var(--cs-transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.cs-btn-icon:active {
+  transform: scale(0.92);
 }
 
 .cs-btn-icon:hover {
@@ -1489,16 +1532,43 @@ body.modo-oscuro .cs-point-badge {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --cs-header-content-h: 46px;
+  }
+
   .cs-header__inner {
     padding: 0 0.65rem;
+    gap: 0.45rem;
+  }
+
+  .cs-brand__logo-box {
+    height: 26px;
+    padding: 2px 4px;
+  }
+
+  .cs-brand__logo {
+    height: 20px;
+    max-width: 85px;
   }
 
   .cs-header__title {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
   }
 
   .cs-header__clock {
     display: none;
+  }
+
+  .cs-btn-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .cs-btn-icon svg.cs-icon {
+    width: 14px !important;
+    height: 14px !important;
   }
 
   /* Tarjetas KPI en 2 Columnas x 2 Líneas en Móvil */
@@ -1524,7 +1594,7 @@ body.modo-oscuro .cs-point-badge {
   .cs-panel-header--map {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .cs-label-toggle-group {
@@ -1538,19 +1608,77 @@ body.modo-oscuro .cs-point-badge {
   }
 
   .cs-sector-active-bar {
-    width: 92%;
+    width: 90%;
+    max-width: calc(100% - 90px);
     justify-content: space-between;
-    padding: 0.35rem 0.65rem;
+    padding: 0.3rem 0.6rem;
   }
 }
 
 @media (max-width: 480px) {
   :root {
-    --cs-header-height: 48px;
+    --cs-header-content-h: 44px;
+  }
+
+  .cs-header__inner {
+    padding: 0 0.5rem;
+    gap: 0.35rem;
+  }
+
+  .cs-header__brand {
+    gap: 0.45rem;
+  }
+
+  /* Logo ultracompacto y limpio */
+  .cs-brand__logo-box {
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    padding: 2px 5px;
+    height: 22px;
+    border-radius: 5px;
+  }
+
+  .cs-brand__logo {
+    height: 16px;
+    max-width: 72px;
+    width: auto;
+  }
+
+  .cs-header__title-group {
+    gap: 0.3rem;
+  }
+
+  .cs-header__title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .cs-header__live-badge {
+    padding: 0.08rem 0.32rem;
+    font-size: 0.58rem;
+    gap: 0.22rem;
+  }
+
+  .cs-header__live-dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  .cs-header__actions {
+    gap: 0.3rem;
+  }
+
+  .cs-btn-icon {
+    width: 27px;
+    height: 27px;
+    min-width: 27px;
+    min-height: 27px;
   }
 
   .cs-container {
-    padding: 0.4rem 0.4rem 2rem;
+    padding: 0.4rem 0.4rem max(2rem, calc(var(--sab) + 1.25rem)) !important;
   }
 
   /* Mantener estrictamente 2 columnas x 2 filas en iPhone */
@@ -1592,7 +1720,7 @@ body.modo-oscuro .cs-point-badge {
   }
 
   .cs-select {
-    padding: 0.32rem 0.45rem;
+    padding: 0.32rem 1.4rem 0.32rem 0.45rem;
     font-size: 0.7rem;
   }
 
@@ -1602,8 +1730,8 @@ body.modo-oscuro .cs-point-badge {
   }
 
   .cs-btn-gmaps {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.68rem;
   }
 
   .cs-table-card {
@@ -1617,11 +1745,12 @@ body.modo-oscuro .cs-point-badge {
 
 @media (max-width: 360px) {
   .cs-brand__logo {
-    height: 22px;
+    height: 17px;
+    max-width: 68px;
   }
 
   .cs-header__title {
-    display: none;
+    font-size: 0.72rem;
   }
 }
 
