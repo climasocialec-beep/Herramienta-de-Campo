@@ -696,41 +696,37 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   outline: none !important;
 }
 
-/* Barra Flotante de Navegación del Sector Censal Activo */
+/* Barra Flotante Glassmorphism del Sector Censal Activo */
 .cs-sector-active-bar {
   position: absolute;
   top: 0.85rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 400;
-  background: rgba(13, 33, 55, 0.94);
-  backdrop-filter: blur(8px);
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--radius-full);
-  border: 1.5px solid rgba(242, 100, 25, 0.6);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  animation: slideDownBar 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0.35rem 0.5rem 0.35rem 0.95rem;
+  background: rgba(44, 11, 54, 0.92);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  border-radius: var(--radius-full);
+  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.35), 0 0 16px rgba(245, 158, 11, 0.25);
+  animation: slideDownGlass 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes slideDownBar {
-  from {
-    transform: translateX(-50%) translateY(-25px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
+@keyframes slideDownGlass {
+  0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 .cs-sector-active-info {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   color: #ffffff;
+  font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
@@ -740,27 +736,27 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #028090 0%, #00a896 100%);
   color: #ffffff !important;
   text-decoration: none !important;
-  padding: 0.3rem 0.75rem;
+  padding: 0.3rem 0.8rem;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
-  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(2, 128, 144, 0.4);
+  transition: all var(--cs-transition);
   white-space: nowrap;
 }
 
 .cs-btn-gmaps:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45);
+  background: linear-gradient(135deg, #00a896 0%, #028090 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(2, 128, 144, 0.55);
 }
 
 .cs-btn-gmaps svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 /* Botón GPS Flotante */
@@ -898,49 +894,73 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
 .cs-select-wrap {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.cs-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0.65rem;
+  width: 8px;
+  height: 5px;
+  background-color: var(--text-muted);
+  clip-path: polygon(100% 0%, 0 0%, 50% 100%);
+  pointer-events: none;
+  transition: transform var(--cs-transition);
+}
+
+.cs-select-wrap:focus-within::after {
+  transform: rotate(180deg);
+  background-color: var(--cs-purple-primary);
 }
 
 .cs-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
   background-color: var(--bg-subtle);
   color: var(--text-main);
   border: 1.5px solid var(--border-medium);
-  border-radius: 7px;
-  padding: 0.38rem 0.6rem;
+  border-radius: 8px;
+  padding: 0.42rem 1.6rem 0.42rem 0.65rem;
   font-size: 0.74rem;
   font-weight: 600;
   font-family: inherit;
+  font-variant-numeric: tabular-nums;
   outline: none;
   cursor: pointer;
   transition: all var(--cs-transition);
-  width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+  box-shadow: var(--shadow-xs);
 }
 
 .cs-select:hover {
   border-color: var(--cs-purple-medium);
+  background-color: var(--bg-surface);
 }
 
 .cs-select:focus {
   border-color: var(--cs-purple-primary);
   background-color: var(--bg-surface);
-  box-shadow: 0 0 0 2.5px rgba(76, 24, 92, 0.2);
+  box-shadow: 0 0 0 3px rgba(76, 24, 92, 0.18);
 }
 
 .cs-select.is-active {
-  border-color: var(--cs-purple-primary);
-  background-color: #faf5ff;
-  color: var(--cs-purple-dark);
+  border-color: var(--cs-amber);
+  background-color: #fffbeb;
+  color: #92400e;
   font-weight: 700;
-  box-shadow: 0 0 0 1.5px var(--cs-purple-primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
 }
 
 body.modo-oscuro .cs-select.is-active {
-  border-color: #c084fc;
-  background-color: #3b1847;
-  color: #f5d0fe;
-  box-shadow: 0 0 0 1.5px #c084fc;
+  border-color: var(--cs-amber);
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fde68a;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
 }
 
 /* Card de Tabla de Encuestadores */

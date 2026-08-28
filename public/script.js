@@ -409,32 +409,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        // 2. Selector Sectores Censales
+        // 2. Selector Sectores Censales (Único, Ultracompacto & Orden Natural)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
             UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores</option>';
             
-            // Combinar sectores de encuestas con todos los sectores conocidos del mapa
-            const todosSectoresKeys = new Set([...sectores.keys(), ...AppState.sectoresMap.keys()]);
-            const secList = Array.from(todosSectoresKeys).filter(k => /^\d+$/.test(k)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            // Usar catálogo canónico único del GeoJSON
+            const mapaSectoresUnicos = new Map();
+            if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
+                AppState.sectoresGeojson.features.forEach(f => {
+                    const p = f.properties || {};
+                    const scNum = String(p.sc || '').trim();
+                    const tipologia = String(p.tipologia || '').trim().toUpperCase();
+                    const etiqueta = p.etiquetaSC || `${scNum}${tipologia}`;
+                    const parroquia = String(p.PARROQUIA || p.parroquia || '').trim();
+                    if (scNum && !mapaSectoresUnicos.has(scNum)) {
+                        mapaSectoresUnicos.set(scNum, { sc: scNum, etiqueta, parroquia });
+                    }
+                });
+            }
+
+            // Ordenamiento natural de sectores 1..77
+            const listaSectores = Array.from(mapaSectoresUnicos.values()).sort((a, b) => {
+                return (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0);
+            });
             
             const frag = document.createDocumentFragment();
-            secList.forEach(sc => {
-                const meta = AppState.sectoresMap.get(sc);
-                const etiqueta = meta ? (meta.etiquetaSC || sc) : sc;
-                const count = sectores.get(sc) || 0;
-                const parroquiaName = meta && meta.feature && meta.feature.properties ? (meta.feature.properties.PARROQUIA || '') : '';
+            listaSectores.forEach(item => {
+                const count = (sectores.get(item.sc) || 0) + (item.etiqueta !== item.sc ? (sectores.get(item.etiqueta) || 0) : 0);
                 
                 // Si hay parroquia seleccionada, filtrar sectores a los de esa parroquia
-                if (targetPar && parroquiaName && !parroquiaName.toUpperCase().includes(targetPar) && !targetPar.includes(parroquiaName.toUpperCase()) && count === 0) {
+                if (targetPar && item.parroquia && !item.parroquia.toUpperCase().includes(targetPar) && !targetPar.includes(item.parroquia.toUpperCase()) && count === 0) {
                     return;
                 }
 
                 const opt = document.createElement('option');
-                opt.value = sc;
-                opt.textContent = count > 0 
-                    ? `Sector ${etiqueta}${parroquiaName ? ` (${parroquiaName})` : ''} - ${count} enc.`
-                    : `Sector ${etiqueta}${parroquiaName ? ` (${parroquiaName})` : ''}`;
+                opt.value = item.sc;
+                // Formato ultracompacto para máxima legibilidad sin truncamiento
+                opt.textContent = count > 0 ? `Sector ${item.etiqueta} (${count})` : `Sector ${item.etiqueta}`;
+                opt.title = `Sector ${item.etiqueta}${item.parroquia ? ` — ${item.parroquia}` : ''}${count > 0 ? ` (${count} encuestas)` : ''}`;
                 frag.appendChild(opt);
             });
             UI.sectorFilter.appendChild(frag);
@@ -500,9 +513,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filtro por Sector Censal
         if (AppState.sectorSeleccionado !== 'Todos') {
+            const targetSC = AppState.sectorSeleccionado;
             filtradas = filtradas.filter(e => {
                 const sc = String(e.sc || campo(e, 'sc') || '');
-                return sc === AppState.sectorSeleccionado;
+                const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
+                const etiq = `${sc}${tip}`;
+                return sc === targetSC || etiq === targetSC;
             });
         }
 
