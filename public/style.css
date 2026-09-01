@@ -866,6 +866,88 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   height: 13px;
 }
 
+/* Leyenda Dinámica de Supervisores en Mapa */
+.cs-map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 15;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  max-width: 220px;
+  pointer-events: auto;
+  transition: all var(--cs-transition);
+}
+
+body.modo-oscuro .cs-map-legend {
+  background: rgba(15, 23, 42, 0.94);
+  border-color: #334155;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.cs-map-legend__header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+body.modo-oscuro .cs-map-legend__header {
+  border-bottom-color: #334155;
+}
+
+.cs-legend-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.cs-map-legend__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+.cs-map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+body.modo-oscuro .cs-map-legend__item {
+  color: #f1f5f9;
+}
+
+.cs-legend-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8);
+}
+
+.cs-legend-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  padding-left: 0.4rem;
+}
+
 /* Botón GPS Flotante */
 .cs-locate-btn {
   position: absolute;
@@ -1002,6 +1084,69 @@ body.modo-oscuro .cs-ribbon-title {
   letter-spacing: 0.03em;
 }
 
+.cs-date-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.cs-date-pills {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+body.modo-oscuro .cs-date-pills {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.cs-date-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.cs-date-pill:hover {
+  color: var(--text-main);
+  background-color: var(--bg-surface);
+}
+
+.cs-date-pill.active {
+  background-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+body.modo-oscuro .cs-date-pill.active {
+  background-color: var(--cs-teal);
+  color: #ffffff;
+}
+
+.cs-select-wrap--date {
+  flex: 1;
+  min-width: 90px;
+}
+
+.cs-select--compact {
+  padding: 0.35rem 1.4rem 0.35rem 0.5rem;
+  font-size: 0.7rem;
+}
+
 .cs-select-wrap {
   position: relative;
   width: 100%;
@@ -1023,11 +1168,11 @@ body.modo-oscuro .cs-ribbon-title {
 
 .cs-select-wrap:focus-within::after {
   transform: rotate(180deg);
-  background-color: var(--cs-purple-primary);
+  background-color: var(--border-focus);
 }
 
 body.modo-oscuro .cs-select-wrap:focus-within::after {
-  background-color: #c084fc;
+  background-color: #38bdf8;
 }
 
 /* Barra de Chips de Filtros Activos */
@@ -1401,16 +1546,107 @@ body.modo-oscuro .cs-group-pill {
 }
 
 .cs-enc-avatar {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
-  background-color: var(--enc-color, #3e0f49);
+  background-color: var(--enc-color, #0f172a);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.cs-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  border: 1.5px solid #ffffff;
+  flex-shrink: 0;
+}
+
+body.modo-oscuro .cs-status-dot {
+  border-color: #1e293b;
+}
+
+.cs-status-dot--active {
+  background-color: #10b981;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.8);
+}
+
+.cs-status-dot--idle {
+  background-color: #f59e0b;
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.8);
+}
+
+.cs-status-dot--inactive {
+  background-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.9);
+  animation: cs-pulse 1.8s infinite;
+}
+
+/* Mini Gráfica Lateral de Producción Horaria */
+.cs-lateral-chart-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+  animation: cs-fade-in 0.25s ease;
+}
+
+.cs-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cs-chart-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+body.modo-oscuro .cs-chart-title {
+  color: #f8fafc;
+}
+
+.cs-chart-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--cs-teal);
+  background: var(--cs-teal-light);
+  padding: 0.08rem 0.4rem;
+  border-radius: 4px;
+}
+
+.cs-chart-canvas-wrap {
+  width: 100%;
+  height: 72px;
+  position: relative;
+}
+
+.cs-chart-canvas-wrap svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .cs-enc-meta {

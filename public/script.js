@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nombreProyecto: 'Supervisión de Campo',
             metaEncuestas: 2500,
             campoEncuestador: 'cod_enc',
-            campoSupervisor: 'cod_sup'
+            campoSupervisor: 'cod_sup',
+            umbralInactividadMinutos: 15 // Umbral configurable para alerta de inactividad
         },
         encuestas: [],
         supervisorSeleccionado: 'Todos',
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sectorFilter: document.getElementById('sectorFilter'),
         parroquiaFilter: document.getElementById('parroquiaFilter'),
         fechaFilter: document.getElementById('fechaFilter'),
+        datePills: document.querySelectorAll('#datePills .cs-date-pill'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
@@ -80,16 +82,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Mapa y Modos
         mapContainer: document.getElementById('map'),
+        mapLegend: document.getElementById('mapLegend'),
+        mapLegendItems: document.getElementById('mapLegendItems'),
         locateBtn: document.getElementById('locateBtn'),
         btnEtiquetasOn: document.getElementById('btnEtiquetasOn'),
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
         
-        // Tabla
+        // Tabla & Mini Gráfica
         searchInput: document.getElementById('searchInput'),
         tablaEncuestadoresBody: document.querySelector('#tablaEncuestadores tbody'),
         emptyState: document.getElementById('emptyState'),
         headersTabla: document.querySelectorAll('#tablaEncuestadores th'),
+        lateralChartCard: document.getElementById('lateralChartCard'),
+        chartTitleText: document.getElementById('chartTitleText'),
+        chartTotalBadge: document.getElementById('chartTotalBadge'),
+        chartCanvasWrap: document.getElementById('chartCanvasWrap'),
         
         // Footer & Toast
         ultimaActualizacion: document.getElementById('ultimaActualizacion'),
@@ -362,22 +370,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+        // Sincronizar Botones Rápidos de Fecha (Pills)
+        if (UI.datePills && UI.datePills.length > 0) {
+            UI.datePills.forEach(pill => {
+                const f = pill.dataset.dateFilter;
+                pill.classList.toggle('active', AppState.fechaSeleccionada === f);
+            });
+        }
+
         if (UI.fechaFilter) {
-            const isAct = AppState.fechaSeleccionada !== 'Todas';
-            UI.fechaFilter.classList.toggle('is-active', isAct);
-            if (isAct) {
-                activeCount++;
-                chips.push({
-                    tipo: 'fecha',
-                    label: `Fecha: ${AppState.fechaSeleccionada}`,
-                    onClear: () => {
-                        AppState.fechaSeleccionada = 'Todas';
-                        if (UI.fechaFilter) UI.fechaFilter.value = 'Todas';
-                        poblarFiltros();
-                        renderizarVista(true, true);
-                    }
-                });
+            const isCustomDate = AppState.fechaSeleccionada !== 'Todas' && 
+                                 AppState.fechaSeleccionada !== 'Hoy' && 
+                                 AppState.fechaSeleccionada !== 'Ayer' && 
+                                 AppState.fechaSeleccionada !== 'Semana';
+            UI.fechaFilter.classList.toggle('is-active', isCustomDate);
+            if (isCustomDate) {
+                UI.fechaFilter.value = AppState.fechaSeleccionada;
             }
+        }
+
+        if (AppState.fechaSeleccionada !== 'Todas') {
+            activeCount++;
+            let fecLabel = `Fecha: ${AppState.fechaSeleccionada}`;
+            if (AppState.fechaSeleccionada === 'Hoy') fecLabel = 'Fecha: Hoy';
+            else if (AppState.fechaSeleccionada === 'Ayer') fecLabel = 'Fecha: Ayer';
+            else if (AppState.fechaSeleccionada === 'Semana') fecLabel = 'Fecha: Esta semana';
+
+            chips.push({
+                tipo: 'fecha',
+                label: fecLabel,
+                onClear: () => {
+                    AppState.fechaSeleccionada = 'Todas';
+                    if (UI.fechaFilter) UI.fechaFilter.value = 'Todas';
+                    renderizarVista(false, false);
+                }
+            });
         }
         if (AppState.encuestadorSeleccionado) {
             activeCount++;
@@ -467,7 +494,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
             const matchSec = (selSec === 'Todos' || sc === selSec || rawSc === selSec || etiq === selSec);
-            const matchFec = (selFec === 'Todas' || fec === selFec);
+            let matchFec = true;
+            if (selFec !== 'Todas') {
+                const hoyStr = new Date().toISOString().split('T')[0];
+                const ayerStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                const haceSieteDiasStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                if (selFec === 'Hoy') matchFec = (fec === hoyStr);
+                else if (selFec === 'Ayer') matchFec = (fec === ayerStr);
+                else if (selFec === 'Semana') matchFec = (fec >= haceSieteDiasStr && fec <= hoyStr);
+                else matchFec = (fec === selFec);
+            }
             const matchEnc = (!selEnc || encCod === String(selEnc));
             let matchPar = true;
             if (targetPar) {
@@ -594,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Selector Fechas
         if (UI.fechaFilter) {
             const actualFec = AppState.fechaSeleccionada || 'Todas';
-            UI.fechaFilter.innerHTML = '<option value="Todas">Todas las fechas</option>';
+            UI.fechaFilter.innerHTML = '<option value="Todas">Otras fechas…</option>';
             const fecList = Array.from(fechas.keys()).sort().reverse();
             const frag = document.createDocumentFragment();
             fecList.forEach(f => {
@@ -604,8 +640,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 frag.appendChild(opt);
             });
             UI.fechaFilter.appendChild(frag);
-            UI.fechaFilter.value = fechas.has(actualFec) ? actualFec : 'Todas';
-            if (!fechas.has(actualFec) && actualFec !== 'Todas') AppState.fechaSeleccionada = 'Todas';
+            const isNamedFec = actualFec === 'Todas' || actualFec === 'Hoy' || actualFec === 'Ayer' || actualFec === 'Semana';
+            UI.fechaFilter.value = isNamedFec ? 'Todas' : (fechas.has(actualFec) ? actualFec : 'Todas');
+            if (!isNamedFec && !fechas.has(actualFec)) AppState.fechaSeleccionada = 'Todas';
         }
 
         actualizarFiltrosUI();
@@ -642,11 +679,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Fecha
+        // Filtro por Fecha (Compatible con 'Hoy', 'Ayer', 'Semana' y fecha específica YYYY-MM-DD)
         if (AppState.fechaSeleccionada !== 'Todas') {
+            const hoyObj = new Date();
+            const hoyStr = hoyObj.toISOString().split('T')[0];
+            const ayerStr = new Date(hoyObj.getTime() - 86400000).toISOString().split('T')[0];
+            const haceSieteDiasStr = new Date(hoyObj.getTime() - 7 * 86400000).toISOString().split('T')[0];
+
             filtradas = filtradas.filter(e => {
                 const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
-                return fec === AppState.fechaSeleccionada;
+                if (!fec) return false;
+
+                if (AppState.fechaSeleccionada === 'Hoy') {
+                    return fec === hoyStr;
+                } else if (AppState.fechaSeleccionada === 'Ayer') {
+                    return fec === ayerStr;
+                } else if (AppState.fechaSeleccionada === 'Semana') {
+                    return fec >= haceSieteDiasStr && fec <= hoyStr;
+                } else {
+                    return fec === AppState.fechaSeleccionada;
+                }
             });
         }
 
@@ -671,7 +723,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const encuestas = obtenerEncuestasFiltradas();
         actualizarKPIs(encuestas);
         actualizarMapa(encuestas, ajustarCamara && AppState.sectorSeleccionado === 'Todos' && AppState.parroquiaSeleccionada === 'Todas');
+        actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
+        renderizarGraficaHoraria(encuestas);
         actualizarClaseZoom();
     }
 
@@ -930,37 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cluster: false
             });
 
-            // 1. Capa de Etiquetas de Encuestas
-            map.addLayer({
-                id: 'puntos-label-layer',
-                type: 'symbol',
-                source: 'encuestas-puntos-source',
-                layout: {
-                    'text-field': ['get', 'microEtiqueta'],
-                    'text-font': ['Open Sans Bold'],
-                    'text-size': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        12, 10,
-                        15, 13,
-                        17, 16
-                    ],
-                    'text-offset': [0, -1.4],
-                    'text-anchor': 'bottom',
-                    'text-allow-overlap': false,
-                    'text-optional': true,
-                    'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
-                },
-                paint: {
-                    'text-color': '#0f172a',
-                    'text-halo-color': '#ffffff',
-                    'text-halo-width': 2.5,
-                    'text-halo-blur': 0.5
-                }
-            });
-
-            // 2. Círculos de Puntos Individuales (Siempre visibles y destacados)
+            // 1. Círculos de Puntos Individuales (Coloreados por Supervisor)
             map.addLayer({
                 id: 'puntos-layer',
                 type: 'circle',
@@ -978,10 +1002,47 @@ document.addEventListener('DOMContentLoaded', () => {
                         '7', '#ea580c',
                         '#f26419'
                     ],
-                    'circle-radius': 7.0,
-                    'circle-stroke-width': 2.5,
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 8.5,
+                        13, 10.5,
+                        16, 12.5
+                    ],
+                    'circle-stroke-width': 2.0,
                     'circle-stroke-color': '#ffffff',
                     'circle-opacity': 1.0
+                }
+            });
+
+            // 2. Capa de Etiquetas de Encuestador (Centrada exactamente dentro del círculo)
+            map.addLayer({
+                id: 'puntos-label-layer',
+                type: 'symbol',
+                source: 'encuestas-puntos-source',
+                layout: {
+                    'text-field': ['to-string', ['get', 'encuestador']],
+                    'text-font': ['Open Sans Bold'],
+                    'text-size': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 7.5,
+                        13, 9.5,
+                        16, 11.5
+                    ],
+                    'text-offset': [0, 0],
+                    'text-anchor': 'center',
+                    'text-allow-overlap': true,
+                    'text-ignore-placement': true,
+                    'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
+                },
+                paint: {
+                    'text-color': '#ffffff',
+                    'text-halo-color': 'rgba(0, 0, 0, 0.75)',
+                    'text-halo-width': 1.0,
+                    'text-halo-blur': 0.2
                 }
             });
         }
@@ -1490,6 +1551,138 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
+    // LEYENDA DINÁMICA DE SUPERVISORES EN EL MAPA
+    // =========================================================================
+    function actualizarLeyendaMapa(encuestas) {
+        if (!UI.mapLegend || !UI.mapLegendItems) return;
+
+        if (!encuestas || encuestas.length === 0) {
+            UI.mapLegend.style.display = 'none';
+            return;
+        }
+
+        const conteoSupervisores = new Map();
+        encuestas.forEach(e => {
+            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+            if (sup && sup !== '98') {
+                conteoSupervisores.set(sup, (conteoSupervisores.get(sup) || 0) + 1);
+            }
+        });
+
+        if (conteoSupervisores.size === 0) {
+            UI.mapLegend.style.display = 'none';
+            return;
+        }
+
+        UI.mapLegend.style.display = 'block';
+        UI.mapLegendItems.innerHTML = '';
+
+        const supIds = Array.from(conteoSupervisores.keys()).sort((a, b) => {
+            const numA = parseInt(a, 10);
+            const numB = parseInt(b, 10);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b, undefined, { numeric: true });
+        });
+
+        const frag = document.createDocumentFragment();
+        supIds.forEach(supId => {
+            const color = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
+            const total = conteoSupervisores.get(supId);
+            const item = document.createElement('div');
+            item.className = 'cs-map-legend__item';
+            item.title = `Supervisor #${supId}: ${total} encuestas`;
+            item.innerHTML = `
+                <span class="cs-legend-color-dot" style="background-color:${color};"></span>
+                <span>Sup #${supId}</span>
+                <span class="cs-legend-count">${total}</span>
+            `;
+            frag.appendChild(item);
+        });
+
+        UI.mapLegendItems.appendChild(frag);
+    }
+
+    // =========================================================================
+    // MINI GRÁFICA DE PRODUCCIÓN HORARIA (PANEL LATERAL)
+    // =========================================================================
+    function renderizarGraficaHoraria(encuestas) {
+        if (!UI.lateralChartCard || !UI.chartCanvasWrap) return;
+
+        if (!encuestas || encuestas.length === 0) {
+            UI.lateralChartCard.style.display = 'none';
+            return;
+        }
+
+        UI.lateralChartCard.style.display = 'flex';
+        if (UI.chartTotalBadge) {
+            UI.chartTotalBadge.textContent = `${encuestas.length} enc.`;
+        }
+
+        if (UI.chartTitleText) {
+            let label = 'Producción por Hora';
+            if (AppState.fechaSeleccionada === 'Hoy') label = 'Producción Hoy';
+            else if (AppState.fechaSeleccionada === 'Ayer') label = 'Producción Ayer';
+            else if (AppState.fechaSeleccionada === 'Semana') label = 'Producción 7 Días';
+            UI.chartTitleText.textContent = label;
+        }
+
+        // Distribución por franja horaria (07:00 a 19:00)
+        const horasMap = new Map();
+        for (let h = 7; h <= 19; h++) {
+            const hh = String(h).padStart(2, '0');
+            horasMap.set(hh, 0);
+        }
+
+        encuestas.forEach(e => {
+            const timeStr = e._submission_time || e.start || e.end || '';
+            if (timeStr && timeStr.includes('T')) {
+                const timePart = timeStr.split('T')[1];
+                const hh = timePart ? timePart.substring(0, 2) : '';
+                if (hh && horasMap.has(hh)) {
+                    horasMap.set(hh, horasMap.get(hh) + 1);
+                }
+            }
+        });
+
+        const maxVal = Math.max(...horasMap.values(), 1);
+        const horas = Array.from(horasMap.keys());
+        const n = horas.length;
+        const svgWidth = 320;
+        const svgHeight = 68;
+        const padX = 10;
+        const padY = 14;
+        const usableW = svgWidth - (padX * 2);
+        const usableH = svgHeight - padY - 6;
+        const barWidth = Math.max(6, (usableW / n) - 6);
+        const step = usableW / n;
+
+        let barsSvg = '';
+        horas.forEach((h, i) => {
+            const val = horasMap.get(h);
+            const barH = val > 0 ? Math.max(4, (val / maxVal) * usableH) : 2;
+            const x = padX + (i * step) + (step - barWidth) / 2;
+            const y = svgHeight - padY - barH;
+            const isPeak = val === maxVal && val > 0;
+            const fill = val === 0 ? 'rgba(148, 163, 184, 0.25)' : (isPeak ? '#028090' : '#4f46e5');
+
+            barsSvg += `
+                <g class="cs-chart-bar-group">
+                    <title>${h}:00 - ${h}:59 ➔ ${val} encuestas</title>
+                    <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="2" fill="${fill}" />
+                    ${(i % 3 === 0 || i === n - 1) ? `<text x="${(x + barWidth / 2).toFixed(1)}" y="${svgHeight - 2}" font-size="8.5" fill="#94a3b8" text-anchor="middle" font-family="'JetBrains Mono',monospace">${h}h</text>` : ''}
+                </g>
+            `;
+        });
+
+        UI.chartCanvasWrap.innerHTML = `
+            <svg viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="width:100%;height:100%;">
+                <line x1="${padX}" y1="${svgHeight - padY}" x2="${svgWidth - padX}" y2="${svgHeight - padY}" stroke="rgba(148, 163, 184, 0.2)" stroke-width="1" />
+                ${barsSvg}
+            </svg>
+        `;
+    }
+
+    // =========================================================================
     // TABLA DE RENDIMIENTO POR ENCUESTADOR & MÉTRICAS DE TIEMPO
     // =========================================================================
     function formatearMinutos(m) {
@@ -1506,6 +1699,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function agruparPorEncuestador(encuestas) {
         const grupos = new Map();
         const total = encuestas.length;
+        const ahora = Date.now();
+        const umbral = AppState.config.umbralInactividadMinutos || 15;
 
         for (let i = 0; i < total; i++) {
             const enc = encuestas[i];
@@ -1524,7 +1719,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     supervisor: String(supVal).trim(),
                     promStr: 'Sin datos',
                     minStr: '-',
-                    maxStr: '-'
+                    maxStr: '-',
+                    ultimoTimestamp: 0,
+                    status: 'active',
+                    statusText: 'Activo'
                 };
                 grupos.set(codEnc, g);
             } else if (!g.supervisor) {
@@ -1533,6 +1731,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             g.encuestas.push(enc);
+
+            // Registro de último timestamp de sincronización
+            const rawTime = enc._submission_time || enc.end || enc.start;
+            if (rawTime) {
+                const t = new Date(rawTime).getTime();
+                if (!isNaN(t) && t > g.ultimoTimestamp) {
+                    g.ultimoTimestamp = t;
+                }
+            }
 
             // Duración por encuesta (filtrando outliers <30s o >3h)
             const s = enc.start;
@@ -1560,6 +1767,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 g.minStr = formatearMinutos(min);
                 g.maxStr = formatearMinutos(max);
             }
+
+            // Cálculo de inactividad
+            if (g.ultimoTimestamp > 0) {
+                const diffMin = Math.round((ahora - g.ultimoTimestamp) / 60000);
+                if (diffMin <= umbral) {
+                    g.status = 'active';
+                    g.statusText = `🟢 Activo: última encuesta hace ${diffMin <= 1 ? '1 min' : diffMin + ' min'}`;
+                } else if (diffMin <= 45) {
+                    g.status = 'idle';
+                    g.statusText = `🟡 En pausa: última encuesta hace ${diffMin} min`;
+                } else {
+                    g.status = 'inactive';
+                    const tiempoStr = diffMin >= 60 ? `${Math.floor(diffMin / 60)}h ${diffMin % 60}m` : `${diffMin} min`;
+                    g.statusText = `🔴 Inactivo (>${umbral}m): última encuesta hace ${tiempoStr}`;
+                }
+            } else {
+                g.status = 'inactive';
+                g.statusText = '🔴 Sin registro reciente';
+            }
+
             resultado.push(g);
         }
 
@@ -1622,7 +1849,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const diff = a.encuestas.length - b.encuestas.length;
                     return AppState.ordenTabla.asc ? diff : -diff;
                 } else {
-                    // Orden numérico ascendente/descendente por ID de encuestador
                     const numA = parseInt(a.id, 10);
                     const numB = parseInt(b.id, 10);
                     if (!isNaN(numA) && !isNaN(numB)) {
@@ -1693,21 +1919,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>
                             <div class="cs-enc-card">
-                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};">
+                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};" title="${grupo.statusText}">
                                     <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <span class="cs-status-dot cs-status-dot--${grupo.status}" title="${grupo.statusText}"></span>
                                 </div>
                                 <div class="cs-enc-meta">
-                                    <div class="cs-enc-name">Encuestador #${grupo.id}</div>
+                                    <div class="cs-enc-name" title="Encuestador #${grupo.id} (Sup #${supId})">Encuestador #${grupo.id}</div>
                                     <div class="cs-enc-sub">
-                                        <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio">⏱️ ${grupo.promStr}</span>
-                                        <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo">⬇️ ${grupo.minStr}</span>
-                                        <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo">⬆️ ${grupo.maxStr}</span>
+                                        <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
+                                        <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
+                                        <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
                                     </div>
                                 </div>
                             </div>
                         </td>
                         <td style="text-align:right;">
-                            <span class="cs-enc-total-pill">${grupo.encuestas.length}</span>
+                            <span class="cs-enc-total-pill" title="Total de encuestas recolectadas">${grupo.encuestas.length}</span>
                         </td>
                     `;
 
@@ -1818,11 +2045,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 4. Filtro Fecha
+        // 4. Filtro Fecha (Dropdown)
         if (UI.fechaFilter) {
             UI.fechaFilter.addEventListener('change', (e) => {
                 AppState.fechaSeleccionada = e.target.value;
-                renderizarVista(true, true);
+                renderizarVista(false, true);
+            });
+        }
+
+        // 4.1 Filtro Rápido de Fecha (Pills: Todas, Hoy, Ayer, Semana)
+        const datePills = document.querySelectorAll('#datePills .cs-date-pill');
+        if (datePills && datePills.length > 0) {
+            datePills.forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const filterVal = pill.dataset.dateFilter;
+                    AppState.fechaSeleccionada = filterVal;
+                    if (UI.fechaFilter) {
+                        UI.fechaFilter.value = 'Todas';
+                    }
+                    renderizarVista(false, false);
+                });
             });
         }
 

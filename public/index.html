@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=2.0.0">
+  <link rel="stylesheet" href="style.css?v=2.1.0">
 </head>
 <body>
 
@@ -206,16 +206,24 @@
             </div>
           </div>
 
-          <!-- Fecha -->
-          <div class="cs-ribbon-field">
+          <!-- Fecha con Botones Rápidos -->
+          <div class="cs-ribbon-field cs-ribbon-field--date">
             <label for="fechaFilter" class="cs-field-label">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <span>Fecha</span>
             </label>
-            <div class="cs-select-wrap">
-              <select id="fechaFilter" class="cs-select">
-                <option value="Todas">Todas las fechas</option>
-              </select>
+            <div class="cs-date-filter-group">
+              <div class="cs-date-pills" id="datePills" role="group" aria-label="Filtro rápido de fecha">
+                <button type="button" class="cs-date-pill active" data-date-filter="Todas">Todas</button>
+                <button type="button" class="cs-date-pill" data-date-filter="Hoy">Hoy</button>
+                <button type="button" class="cs-date-pill" data-date-filter="Ayer">Ayer</button>
+                <button type="button" class="cs-date-pill" data-date-filter="Semana">Semana</button>
+              </div>
+              <div class="cs-select-wrap cs-select-wrap--date">
+                <select id="fechaFilter" class="cs-select cs-select--compact" title="Seleccionar fecha específica">
+                  <option value="Todas">Otras fechas…</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -253,6 +261,14 @@
 
         <div class="cs-map-wrapper">
           <div id="map"></div>
+
+          <!-- Leyenda Dinámica de Supervisores -->
+          <div class="cs-map-legend" id="mapLegend" style="display:none;">
+            <div class="cs-map-legend__header">
+              <span class="cs-legend-title">Supervisores</span>
+            </div>
+            <div class="cs-map-legend__items" id="mapLegendItems"></div>
+          </div>
           
           <!-- Barra flotante de navegación para Sector Censal activo -->
           <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
@@ -279,7 +295,7 @@
         </div>
       </section>
 
-      <!-- COLUMNA DERECHA: TABLA COMPLETA DE ENCUESTADORES -->
+      <!-- COLUMNA DERECHA: TABLA DE ENCUESTADORES + MINI GRÁFICA LATERAL -->
       <section class="cs-right-panel" aria-label="Panel de Encuestadores">
         <div class="cs-table-card">
           <div class="cs-panel-header cs-panel-header--navy">
@@ -312,6 +328,18 @@
             <p>No se encontraron encuestadores con ese filtro</p>
           </div>
         </div>
+
+        <!-- Mini Gráfica de Producción Horaria (Aprovechamiento Espacial) -->
+        <div class="cs-lateral-chart-card" id="lateralChartCard">
+          <div class="cs-chart-header">
+            <div class="cs-chart-title">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span id="chartTitleText">Producción por Hora</span>
+            </div>
+            <span class="cs-chart-badge" id="chartTotalBadge">0 encuestas</span>
+          </div>
+          <div class="cs-chart-canvas-wrap" id="chartCanvasWrap"></div>
+        </div>
       </section>
 
     </div>
@@ -329,7 +357,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=2.0.0"></script>
+  <script src="script.js?v=2.1.0"></script>
 
 </body>
 </html>
