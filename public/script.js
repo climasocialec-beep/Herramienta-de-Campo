@@ -1122,6 +1122,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     'text-halo-width': 1.6
                 }
             });
+
+            // 3. Capa de Micro-Etiquetas de Sector y Tipología de la Encuesta (Discreta, arriba del punto)
+            map.addLayer({
+                id: 'puntos-micro-label-layer',
+                type: 'symbol',
+                source: 'encuestas-puntos-source',
+                layout: {
+                    'text-field': ['get', 'microEtiqueta'],
+                    'text-font': ['Open Sans Bold'],
+                    'text-size': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        11, 9.5,
+                        14, 11.5,
+                        17, 13.5
+                    ],
+                    'text-offset': [0, -1.35],
+                    'text-anchor': 'bottom',
+                    'text-allow-overlap': false,
+                    'text-optional': true,
+                    'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
+                },
+                paint: {
+                    'text-color': '#0f172a',
+                    'text-halo-color': '#ffffff',
+                    'text-halo-width': 2.5,
+                    'text-halo-blur': 0.3
+                }
+            });
         }
 
         // =====================================================================
@@ -1206,6 +1236,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (map.getLayer('puntos-label-layer')) {
             map.setLayoutProperty('puntos-label-layer', 'visibility', show);
+        }
+        if (map.getLayer('puntos-micro-label-layer')) {
+            map.setLayoutProperty('puntos-micro-label-layer', 'visibility', show);
         }
         if (map.getLayer('sectores-label')) {
             map.setLayoutProperty('sectores-label', 'visibility', show);
@@ -1547,6 +1580,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (map.getLayer('puntos-label-layer')) {
             map.setLayoutProperty('puntos-label-layer', 'visibility', showLabels);
+        }
+        if (map.getLayer('puntos-micro-label-layer')) {
+            map.setLayoutProperty('puntos-micro-label-layer', 'visibility', showLabels);
         }
         if (map.getLayer('sectores-label')) {
             map.setLayoutProperty('sectores-label', 'visibility', showLabels);
