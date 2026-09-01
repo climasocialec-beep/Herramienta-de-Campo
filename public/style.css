@@ -5,13 +5,19 @@
 
 :root {
   /* ------------------------------------------------------------------------
-     1. IDENTIDAD VISUAL: MORADOS INSTITUCIONALES CLIMA SOCIAL
+     1. IDENTIDAD VISUAL: SLATE MODERNO & ACENTOS CLIMA SOCIAL (SIN MORADOS PESADOS)
      ------------------------------------------------------------------------ */
-  --cs-purple-dark: #24072b;      /* Morado Noche Profundo (Header & Canvas Oscuro) */
-  --cs-purple-primary: #370e44;   /* Morado Institucional Principal (Cabeceras de Panel) */
-  --cs-purple-medium: #4c185c;    /* Morado Medio Acento */
-  --cs-purple-light: #f6f0f8;     /* Fondo Morado Pastel */
-  --cs-purple-border: #ebdff0;    /* Borde Morado Suave */
+  --cs-slate-dark: #0f172a;       /* Slate 900 (Cabeceras de Panel y Contraste Alto) */
+  --cs-slate-surface: #1e293b;    /* Slate 800 */
+  --cs-slate-medium: #334155;     /* Slate 700 */
+  --cs-slate-light: #f1f5f9;      /* Slate 100 Pastel */
+  --cs-slate-border: #e2e8f0;     /* Slate 200 Borde Suave */
+
+  --cs-purple-dark: var(--cs-slate-dark);
+  --cs-purple-primary: var(--cs-slate-dark);
+  --cs-purple-medium: var(--cs-slate-medium);
+  --cs-purple-light: var(--cs-indigo-light);
+  --cs-purple-border: var(--cs-indigo-border);
 
   /* ------------------------------------------------------------------------
      2. PALETA DE ESTADOS SEMÁNTICOS (SUTILES, NO SATURADOS)
@@ -32,14 +38,18 @@
   --cs-teal-light: #f0fdfa;
   --cs-teal-border: #99f6e4;
 
+  --cs-indigo: #4f46e5;           /* Indigo / Acento Secundario */
+  --cs-indigo-light: #eef2ff;
+  --cs-indigo-border: #c7d2fe;
+
   --cs-gold: #f59e0b;             /* Ocre Dorado Vivo */
 
   /* ------------------------------------------------------------------------
      3. SUPERFICIES Y FONDOS (MODERNO, LIMPIO, PROFESIONAL)
      ------------------------------------------------------------------------ */
-  --bg-canvas: #f1f4f8;           /* Gris Muy Claro Profesional (Canvas de Fondo) */
+  --bg-canvas: #f8fafc;           /* Slate 50 Fondo Limpio Ejecutivo */
   --bg-surface: #ffffff;          /* Blanco Puro para Módulos y Tarjetas */
-  --bg-subtle: #f8fafc;           /* Gris Suave para Inputs, Cabeceras de Tabla */
+  --bg-subtle: #f1f5f9;           /* Gris Suave para Inputs, Cabeceras de Tabla */
   --bg-card-hover: #f8fafc;
 
   /* ------------------------------------------------------------------------
@@ -48,14 +58,14 @@
   --text-main: #0f172a;           /* Texto Principal de Alto Contraste */
   --text-soft: #334155;           /* Texto Secundario y Etiquetas */
   --text-muted: #64748b;          /* Subtítulos, Metadatos y Placeholders */
-  --text-inverse: #ffffff;        /* Blanco sobre Morado */
+  --text-inverse: #ffffff;        /* Blanco sobre Fondos Oscuros */
 
   /* ------------------------------------------------------------------------
-     5. BORDES MUY SUTILES (SIN LÍNEAS GRUESAS NI NEGRAS)
+     5. BORDES MUY SUTILES
      ------------------------------------------------------------------------ */
   --border-subtle: #e2e8f0;       /* Borde 1px muy sutil */
   --border-medium: #cbd5e1;       /* Borde para inputs y controles */
-  --border-focus: var(--cs-purple-medium);
+  --border-focus: var(--cs-teal);
 
   /* ------------------------------------------------------------------------
      6. SOMBRAS SUAVES Y DIFUSAS
@@ -199,10 +209,10 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   flex-shrink: 0;
   background: repeating-linear-gradient(-45deg,
-      #370e44 0 10px,
-      #c23b49 10px 20px,
+      #0f172a 0 10px,
+      #e11d48 10px 20px,
       #028090 20px 30px,
-      #f0a200 30px 40px);
+      #f59e0b 30px 40px);
 }
 
 /* ==========================================================================
@@ -244,13 +254,13 @@ svg.cs-icon *, .cs-icon * {
 }
 
 /* ==========================================================================
-   Header Component (Elegante & Alineado)
+   Header Component (Elegante, Luminoso & Logo Prominente)
    ========================================================================== */
 .cs-header {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #1d0523 0%, #300a3c 50%, #3a0e49 100%);
+  background-color: #ffffff;
   height: var(--cs-header-height);
   min-height: var(--cs-header-height);
   padding-top: var(--sat);
@@ -258,88 +268,119 @@ svg.cs-icon *, .cs-icon * {
   padding-right: var(--sar);
   display: flex;
   align-items: center;
-  box-shadow: 0 4px 16px rgba(10, 2, 14, 0.45);
-  color: #ffffff;
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+  color: var(--text-main);
   flex-shrink: 0;
   width: 100%;
+  transition: background-color var(--cs-transition), border-color var(--cs-transition);
+}
+
+body.modo-oscuro .cs-header {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  color: #f8fafc;
 }
 
 .cs-header__inner {
   width: 100%;
   height: var(--cs-header-content-h);
-  padding: 0 0.85rem;
+  padding: 0 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
   box-sizing: border-box;
 }
 
 .cs-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.cs-brand__logo-box {
-  background: #ffffff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+.cs-brand__link {
   display: flex;
   align-items: center;
-  justify-content: center;
+  text-decoration: none;
   flex-shrink: 0;
-  height: 24px;
 }
 
 .cs-brand__logo {
-  height: 18px;
-  max-width: 84px;
+  height: 34px;
+  max-height: 34px;
+  max-width: 160px;
   width: auto;
   object-fit: contain;
   display: block;
 }
 
+body.modo-oscuro .cs-brand__logo {
+  filter: brightness(1.2) contrast(1.1);
+}
+
+.cs-header__divider {
+  width: 1px;
+  height: 22px;
+  background-color: var(--border-subtle);
+  margin: 0 0.15rem;
+  flex-shrink: 0;
+}
+
+body.modo-oscuro .cs-header__divider {
+  background-color: #334155;
+}
+
 .cs-header__title-group {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.55rem;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 .cs-header__title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.015em;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
 
+body.modo-oscuro .cs-header__title {
+  color: #f8fafc;
+}
+
 .cs-header__live-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
-  font-size: 0.62rem;
+  gap: 0.3rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  background-color: rgba(16, 185, 129, 0.16);
-  color: #a7f3d0;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  padding: 0.1rem 0.45rem;
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 0.12rem 0.5rem;
   border-radius: var(--radius-full);
   flex-shrink: 0;
   white-space: nowrap;
 }
 
+body.modo-oscuro .cs-header__live-badge {
+  background-color: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
 .cs-header__live-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background-color: #10b981;
   border-radius: 50%;
   box-shadow: 0 0 6px #10b981;
@@ -356,7 +397,7 @@ svg.cs-icon *, .cs-icon * {
 .cs-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -365,32 +406,47 @@ svg.cs-icon *, .cs-icon * {
   flex-direction: column;
   align-items: flex-end;
   font-size: 0.72rem;
-  color: #cbd5e1;
-  border-left: 1px solid rgba(255, 255, 255, 0.15);
-  padding-left: 0.65rem;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 0.75rem;
   margin-right: 0.2rem;
+  line-height: 1.25;
+}
+
+body.modo-oscuro .cs-header__clock {
+  border-left-color: #334155;
+  color: #94a3b8;
 }
 
 .cs-clock {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+
+body.modo-oscuro .cs-clock {
+  color: #f1f5f9;
 }
 
 .cs-date {
-  font-size: 0.62rem;
-  opacity: 0.75;
+  font-size: 0.63rem;
+  color: var(--text-muted);
+}
+
+body.modo-oscuro .cs-date {
+  color: #94a3b8;
 }
 
 .cs-btn-icon {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-soft);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -402,18 +458,25 @@ svg.cs-icon *, .cs-icon * {
 }
 
 .cs-btn-icon:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--border-subtle);
+  color: var(--text-main);
+  border-color: var(--border-medium);
   transform: translateY(-1px);
 }
 
 .cs-btn-icon:active {
-  transform: scale(0.92);
+  transform: scale(0.94);
 }
 
-.cs-btn-icon:hover {
-  background: rgba(255, 255, 255, 0.18);
+body.modo-oscuro .cs-btn-icon {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+body.modo-oscuro .cs-btn-icon:hover {
+  background: #334155;
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* ==========================================================================
@@ -531,8 +594,8 @@ svg.cs-icon *, .cs-icon * {
 .cs-kpi-card--amber .cs-kpi-icon-wrap { background-color: var(--cs-amber-light); color: var(--cs-amber); }
 .cs-kpi-card--amber .cs-kpi-card__value { color: var(--cs-amber); }
 
-.cs-kpi-card--purple .cs-kpi-icon-wrap { background-color: var(--cs-purple-light); color: var(--cs-purple-primary); }
-.cs-kpi-card--purple .cs-kpi-card__value { color: var(--cs-purple-primary); }
+.cs-kpi-card--purple .cs-kpi-icon-wrap { background-color: var(--cs-indigo-light); color: var(--cs-indigo); }
+.cs-kpi-card--purple .cs-kpi-card__value { color: var(--cs-indigo); }
 
 /* Barra de Progreso Elegante */
 .cs-progress-bar {
@@ -547,7 +610,7 @@ svg.cs-icon *, .cs-icon * {
 
 .cs-progress-bar__fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--cs-teal), var(--cs-purple-medium));
+  background: linear-gradient(90deg, var(--cs-teal), var(--cs-indigo));
   transition: width 0.8s ease;
 }
 
@@ -565,21 +628,28 @@ svg.cs-icon *, .cs-icon * {
 }
 
 /* ==========================================================================
-   Cabeceras de Panel (Morado Institucional Refinado)
+   Cabeceras de Panel (Slate Moderno & Limpio)
    ========================================================================== */
 .cs-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.8rem;
+  padding: 0.48rem 0.85rem;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   flex-shrink: 0;
 }
 
-.cs-panel-header--navy {
-  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, var(--cs-purple-primary) 100%);
+.cs-panel-header--navy,
+.cs-panel-header--map {
+  background-color: #0f172a;
   color: #ffffff;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.modo-oscuro .cs-panel-header--navy,
+body.modo-oscuro .cs-panel-header--map {
+  background-color: #1e293b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .cs-panel-header--navy h3 {
@@ -591,12 +661,6 @@ svg.cs-icon *, .cs-icon * {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.cs-panel-header--map {
-  background: linear-gradient(135deg, var(--cs-purple-dark) 0%, var(--cs-purple-primary) 100%);
-  color: #ffffff;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .cs-panel-header--map h2 {
@@ -897,14 +961,18 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--cs-purple-primary);
+  color: var(--text-main);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.38rem;
+}
+
+.cs-ribbon-title svg {
+  color: var(--cs-teal);
 }
 
 body.modo-oscuro .cs-ribbon-title {
-  color: #c084fc;
+  color: #f8fafc;
 }
 
 .cs-ribbon-grid {
