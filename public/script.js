@@ -270,7 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
             
             const data = await res.json();
-            AppState.encuestas = data.resultados || [];
+            const rawEncuestas = data.resultados || [];
+            AppState.encuestas = rawEncuestas.filter(e => {
+                const codEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+                const codSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+                return codEnc !== '98' && codSup !== '98';
+            });
             
             poblarFiltros();
             renderizarVista(false, mostrarOverlay);
@@ -1413,6 +1418,8 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < total; i++) {
             const enc = encuestas[i];
             const codEnc = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || 'Sin asignar');
+            const codSup = String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
+            if (codEnc === '98' || codSup === '98') continue;
 
             let g = grupos.get(codEnc);
             if (!g) {
@@ -1550,7 +1557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : `Supervisor #${supId}`;
             const pluralEnc = gSup.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
-            const pluralBol = gSup.totalEncuestas === 1 ? 'boleta' : 'boletas';
+            const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
             trHeader.innerHTML = `
                 <td colspan="2">
@@ -1560,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                         <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
                         <span class="cs-group-name">${supLabel}</span>
-                        <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralBol}</span>
+                        <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
                     </div>
                 </td>
             `;

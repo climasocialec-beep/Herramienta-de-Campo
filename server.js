@@ -188,9 +188,12 @@ async function obtenerDatosKobo() {
         }
 
         // Normalización ultra-ligera en memoria: reduce payload en un 95%
-        const resultados = resultadosRaw.map(normalizarEncuesta);
+        // Se excluye código 98 (pruebas de campo)
+        const resultados = resultadosRaw
+            .map(normalizarEncuesta)
+            .filter(e => String(e.encuestador).trim() !== "98" && String(e.supervisor).trim() !== "98");
 
-        cache.datos = { total, resultados, obtenidoEn: Date.now() };
+        cache.datos = { total: resultados.length, resultados, obtenidoEn: Date.now() };
         cache.timestamp = Date.now();
         return cache.datos;
     })();
