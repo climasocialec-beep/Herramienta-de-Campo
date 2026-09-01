@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fechaFilter: document.getElementById('fechaFilter'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
+        activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
+        activeFilterChips: document.getElementById('activeFilterChips'),
         
         // Mapa y Modos
         mapContainer: document.getElementById('map'),
@@ -307,32 +309,99 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function actualizarFiltrosUI() {
         let activeCount = 0;
+        const chips = [];
 
         if (UI.supervisorFilter) {
             const isAct = AppState.supervisorSeleccionado !== 'Todos';
             UI.supervisorFilter.classList.toggle('is-active', isAct);
-            if (isAct) activeCount++;
-        }
-        if (UI.fechaFilter) {
-            const isAct = AppState.fechaSeleccionada !== 'Todas';
-            UI.fechaFilter.classList.toggle('is-active', isAct);
-            if (isAct) activeCount++;
+            if (isAct) {
+                activeCount++;
+                chips.push({
+                    tipo: 'supervisor',
+                    label: `Supervisor #${AppState.supervisorSeleccionado}`,
+                    onClear: () => {
+                        AppState.supervisorSeleccionado = 'Todos';
+                        if (UI.supervisorFilter) UI.supervisorFilter.value = 'Todos';
+                        poblarFiltros();
+                        renderizarVista(true, true);
+                    }
+                });
+            }
         }
         if (UI.parroquiaFilter) {
             const isAct = AppState.parroquiaSeleccionada !== 'Todas';
             UI.parroquiaFilter.classList.toggle('is-active', isAct);
-            if (isAct) activeCount++;
+            if (isAct) {
+                activeCount++;
+                chips.push({
+                    tipo: 'parroquia',
+                    label: `Parroquia: ${AppState.parroquiaSeleccionada}`,
+                    onClear: () => {
+                        AppState.parroquiaSeleccionada = 'Todas';
+                        if (UI.parroquiaFilter) UI.parroquiaFilter.value = 'Todas';
+                        poblarFiltros();
+                        renderizarVista(true, true);
+                    }
+                });
+            }
         }
         if (UI.sectorFilter) {
             const isAct = AppState.sectorSeleccionado !== 'Todos';
             UI.sectorFilter.classList.toggle('is-active', isAct);
-            if (isAct) activeCount++;
+            if (isAct) {
+                activeCount++;
+                chips.push({
+                    tipo: 'sector',
+                    label: `Sector: ${AppState.sectorSeleccionado}`,
+                    onClear: () => {
+                        AppState.sectorSeleccionado = 'Todos';
+                        if (UI.sectorFilter) UI.sectorFilter.value = 'Todos';
+                        poblarFiltros();
+                        renderizarVista(true, true);
+                    }
+                });
+            }
+        }
+        if (UI.fechaFilter) {
+            const isAct = AppState.fechaSeleccionada !== 'Todas';
+            UI.fechaFilter.classList.toggle('is-active', isAct);
+            if (isAct) {
+                activeCount++;
+                chips.push({
+                    tipo: 'fecha',
+                    label: `Fecha: ${AppState.fechaSeleccionada}`,
+                    onClear: () => {
+                        AppState.fechaSeleccionada = 'Todas';
+                        if (UI.fechaFilter) UI.fechaFilter.value = 'Todas';
+                        poblarFiltros();
+                        renderizarVista(true, true);
+                    }
+                });
+            }
         }
         if (AppState.encuestadorSeleccionado) {
             activeCount++;
+            chips.push({
+                tipo: 'encuestador',
+                label: `Encuestador #${AppState.encuestadorSeleccionado}`,
+                onClear: () => {
+                    seleccionarEncuestador(AppState.encuestadorSeleccionado);
+                }
+            });
         }
         if (AppState.filtroTabla) {
             activeCount++;
+            chips.push({
+                tipo: 'busqueda',
+                label: `Búsqueda: "${AppState.filtroTabla}"`,
+                onClear: () => {
+                    AppState.filtroTabla = '';
+                    if (UI.searchInput) UI.searchInput.value = '';
+                    const encuestas = obtenerEncuestasFiltradas();
+                    actualizarTabla(encuestas);
+                    actualizarFiltrosUI();
+                }
+            });
         }
 
         if (UI.btnLimpiarFiltros) {
@@ -340,6 +409,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const txt = document.getElementById('txtLimpiarFiltros');
             if (txt) {
                 txt.textContent = activeCount > 0 ? `Limpiar (${activeCount})` : 'Limpiar';
+            }
+        }
+
+        // Renderizar Chips de Filtros Activos
+        if (UI.activeFilterChipsWrap && UI.activeFilterChips) {
+            if (chips.length > 0) {
+                UI.activeFilterChipsWrap.style.display = 'flex';
+                UI.activeFilterChips.innerHTML = '';
+                chips.forEach(chip => {
+                    const el = document.createElement('button');
+                    el.type = 'button';
+                    el.className = 'cs-filter-chip';
+                    el.innerHTML = `<span>${chip.label}</span><svg class="cs-chip-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+                    el.title = `Quitar filtro: ${chip.label}`;
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        chip.onClear();
+                    });
+                    UI.activeFilterChips.appendChild(el);
+                });
+            } else {
+                UI.activeFilterChipsWrap.style.display = 'none';
+                UI.activeFilterChips.innerHTML = '';
             }
         }
     }

@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=1.2.0">
+  <link rel="stylesheet" href="style.css?v=2.0.0">
 </head>
 <body>
 
@@ -151,7 +151,83 @@
 
     </section>
 
-    <!-- ===== MAIN 2-COLUMN GRID (MAPA A LA IZQUIERDA, FILTROS Y TABLA A LA DERECHA) ===== -->
+    <!-- ===== NUEVA BARRA DE CONTROL Y FILTROS HORIZONTAL (PANORÁMICA) ===== -->
+    <section class="cs-filter-ribbon-card" aria-label="Filtros de Campo">
+      <div class="cs-ribbon-main">
+        <div class="cs-ribbon-heading">
+          <div class="cs-ribbon-title">
+            <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span>Filtros de Campo</span>
+          </div>
+          <button type="button" class="cs-btn-reset" id="btnLimpiarFiltros" title="Restablecer todos los filtros">
+            <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <span id="txtLimpiarFiltros">Limpiar</span>
+          </button>
+        </div>
+
+        <div class="cs-ribbon-grid">
+          <!-- Supervisor -->
+          <div class="cs-ribbon-field">
+            <label for="supervisorFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Supervisor</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="supervisorFilter" class="cs-select">
+                <option value="Todos">Todos los supervisores</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Parroquia -->
+          <div class="cs-ribbon-field">
+            <label for="parroquiaFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Parroquia</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="parroquiaFilter" class="cs-select">
+                <option value="Todas">Todas las parroquias</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Sector Censal -->
+          <div class="cs-ribbon-field">
+            <label for="sectorFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <span>Sector Censal</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="sectorFilter" class="cs-select">
+                <option value="Todos">Todos los sectores</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fecha -->
+          <div class="cs-ribbon-field">
+            <label for="fechaFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>Fecha</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="fechaFilter" class="cs-select">
+                <option value="Todas">Todas las fechas</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Chips de Filtros Activos -->
+      <div class="cs-active-chips-wrap" id="activeFilterChipsWrap" style="display:none;">
+        <span class="cs-chips-label">Filtros activos:</span>
+        <div class="cs-chips-container" id="activeFilterChips"></div>
+      </div>
+    </section>
+
+    <!-- ===== MAIN 2-COLUMN GRID (MAPA A LA IZQUIERDA, TABLA DE ENCUESTADORES A LA DERECHA) ===== -->
     <div class="cs-main-grid">
 
       <!-- COLUMNA IZQUIERDA: MAPA PROTAGONISTA -->
@@ -202,87 +278,17 @@
         </div>
       </section>
 
-      <!-- COLUMNA DERECHA: FILTROS + TABLA DE ENCUESTADORES -->
-      <section class="cs-right-panel" aria-label="Filtros y Encuestadores">
-
-        <!-- BLOQUE DE FILTROS RÁPIDOS -->
-        <div class="cs-filter-panel">
-          <div class="cs-panel-header cs-panel-header--navy">
-            <h3>
-              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-              Filtros de Campo
-            </h3>
-            <button type="button" class="cs-btn-reset" id="btnLimpiarFiltros" title="Restablecer todos los filtros">
-              <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-              <span id="txtLimpiarFiltros">Limpiar</span>
-            </button>
-          </div>
-
-          <div class="cs-filter-body">
-            <div class="cs-filter-grid">
-              <!-- Fila 1: Supervisor + Fecha -->
-              <div class="cs-form-group">
-                <label for="supervisorFilter">
-                  <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  Supervisor:
-                </label>
-                <div class="cs-select-wrap">
-                  <select id="supervisorFilter" class="cs-select">
-                    <option value="Todos">Todos</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="cs-form-group">
-                <label for="fechaFilter">
-                  <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Fecha:
-                </label>
-                <div class="cs-select-wrap">
-                  <select id="fechaFilter" class="cs-select">
-                    <option value="Todas">Todas</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Fila 2: Parroquia + Sector Censal -->
-              <div class="cs-form-group">
-                <label for="parroquiaFilter">
-                  <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                  Parroquia:
-                </label>
-                <div class="cs-select-wrap">
-                  <select id="parroquiaFilter" class="cs-select">
-                    <option value="Todas">Todas</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="cs-form-group">
-                <label for="sectorFilter">
-                  <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                  Sector Censal:
-                </label>
-                <div class="cs-select-wrap">
-                  <select id="sectorFilter" class="cs-select">
-                    <option value="Todos">Todos</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TABLA DE ENCUESTADORES -->
+      <!-- COLUMNA DERECHA: TABLA COMPLETA DE ENCUESTADORES -->
+      <section class="cs-right-panel" aria-label="Panel de Encuestadores">
         <div class="cs-table-card">
           <div class="cs-panel-header cs-panel-header--navy">
             <h3>
               <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Encuestadores
+              Equipo de Encuestadores
             </h3>
             <div class="cs-search-bar">
               <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" id="searchInput" placeholder="Buscar encuestador…" autocomplete="off">
+              <input type="search" id="searchInput" placeholder="Buscar encuestador o supervisor…" autocomplete="off">
             </div>
           </div>
 
@@ -290,8 +296,8 @@
             <table class="cs-data-table" id="tablaEncuestadores">
               <thead>
                 <tr>
-                  <th data-sort="encuestador" style="width:72%;">Encuestador <span class="cs-sort-icon">↕</span></th>
-                  <th data-sort="encuestas" style="width:28%;text-align:right;">Total <span class="cs-sort-icon">↕</span></th>
+                  <th data-sort="encuestador" style="width:70%;">Encuestador <span class="cs-sort-icon">↕</span></th>
+                  <th data-sort="encuestas" style="width:30%;text-align:right;">Total <span class="cs-sort-icon">↕</span></th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -305,7 +311,6 @@
             <p>No se encontraron encuestadores con ese filtro</p>
           </div>
         </div>
-
       </section>
 
     </div>
@@ -323,7 +328,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=1.2.0"></script>
+  <script src="script.js?v=2.0.0"></script>
 
 </body>
 </html>
