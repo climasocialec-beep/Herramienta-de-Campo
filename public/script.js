@@ -249,7 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     AppState.encuestas = parsed;
-                    if (UI.badgeTexto) UI.badgeTexto.textContent = 'En vivo (Caché)';
+                    if (UI.badgeTexto) UI.badgeTexto.textContent = 'En vivo';
+                    if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
                 }
             }
         } catch (e) {
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Error al inicializar:', error);
+            if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
             mostrarError('Error de inicialización de la aplicación.');
         }
     }
@@ -353,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (UI.badgeTexto) UI.badgeTexto.textContent = 'Sin conexión';
         } finally {
-            if (mostrarOverlay && UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
+            if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
         }
     }
 
