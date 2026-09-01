@@ -13,8 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nombreProyecto: 'Supervisión de Campo',
             metaEncuestas: 2500,
             campoEncuestador: 'cod_enc',
-            campoSupervisor: 'cod_sup',
-            umbralInactividadMinutos: 15 // Umbral configurable para alerta de inactividad
+            campoSupervisor: 'cod_sup'
         },
         encuestas: [],
         supervisorSeleccionado: 'Todos',
@@ -89,15 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
         
-        // Tabla & Mini Gráfica
+        // Tabla
         searchInput: document.getElementById('searchInput'),
         tablaEncuestadoresBody: document.querySelector('#tablaEncuestadores tbody'),
         emptyState: document.getElementById('emptyState'),
         headersTabla: document.querySelectorAll('#tablaEncuestadores th'),
-        lateralChartCard: document.getElementById('lateralChartCard'),
-        chartTitleText: document.getElementById('chartTitleText'),
-        chartTotalBadge: document.getElementById('chartTotalBadge'),
-        chartCanvasWrap: document.getElementById('chartCanvasWrap'),
         
         // Footer & Toast
         ultimaActualizacion: document.getElementById('ultimaActualizacion'),
@@ -402,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 onClear: () => {
                     AppState.fechaSeleccionada = 'Todas';
                     if (UI.fechaFilter) UI.fechaFilter.value = 'Todas';
-                    renderizarVista(false, false);
+                    renderizarVista(true, true);
                 }
             });
         }
@@ -725,7 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarMapa(encuestas, ajustarCamara && AppState.sectorSeleccionado === 'Todos' && AppState.parroquiaSeleccionada === 'Todas');
         actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
-        renderizarGraficaHoraria(encuestas);
         actualizarClaseZoom();
     }
 
@@ -1603,86 +1597,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // MINI GRÁFICA DE PRODUCCIÓN HORARIA (PANEL LATERAL)
-    // =========================================================================
-    function renderizarGraficaHoraria(encuestas) {
-        if (!UI.lateralChartCard || !UI.chartCanvasWrap) return;
-
-        if (!encuestas || encuestas.length === 0) {
-            UI.lateralChartCard.style.display = 'none';
-            return;
-        }
-
-        UI.lateralChartCard.style.display = 'flex';
-        if (UI.chartTotalBadge) {
-            UI.chartTotalBadge.textContent = `${encuestas.length} enc.`;
-        }
-
-        if (UI.chartTitleText) {
-            let label = 'Producción por Hora';
-            if (AppState.fechaSeleccionada === 'Hoy') label = 'Producción Hoy';
-            else if (AppState.fechaSeleccionada === 'Ayer') label = 'Producción Ayer';
-            else if (AppState.fechaSeleccionada === 'Semana') label = 'Producción 7 Días';
-            UI.chartTitleText.textContent = label;
-        }
-
-        // Distribución por franja horaria (07:00 a 19:00)
-        const horasMap = new Map();
-        for (let h = 7; h <= 19; h++) {
-            const hh = String(h).padStart(2, '0');
-            horasMap.set(hh, 0);
-        }
-
-        encuestas.forEach(e => {
-            const timeStr = e._submission_time || e.start || e.end || '';
-            if (timeStr && timeStr.includes('T')) {
-                const timePart = timeStr.split('T')[1];
-                const hh = timePart ? timePart.substring(0, 2) : '';
-                if (hh && horasMap.has(hh)) {
-                    horasMap.set(hh, horasMap.get(hh) + 1);
-                }
-            }
-        });
-
-        const maxVal = Math.max(...horasMap.values(), 1);
-        const horas = Array.from(horasMap.keys());
-        const n = horas.length;
-        const svgWidth = 320;
-        const svgHeight = 68;
-        const padX = 10;
-        const padY = 14;
-        const usableW = svgWidth - (padX * 2);
-        const usableH = svgHeight - padY - 6;
-        const barWidth = Math.max(6, (usableW / n) - 6);
-        const step = usableW / n;
-
-        let barsSvg = '';
-        horas.forEach((h, i) => {
-            const val = horasMap.get(h);
-            const barH = val > 0 ? Math.max(4, (val / maxVal) * usableH) : 2;
-            const x = padX + (i * step) + (step - barWidth) / 2;
-            const y = svgHeight - padY - barH;
-            const isPeak = val === maxVal && val > 0;
-            const fill = val === 0 ? 'rgba(148, 163, 184, 0.25)' : (isPeak ? '#028090' : '#4f46e5');
-
-            barsSvg += `
-                <g class="cs-chart-bar-group">
-                    <title>${h}:00 - ${h}:59 ➔ ${val} encuestas</title>
-                    <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="2" fill="${fill}" />
-                    ${(i % 3 === 0 || i === n - 1) ? `<text x="${(x + barWidth / 2).toFixed(1)}" y="${svgHeight - 2}" font-size="8.5" fill="#94a3b8" text-anchor="middle" font-family="'JetBrains Mono',monospace">${h}h</text>` : ''}
-                </g>
-            `;
-        });
-
-        UI.chartCanvasWrap.innerHTML = `
-            <svg viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none" style="width:100%;height:100%;">
-                <line x1="${padX}" y1="${svgHeight - padY}" x2="${svgWidth - padX}" y2="${svgHeight - padY}" stroke="rgba(148, 163, 184, 0.2)" stroke-width="1" />
-                ${barsSvg}
-            </svg>
-        `;
-    }
-
-    // =========================================================================
     // TABLA DE RENDIMIENTO POR ENCUESTADOR & MÉTRICAS DE TIEMPO
     // =========================================================================
     function formatearMinutos(m) {
@@ -1699,8 +1613,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function agruparPorEncuestador(encuestas) {
         const grupos = new Map();
         const total = encuestas.length;
-        const ahora = Date.now();
-        const umbral = AppState.config.umbralInactividadMinutos || 15;
 
         for (let i = 0; i < total; i++) {
             const enc = encuestas[i];
@@ -1719,10 +1631,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     supervisor: String(supVal).trim(),
                     promStr: 'Sin datos',
                     minStr: '-',
-                    maxStr: '-',
-                    ultimoTimestamp: 0,
-                    status: 'active',
-                    statusText: 'Activo'
+                    maxStr: '-'
                 };
                 grupos.set(codEnc, g);
             } else if (!g.supervisor) {
@@ -1731,15 +1640,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             g.encuestas.push(enc);
-
-            // Registro de último timestamp de sincronización
-            const rawTime = enc._submission_time || enc.end || enc.start;
-            if (rawTime) {
-                const t = new Date(rawTime).getTime();
-                if (!isNaN(t) && t > g.ultimoTimestamp) {
-                    g.ultimoTimestamp = t;
-                }
-            }
 
             // Duración por encuesta (filtrando outliers <30s o >3h)
             const s = enc.start;
@@ -1767,26 +1667,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 g.minStr = formatearMinutos(min);
                 g.maxStr = formatearMinutos(max);
             }
-
-            // Cálculo de inactividad
-            if (g.ultimoTimestamp > 0) {
-                const diffMin = Math.round((ahora - g.ultimoTimestamp) / 60000);
-                if (diffMin <= umbral) {
-                    g.status = 'active';
-                    g.statusText = `🟢 Activo: última encuesta hace ${diffMin <= 1 ? '1 min' : diffMin + ' min'}`;
-                } else if (diffMin <= 45) {
-                    g.status = 'idle';
-                    g.statusText = `🟡 En pausa: última encuesta hace ${diffMin} min`;
-                } else {
-                    g.status = 'inactive';
-                    const tiempoStr = diffMin >= 60 ? `${Math.floor(diffMin / 60)}h ${diffMin % 60}m` : `${diffMin} min`;
-                    g.statusText = `🔴 Inactivo (>${umbral}m): última encuesta hace ${tiempoStr}`;
-                }
-            } else {
-                g.status = 'inactive';
-                g.statusText = '🔴 Sin registro reciente';
-            }
-
             resultado.push(g);
         }
 
@@ -1919,9 +1799,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>
                             <div class="cs-enc-card">
-                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};" title="${grupo.statusText}">
+                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};">
                                     <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                    <span class="cs-status-dot cs-status-dot--${grupo.status}" title="${grupo.statusText}"></span>
                                 </div>
                                 <div class="cs-enc-meta">
                                     <div class="cs-enc-name" title="Encuestador #${grupo.id} (Sup #${supId})">Encuestador #${grupo.id}</div>
@@ -2049,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.fechaFilter) {
             UI.fechaFilter.addEventListener('change', (e) => {
                 AppState.fechaSeleccionada = e.target.value;
-                renderizarVista(false, true);
+                renderizarVista(true, true);
             });
         }
 
@@ -2063,7 +1942,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (UI.fechaFilter) {
                         UI.fechaFilter.value = 'Todas';
                     }
-                    renderizarVista(false, false);
+                    renderizarVista(true, true);
                 });
             });
         }
