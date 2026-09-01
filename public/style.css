@@ -1113,6 +1113,87 @@ body.modo-oscuro .cs-select.is-active {
 }
 
 /* ==========================================================================
+   Encabezados de Grupo por Supervisor en Tabla
+   ========================================================================== */
+.cs-table-group-header {
+  background-color: var(--bg-subtle);
+  user-select: none;
+  cursor: pointer;
+  transition: background-color var(--cs-transition);
+}
+
+.cs-table-group-header:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.cs-table-group-header td {
+  padding: 0.45rem 0.55rem !important;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cs-table-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cs-group-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.cs-group-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cs-table-group-header.is-collapsed .cs-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.cs-group-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--sup-dot-color, var(--cs-purple-primary));
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.cs-group-name {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.cs-group-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  padding: 0.08rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+body.modo-oscuro .cs-group-pill {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+}
+
+.cs-enc-row td {
+  padding-left: 0.85rem;
+}
+
+/* ==========================================================================
    Fila de Encuestadores Compacta & Sin Redundancia
    ========================================================================== */
 .cs-data-table td {

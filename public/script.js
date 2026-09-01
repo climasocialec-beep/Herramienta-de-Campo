@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
         filtroTabla: '',
         modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
-        ordenTabla: { columna: 'encuestas', asc: false },
+        ordenTabla: { columna: 'encuestador', asc: true },
+        supervisoresColapsados: new Set(),
         ubicacionSupervisor: null,
         markerSupervisor: null,
         mapLoaded: false,
@@ -1415,17 +1416,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let g = grupos.get(codEnc);
             if (!g) {
+                const supVal = enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '';
                 g = {
                     id: codEnc,
                     encuestas: [],
                     duraciones: [],
                     totalMins: 0,
-                    supervisor: enc.supervisor || enc.C_digo_Supervisor || '',
+                    supervisor: String(supVal).trim(),
                     promStr: 'Sin datos',
                     minStr: '-',
                     maxStr: '-'
                 };
                 grupos.set(codEnc, g);
+            } else if (!g.supervisor) {
+                const supVal = enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '';
+                if (supVal) g.supervisor = String(supVal).trim();
             }
 
             g.encuestas.push(enc);
@@ -1470,27 +1475,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Búsqueda en vivo
         if (AppState.filtroTabla) {
             const term = AppState.filtroTabla.toLowerCase();
-            datos = datos.filter(g => g.id.toLowerCase().includes(term));
+            datos = datos.filter(g => g.id.toLowerCase().includes(term) || (g.supervisor && g.supervisor.toLowerCase().includes(term)));
         }
-
-        // Ordenamiento
-        datos.sort((a, b) => {
-            let valA, valB;
-            switch(AppState.ordenTabla.columna) {
-                case 'encuestador':
-                    valA = parseInt(a.id, 10) || a.id;
-                    valB = parseInt(b.id, 10) || b.id;
-                    break;
-                case 'encuestas':
-                default:
-                    valA = a.encuestas.length;
-                    valB = b.encuestas.length;
-            }
-
-            if (valA < valB) return AppState.ordenTabla.asc ? -1 : 1;
-            if (valA > valB) return AppState.ordenTabla.asc ? 1 : -1;
-            return 0;
-        });
 
         UI.tablaEncuestadoresBody.innerHTML = '';
 
@@ -1501,41 +1487,135 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (UI.emptyState) UI.emptyState.style.display = 'none';
 
+        // 1. Agrupar por Supervisor
+        const gruposSupervisor = new Map();
+        datos.forEach(encuestador => {
+            const supId = (encuestador.supervisor && encuestador.supervisor !== 'undefined' && encuestador.supervisor !== 'null') 
+                ? encuestador.supervisor 
+                : 'Sin asignar';
+            if (!gruposSupervisor.has(supId)) {
+                gruposSupervisor.set(supId, {
+                    id: supId,
+                    encuestadores: [],
+                    totalEncuestas: 0
+                });
+            }
+            const gSup = gruposSupervisor.get(supId);
+            gSup.encuestadores.push(encuestador);
+            gSup.totalEncuestas += encuestador.encuestas.length;
+        });
+
+        // 2. Ordenar Supervisores numéricamente (1, 2, 3... y 'Sin asignar' al final)
+        const supKeys = Array.from(gruposSupervisor.keys()).sort((a, b) => {
+            if (a === 'Sin asignar') return 1;
+            if (b === 'Sin asignar') return -1;
+            const numA = parseInt(a, 10);
+            const numB = parseInt(b, 10);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        // 3. Ordenar encuestadores dentro de cada supervisor
+        supKeys.forEach(supId => {
+            const gSup = gruposSupervisor.get(supId);
+            gSup.encuestadores.sort((a, b) => {
+                if (AppState.ordenTabla.columna === 'encuestas') {
+                    const diff = a.encuestas.length - b.encuestas.length;
+                    return AppState.ordenTabla.asc ? diff : -diff;
+                } else {
+                    // Orden numérico ascendente/descendente por ID de encuestador
+                    const numA = parseInt(a.id, 10);
+                    const numB = parseInt(b.id, 10);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return AppState.ordenTabla.asc ? (numA - numB) : (numB - numA);
+                    }
+                    const cmp = String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
+                    return AppState.ordenTabla.asc ? cmp : -cmp;
+                }
+            });
+        });
+
         const fragment = document.createDocumentFragment();
 
-        datos.forEach(grupo => {
-            const tr = document.createElement('tr');
-            if (AppState.encuestadorSeleccionado === grupo.id) {
-                tr.classList.add('selected');
-            }
+        // 4. Renderizar grupos de supervisores y sus encuestadores
+        supKeys.forEach(supId => {
+            const gSup = gruposSupervisor.get(supId);
+            const colorSupervisor = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
+            const isCollapsed = !AppState.filtroTabla && AppState.supervisoresColapsados && AppState.supervisoresColapsados.has(supId);
 
-            const supervisorId = grupo.supervisor || (grupo.encuestas[0] ? (grupo.encuestas[0].supervisor || grupo.encuestas[0].C_digo_Supervisor || '') : '');
-            const colorSupervisor = PALETA_SUPERVISORES[supervisorId] || PALETA_SUPERVISORES.default;
+            // Fila de encabezado de grupo (Supervisor)
+            const trHeader = document.createElement('tr');
+            trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
+            trHeader.dataset.supId = supId;
 
-            tr.innerHTML = `
-                <td>
-                    <div class="cs-enc-card">
-                        <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};">
-                            <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        </div>
-                        <div class="cs-enc-meta">
-                            <div class="cs-enc-name">Encuestador #${grupo.id}</div>
-                            <div class="cs-enc-sub">
-                                <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio">⏱️ ${grupo.promStr}</span>
-                                <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo">⬇️ ${grupo.minStr}</span>
-                                <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo">⬆️ ${grupo.maxStr}</span>
-                            </div>
-                        </div>
+            const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : `Supervisor #${supId}`;
+            const pluralEnc = gSup.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
+            const pluralBol = gSup.totalEncuestas === 1 ? 'boleta' : 'boletas';
+
+            trHeader.innerHTML = `
+                <td colspan="2">
+                    <div class="cs-table-group-title">
+                        <span class="cs-group-toggle-icon">
+                            <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                        <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
+                        <span class="cs-group-name">${supLabel}</span>
+                        <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralBol}</span>
                     </div>
-                </td>
-                <td style="text-align:right;">
-                    <span class="cs-enc-total-pill">${grupo.encuestas.length}</span>
                 </td>
             `;
 
-            tr.addEventListener('click', () => seleccionarEncuestador(grupo.id));
+            trHeader.addEventListener('click', () => {
+                if (!AppState.supervisoresColapsados) AppState.supervisoresColapsados = new Set();
+                if (AppState.supervisoresColapsados.has(supId)) {
+                    AppState.supervisoresColapsados.delete(supId);
+                } else {
+                    AppState.supervisoresColapsados.add(supId);
+                }
+                const encs = obtenerEncuestasFiltradas();
+                actualizarTabla(encs);
+            });
 
-            fragment.appendChild(tr);
+            fragment.appendChild(trHeader);
+
+            // Filas de encuestadores del supervisor (si no está colapsado)
+            if (!isCollapsed) {
+                gSup.encuestadores.forEach(grupo => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'cs-enc-row';
+                    if (AppState.encuestadorSeleccionado === grupo.id) {
+                        tr.classList.add('selected');
+                    }
+
+                    tr.innerHTML = `
+                        <td>
+                            <div class="cs-enc-card">
+                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};">
+                                    <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                </div>
+                                <div class="cs-enc-meta">
+                                    <div class="cs-enc-name">Encuestador #${grupo.id}</div>
+                                    <div class="cs-enc-sub">
+                                        <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio">⏱️ ${grupo.promStr}</span>
+                                        <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo">⬇️ ${grupo.minStr}</span>
+                                        <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo">⬆️ ${grupo.maxStr}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="cs-enc-total-pill">${grupo.encuestas.length}</span>
+                        </td>
+                    `;
+
+                    tr.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        seleccionarEncuestador(grupo.id);
+                    });
+
+                    fragment.appendChild(tr);
+                });
+            }
         });
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
