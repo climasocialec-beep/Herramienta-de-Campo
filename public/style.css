@@ -2037,49 +2037,156 @@ body.modo-oscuro .cs-point-badge {
   .cs-btn-icon svg.cs-icon {
     width: 14px !important;
     height: 14px !important;
+/* =========================================================================
+   OPTIMIZACIONES MÓVILES (CELULARES GAMA BAJA / FIELD FIRST)
+   ========================================================================= */
+
+/* Contención de renderizado para 60 FPS en tablas largas */
+.cs-enc-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 54px;
+}
+
+button, select, input, a, .cs-toggle-btn, .cs-date-pill {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Barra de Navegación Inferior (Móvil) */
+.cs-mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08);
+  z-index: 999;
+  justify-content: space-around;
+  align-items: center;
+}
+
+body.modo-oscuro .cs-mobile-nav {
+  background: rgba(15, 23, 42, 0.96);
+  border-top-color: #334155;
+  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.4);
+}
+
+.cs-mobile-nav-btn {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  min-height: 48px;
+}
+
+.cs-mobile-nav-btn .cs-icon {
+  width: 19px;
+  height: 19px;
+  transition: transform 0.15s ease;
+}
+
+.cs-mobile-nav-btn.active {
+  color: var(--cs-teal);
+}
+
+.cs-mobile-nav-btn.active .cs-icon {
+  transform: scale(1.1);
+}
+
+body.modo-oscuro .cs-mobile-nav-btn.active {
+  color: #38bdf8;
+}
+
+/* MEDIA QUERIES: TABLET Y MÓVIL (≤ 768px) */
+@media (max-width: 768px) {
+  .cs-mobile-nav {
+    display: flex;
   }
 
-  /* Tarjetas KPI en 2 Columnas x 2 Líneas en Móvil */
-  .cs-kpi-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.45rem;
+  .cs-container {
+    padding: 0.35rem 0.35rem calc(60px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  .cs-kpi-card {
-    padding: 0.4rem 0.6rem;
-    min-height: 44px;
+  .cs-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem;
   }
 
-  .cs-kpi-card__value {
-    font-size: 1.15rem;
+  /* Modo Móvil: Mapa por defecto (100% de la pantalla para máxima visibilidad GPS) */
+  body.mobile-view-mapa [data-mobile-panel="kpis"],
+  body.mobile-view-mapa [data-mobile-panel="filtros"],
+  body.mobile-view-mapa [data-mobile-panel="equipo"] {
+    display: none !important;
   }
 
-  .cs-map-wrapper {
-    height: 360px !important;
-    min-height: 360px !important;
-  }
-
-  .cs-panel-header--map {
+  body.mobile-view-mapa [data-mobile-panel="mapa"] {
+    display: flex !important;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
+    height: calc(100vh - 110px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 420px;
   }
 
-  .cs-label-toggle-group {
-    width: 100%;
-    justify-content: space-between;
+  body.mobile-view-mapa .cs-map-wrapper {
+    flex: 1;
+    height: 100% !important;
+    min-height: 100% !important;
   }
 
-  .cs-ribbon-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.45rem;
+  /* Modo Móvil: Lista de Equipo */
+  body.mobile-view-equipo [data-mobile-panel="kpis"],
+  body.mobile-view-equipo [data-mobile-panel="filtros"],
+  body.mobile-view-equipo [data-mobile-panel="mapa"] {
+    display: none !important;
   }
 
-  .cs-sector-active-bar {
-    width: 90%;
-    max-width: calc(100% - 90px);
-    justify-content: space-between;
-    padding: 0.3rem 0.6rem;
+  body.mobile-view-equipo [data-mobile-panel="equipo"] {
+    display: flex !important;
+    height: calc(100vh - 110px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.mobile-view-equipo .cs-table-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.mobile-view-equipo .cs-table-scroll-container {
+    flex: 1;
+    max-height: none !important;
+  }
+
+  /* Modo Móvil: Filtros & KPIs */
+  body.mobile-view-filtros [data-mobile-panel="mapa"],
+  body.mobile-view-filtros [data-mobile-panel="equipo"] {
+    display: none !important;
+  }
+
+  body.mobile-view-filtros [data-mobile-panel="kpis"],
+  body.mobile-view-filtros [data-mobile-panel="filtros"] {
+    display: flex !important;
+  }
+
+  body.mobile-view-filtros [data-mobile-panel="kpis"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .cs-footer {
+    display: none;
   }
 }
 
@@ -2090,7 +2197,7 @@ body.modo-oscuro .cs-point-badge {
 
   .cs-ribbon-grid {
     grid-template-columns: 1fr;
-    gap: 0.4rem;
+    gap: 0.45rem;
   }
 
   .cs-ribbon-main {
@@ -2100,70 +2207,24 @@ body.modo-oscuro .cs-point-badge {
   }
 
   .cs-header__inner {
-    padding: 0 0.5rem;
+    padding: 0 0.45rem;
     gap: 0.35rem;
   }
 
-  .cs-header__brand {
-    gap: 0.45rem;
-  }
-
-  /* Logo ultracompacto y limpio */
-  .cs-brand__logo-box {
-    background: #ffffff;
-    border: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    padding: 2px 5px;
-    height: 22px;
-    border-radius: 5px;
-  }
-
   .cs-brand__logo {
-    height: 16px;
-    max-width: 72px;
+    height: 24px;
+    max-width: 90px;
     width: auto;
-  }
-
-  .cs-header__title-group {
-    gap: 0.3rem;
   }
 
   .cs-header__title {
     font-size: 0.76rem;
     font-weight: 700;
-    letter-spacing: -0.015em;
   }
 
-  .cs-header__live-badge {
-    padding: 0.08rem 0.32rem;
-    font-size: 0.58rem;
-    gap: 0.22rem;
-  }
-
-  .cs-header__live-dot {
-    width: 4px;
-    height: 4px;
-  }
-
-  .cs-header__actions {
-    gap: 0.3rem;
-  }
-
-  .cs-btn-icon {
-    width: 27px;
-    height: 27px;
-    min-width: 27px;
-    min-height: 27px;
-  }
-
-  .cs-container {
-    padding: 0.4rem 0.4rem max(2rem, calc(var(--sab) + 1.25rem)) !important;
-  }
-
-  /* Mantener estrictamente 2 columnas x 2 filas en iPhone */
   .cs-kpi-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .cs-kpi-card {
@@ -2171,65 +2232,33 @@ body.modo-oscuro .cs-point-badge {
     min-height: 42px;
   }
 
-  .cs-kpi-icon-wrap {
-    width: 26px;
-    height: 26px;
-  }
-
-  .cs-kpi-badge {
-    font-size: 0.6rem;
-  }
-
-  .cs-kpi-sub {
-    font-size: 0.52rem;
-  }
-
-  .cs-kpi-card__value {
-    font-size: 1.05rem;
-  }
-
-  .cs-map-wrapper {
-    height: 330px !important;
-    min-height: 330px !important;
-  }
-
-  .cs-filter-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-  }
-
   .cs-select {
-    padding: 0.32rem 1.4rem 0.32rem 0.45rem;
-    font-size: 0.7rem;
+    min-height: 42px;
+    font-size: 0.75rem;
   }
 
   .cs-toggle-btn {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
+    min-height: 36px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .cs-date-pill {
+    min-height: 34px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .cs-sector-active-bar {
+    width: 92%;
+    max-width: calc(100% - 65px);
+    padding: 0.35rem 0.6rem;
   }
 
   .cs-btn-gmaps {
-    padding: 0.22rem 0.5rem;
+    min-height: 34px;
+    padding: 0.25rem 0.5rem;
     font-size: 0.68rem;
-  }
-
-  .cs-table-card {
-    min-height: 320px;
-  }
-
-  .cs-table-scroll-container {
-    max-height: 380px;
-  }
-}
-
-@media (max-width: 360px) {
-  .cs-brand__logo {
-    height: 17px;
-    max-width: 68px;
-  }
-
-  .cs-header__title {
-    font-size: 0.72rem;
   }
 }
 

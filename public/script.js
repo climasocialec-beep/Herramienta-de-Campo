@@ -215,16 +215,58 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // INICIALIZACIÓN
     // =========================================================================
+    function configurarNavegacionMovil() {
+        const navBtns = document.querySelectorAll('#mobileNav .cs-mobile-nav-btn');
+        if (!navBtns || navBtns.length === 0) return;
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                navBtns.forEach(b => b.classList.toggle('active', b === btn));
+                document.body.classList.remove('mobile-view-mapa', 'mobile-view-equipo', 'mobile-view-filtros');
+                document.body.classList.add(`mobile-view-${tab}`);
+
+                if (tab === 'mapa' && map) {
+                    setTimeout(() => {
+                        map.resize();
+                    }, 60);
+                }
+            });
+        });
+    }
+
     async function inicializar() {
+        document.body.classList.add('mobile-view-mapa');
         iniciarReloj();
         configurarModoOscuro();
+        configurarNavegacionMovil();
         configurarEventos();
+
+        // 1. Boot Instantáneo desde Caché Local Offline (0ms)
+        try {
+            const cached = localStorage.getItem('cs_encuestas_cache');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    AppState.encuestas = parsed;
+                    if (UI.badgeTexto) UI.badgeTexto.textContent = 'En vivo (Caché)';
+                }
+            }
+        } catch (e) {
+            console.warn('[Cache] Error al leer caché:', e);
+        }
         
         try {
             await cargarConfiguracion();
             inicializarMapa();
             await Promise.all([cargarLimitesParroquiales(), cargarSectoresCensales()]);
-            await cargarDatos(true);
+            
+            if (AppState.encuestas.length > 0) {
+                poblarFiltros();
+                renderizarVista(false, false);
+            }
+
+            await cargarDatos(AppState.encuestas.length === 0);
             
             // Auto-refresco inteligente (pausa si la pantalla se apaga o se cambia de app)
             AppState.intervaloPolling = setInterval(() => cargarDatos(false), 180000);
@@ -281,6 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const codSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
                 return codEnc !== '98' && codSup !== '98';
             });
+
+            // Guardar en caché local para operatividad 100% offline
+            try {
+                localStorage.setItem('cs_encuestas_cache', JSON.stringify(AppState.encuestas));
+            } catch (e) {
+                console.warn('[Cache] Error al guardar caché:', e);
+            }
             
             poblarFiltros();
             renderizarVista(false, mostrarOverlay);
@@ -299,9 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error cargando encuestas:', error);
             if (AppState.encuestas.length === 0) {
                 mostrarError('No se pudieron cargar los datos de KoboToolbox.');
+            } else {
+                mostrarToast('Modo sin conexión: datos desde caché local', 'info');
             }
             if (UI.badgeTexto) UI.badgeTexto.textContent = 'Sin conexión';
-            mostrarToast('Error al conectar con Kobo', 'error');
         } finally {
             if (mostrarOverlay && UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
         }
@@ -839,6 +889,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Crear el mapa con sectores y parroquias YA incluidos en el estilo
         map = new maplibregl.Map({
             container: 'map',
+            fadeDuration: 0, // Cero desvanecimiento de tiles para máximo rendimiento en GPU móvil
+            maxTileCacheSize: 45, // Protección de memoria RAM en celulares de 1-2GB
+            preserveDrawingBuffer: false,
+            antialias: false,
+            trackResize: true,
             style: {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',

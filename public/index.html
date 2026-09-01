@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=2.2.0">
+  <link rel="stylesheet" href="style.css?v=2.3.0">
 </head>
 <body>
 
@@ -87,7 +87,7 @@
   <main class="cs-container">
 
     <!-- ===== FILA DE INDICADORES CLAVE (KPIS MODERNOS · CLIMA SOCIAL) ===== -->
-    <section class="cs-kpi-grid" aria-label="Indicadores clave">
+    <section class="cs-kpi-grid" data-mobile-panel="kpis" aria-label="Indicadores clave">
 
       <div class="cs-kpi-card cs-kpi-card--teal">
         <div class="cs-kpi-card__main">
@@ -153,7 +153,7 @@
     </section>
 
     <!-- ===== NUEVA BARRA DE CONTROL Y FILTROS HORIZONTAL (PANORÁMICA) ===== -->
-    <section class="cs-filter-ribbon-card" aria-label="Filtros de Campo">
+    <section class="cs-filter-ribbon-card" data-mobile-panel="filtros" aria-label="Filtros de Campo">
       <div class="cs-ribbon-main">
         <div class="cs-ribbon-heading">
           <div class="cs-ribbon-title">
@@ -240,7 +240,7 @@
     <div class="cs-main-grid">
 
       <!-- COLUMNA IZQUIERDA: MAPA PROTAGONISTA -->
-      <section class="cs-map-section" aria-label="Mapa de campo">
+      <section class="cs-map-section" data-mobile-panel="mapa" aria-label="Mapa de campo">
         <div class="cs-panel-header cs-panel-header--map">
           <h2>
             <svg class="cs-icon cs-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -295,8 +295,8 @@
         </div>
       </section>
 
-      <!-- COLUMNA DERECHA: TABLA DE ENCUESTADORES + MINI GRÁFICA LATERAL -->
-      <section class="cs-right-panel" aria-label="Panel de Encuestadores">
+      <!-- COLUMNA DERECHA: TABLA DE ENCUESTADORES -->
+      <section class="cs-right-panel" data-mobile-panel="equipo" aria-label="Panel de Encuestadores">
         <div class="cs-table-card">
           <div class="cs-panel-header cs-panel-header--navy">
             <h3>
@@ -325,6 +325,8 @@
             <div class="cs-empty-state__icon">
               <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
+            <p>No se encontraron encuestadores con ese filtro</p>
+          </div>
         </div>
       </section>
 
@@ -338,12 +340,28 @@
 
   </main>
 
+  <!-- ===== NAVEGACIÓN INFERIOR PARA MÓVILES (ERGONOMÍA DEDO PULGAR) ===== -->
+  <nav class="cs-mobile-nav" id="mobileNav" aria-label="Navegación Móvil">
+    <button type="button" class="cs-mobile-nav-btn active" data-tab="mapa">
+      <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span>Mapa</span>
+    </button>
+    <button type="button" class="cs-mobile-nav-btn" data-tab="equipo">
+      <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Equipo</span>
+    </button>
+    <button type="button" class="cs-mobile-nav-btn" data-tab="filtros">
+      <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span>Filtros</span>
+    </button>
+  </nav>
+
   <!-- ===== TOAST ===== -->
   <div class="cs-toast" id="toast"></div>
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=2.2.0"></script>
+  <script src="script.js?v=2.3.0"></script>
 
 </body>
 </html>
