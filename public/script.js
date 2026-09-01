@@ -845,7 +845,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
 
-        // Enriquecer sectores con etiquetaSC, bbox y centroid
+        // Enriquecer sectores con etiquetaSC, bbox y centroid único
+        const centroidesFeatures = [];
         if (sectoresData.features) {
             sectoresData.features.forEach(f => {
                 const p = f.properties || {};
@@ -858,17 +859,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     f.properties._bbox_s = bbox[0][1];
                     f.properties._bbox_e = bbox[1][0];
                     f.properties._bbox_n = bbox[1][1];
-                    f.properties._cx = (bbox[0][0] + bbox[1][0]) / 2;
-                    f.properties._cy = (bbox[0][1] + bbox[1][1]) / 2;
+                    const cx = (bbox[0][0] + bbox[1][0]) / 2;
+                    const cy = (bbox[0][1] + bbox[1][1]) / 2;
+                    f.properties._cx = cx;
+                    f.properties._cy = cy;
+                    f.properties.centroid = [cx, cy];
                     if (sc) {
-                        AppState.sectoresMap.set(sc, f);
-                        AppState.sectoresMap.set(f.properties.etiquetaSC, f);
+                        AppState.sectoresMap.set(sc, f.properties);
+                        AppState.sectoresMap.set(f.properties.etiquetaSC, f.properties);
                         const n = parseInt(sc, 10);
-                        if (!isNaN(n)) AppState.sectoresMap.set(String(n), f);
+                        if (!isNaN(n)) AppState.sectoresMap.set(String(n), f.properties);
                     }
+                    centroidesFeatures.push({
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [cx, cy]
+                        },
+                        properties: {
+                            sc: sc,
+                            tipologia: tipologia,
+                            etiquetaSC: f.properties.etiquetaSC,
+                            parroquia: p.PARROQUIA || p.parroquia || ''
+                        }
+                    });
                 }
             });
             AppState.sectoresGeojson = sectoresData;
+            AppState.sectoresCentroidesGeojson = {
+                type: 'FeatureCollection',
+                features: centroidesFeatures
+            };
         }
 
         // Enriquecer parroquias con bbox
@@ -891,8 +912,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Crear el mapa con sectores y parroquias YA incluidos en el estilo
         map = new maplibregl.Map({
             container: 'map',
-            fadeDuration: 0, // Cero desvanecimiento de tiles para máximo rendimiento en GPU móvil
-            maxTileCacheSize: 45, // Protección de memoria RAM en celulares de 1-2GB
+            fadeDuration: 0,
+            maxTileCacheSize: 45,
             preserveDrawingBuffer: false,
             antialias: false,
             trackResize: true,
@@ -916,6 +937,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     'sectores-source': {
                         type: 'geojson',
                         data: sectoresData
+                    },
+                    'sectores-centroides-source': {
+                        type: 'geojson',
+                        data: AppState.sectoresCentroidesGeojson || { type: 'FeatureCollection', features: [] }
                     }
                 },
                 layers: [
@@ -972,24 +997,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         id: 'sectores-label',
                         type: 'symbol',
-                        source: 'sectores-source',
+                        source: 'sectores-centroides-source',
                         layout: {
                             'text-field': ['get', 'etiquetaSC'],
                             'text-font': ['Open Sans Bold'],
                             'text-size': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 12,
-                                13, 16,
-                                16, 22
+                                10, 13,
+                                13, 17,
+                                16, 26
                             ],
+                            'text-anchor': 'center',
                             'text-allow-overlap': true,
                             'text-ignore-placement': true,
-                            'visibility': 'none'
+                            'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
                         },
                         paint: {
-                            'text-color': '#0a3d62',
+                            'text-color': '#9a3412',
                             'text-halo-color': '#ffffff',
-                            'text-halo-width': 3.5
+                            'text-halo-width': 4.5
                         }
                     }
                 ]
@@ -1018,13 +1044,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function configurarCapasWebGL() {
         if (!map || !map.isStyleLoaded()) return;
 
-        // Las capas de parroquias y sectores se crean en el estilo inicial del mapa.
-        // Solo actualizamos la data si llega nueva (no re-creamos fuentes ni capas).
         if (AppState.parroquiasGeojson && map.getSource('parroquias-source')) {
             map.getSource('parroquias-source').setData(AppState.parroquiasGeojson);
         }
         if (AppState.sectoresGeojson && map.getSource('sectores-source')) {
             map.getSource('sectores-source').setData(AppState.sectoresGeojson);
+        }
+        if (AppState.sectoresCentroidesGeojson && map.getSource('sectores-centroides-source')) {
+            map.getSource('sectores-centroides-source').setData(AppState.sectoresCentroidesGeojson);
         }
 
         // 3. Capas de Encuestas: Puntos Individuales y Etiquetas
@@ -1057,9 +1084,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 8.5,
-                        13, 10.5,
-                        16, 12.5
+                        10, 10.0,
+                        13, 12.5,
+                        16, 15.5
                     ],
                     'circle-stroke-width': 2.0,
                     'circle-stroke-color': '#ffffff',
@@ -1079,9 +1106,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 7.5,
-                        13, 9.5,
-                        16, 11.5
+                        10, 10.0,
+                        13, 12.0,
+                        16, 14.5
                     ],
                     'text-offset': [0, 0],
                     'text-anchor': 'center',
@@ -1091,9 +1118,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 paint: {
                     'text-color': '#ffffff',
-                    'text-halo-color': 'rgba(0, 0, 0, 0.75)',
-                    'text-halo-width': 1.0,
-                    'text-halo-blur': 0.2
+                    'text-halo-color': 'rgba(0, 0, 0, 0.95)',
+                    'text-halo-width': 1.6
                 }
             });
         }
@@ -1376,18 +1402,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
 
                 map.setFilter('sectores-label', null);
-                map.setLayoutProperty('sectores-label', 'visibility', 'visible');
+                map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
                 map.setLayoutProperty('sectores-label', 'text-size', [
                     'interpolate',
                     ['linear'],
                     ['zoom'],
-                    10, 11,
-                    13, 15,
-                    16, 22
+                    10, 12,
+                    13, 16,
+                    16, 24
                 ]);
-                map.setPaintProperty('sectores-label', 'text-color', '#7c2d12');
+                map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
                 map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
-                map.setPaintProperty('sectores-label', 'text-halo-width', 4.0);
+                map.setPaintProperty('sectores-label', 'text-halo-width', 4.5);
 
                 if (barraSector) barraSector.style.display = 'none';
             } else {
@@ -1404,14 +1430,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
 
                 map.setFilter('sectores-label', filterSC);
-                map.setLayoutProperty('sectores-label', 'visibility', 'visible');
+                map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
                 map.setLayoutProperty('sectores-label', 'text-size', [
                     'interpolate',
                     ['linear'],
                     ['zoom'],
                     12, 18,
                     15, 26,
-                    17, 32
+                    17, 34
                 ]);
                 map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
                 map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
