@@ -336,20 +336,23 @@ body.modo-oscuro .cs-header__divider {
 
 .cs-header__title-group {
   display: flex;
-  align-items: center;
-  gap: 0.55rem;
+  align-items: flex-start;
+  gap: 0.5rem;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 .cs-header__title {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.02em;
-  white-space: nowrap;
+  /* Permite 2 líneas — universal en cualquier ancho de pantalla */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
   min-width: 0;
 }
 
@@ -750,15 +753,18 @@ body.modo-oscuro .cs-panel-header--map {
   min-height: 0;
   overflow: hidden;
   background-color: var(--bg-surface);
-  /* Evita que el browser intercepte eventos touch durante el paneo del mapa */
-  touch-action: none;
+  /* Crítico para Android Chrome: evita que el scroll del body robe los gestos de paneo */
+  overscroll-behavior: none;
+  /* GPU layer propio — evita que Chrome comparta el contexto de eventos con el padre */
+  will-change: transform;
 }
 
 #map {
   width: 100%;
-  height: 100%;   /* Hereda del wrapper — NO sobreescribir con px fijos */
+  height: 100%;
   z-index: 1;
-  touch-action: none;
+  /* MapLibre ya setea touch-action:none en su canvas via JS.
+     NO ponerlo en el contenedor: en iOS rompe el reconocimiento de gestos. */
 }
 
 .maplibregl-canvas {

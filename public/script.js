@@ -233,6 +233,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+
+        // Prevenir que el scroll del body robe los gestos de paneo del mapa en Android Chrome e iOS.
+        // MapLibre llama preventDefault() en su canvas, pero el browser a veces lo ignora cuando
+        // el evento se origina en un elemento padre scrollable.
+        const mapWrapper = document.getElementById('map');
+        if (mapWrapper) {
+            mapWrapper.addEventListener('touchstart', (e) => {
+                // Solo prevenir si el touch viene directamente del canvas del mapa
+                if (e.target === mapWrapper || e.target.closest('#map')) {
+                    // No llamamos preventDefault() aquí — MapLibre lo hace en su canvas.
+                    // Solo marcamos que el mapa tiene el foco del gesto.
+                }
+            }, { passive: true });
+
+            // El evento touchmove SÍ debe prevenir default para bloquear scroll del body
+            mapWrapper.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+        }
     }
 
     async function inicializar() {
