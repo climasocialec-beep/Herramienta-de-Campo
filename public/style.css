@@ -178,8 +178,10 @@ body.modo-oscuro .leaflet-tile-pane {
 
 html, body {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -488,12 +490,13 @@ body.modo-oscuro .cs-btn-icon:hover {
 .cs-container {
   width: 100%;
   max-width: 100%;
-  padding: 0.5rem 0.85rem 0.5rem;
+  padding: 0.5rem 0.85rem 1.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  overflow: hidden;
+  gap: 0.65rem;
+  overflow: visible;
+  height: auto;
 }
 
 /* ==========================================================================
@@ -750,21 +753,20 @@ body.modo-oscuro .cs-panel-header--map {
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 0;
+  min-height: 480px;
   overflow: hidden;
   background-color: var(--bg-surface);
-  /* Crítico para Android Chrome: evita que el scroll del body robe los gestos de paneo */
-  overscroll-behavior: none;
-  /* GPU layer propio — evita que Chrome comparta el contexto de eventos con el padre */
-  will-change: transform;
 }
 
 #map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
-  /* MapLibre ya setea touch-action:none en su canvas via JS.
-     NO ponerlo en el contenedor: en iOS rompe el reconocimiento de gestos. */
 }
 
 .maplibregl-canvas {
@@ -1069,10 +1071,11 @@ body.modo-oscuro .cs-ribbon-title {
 
 .cs-ribbon-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr 1.1fr 1.6fr;
   gap: 0.65rem;
   flex: 1;
-  min-width: 320px;
+  min-width: 0;
+  width: 100%;
 }
 
 .cs-ribbon-field {
@@ -1083,7 +1086,7 @@ body.modo-oscuro .cs-ribbon-title {
 }
 
 .cs-field-label {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   display: flex;
@@ -1092,6 +1095,8 @@ body.modo-oscuro .cs-ribbon-title {
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cs-date-filter-group {
@@ -1960,99 +1965,9 @@ body.modo-oscuro .cs-point-badge {
 /* ==========================================================================
    Responsive Breakpoints & Mobile Optimization (iPhone / Teléfonos)
    ========================================================================== */
-@media (max-width: 1024px) {
-  html, body {
-    height: auto !important;
-    min-height: 100vh;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-  }
-
-  .cs-container {
-    height: auto !important;
-    overflow: visible !important;
-    padding: 0.5rem 0.65rem 2rem;
-  }
-
-  .cs-main-grid {
-    display: flex;
-    flex-direction: column;
-    height: auto !important;
-    gap: 0.75rem;
-  }
-
-  .cs-map-section {
-    height: auto !important;
-    min-height: 500px;
-  }
-
-  /* Wrapper con px fijos → #map hereda height:100% correctamente.
-     NO sobreescribir #map directamente (rompe las coordenadas touch). */
-  .cs-map-wrapper {
-    height: 480px !important;
-    min-height: 480px !important;
-  }
-
-  .cs-right-panel {
-    height: auto !important;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .cs-table-card {
-    height: auto !important;
-    min-height: 360px;
-  }
-
-  .cs-table-scroll-container {
-    max-height: 420px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --cs-header-content-h: 46px;
-  }
-
-  .cs-header__inner {
-    padding: 0 0.65rem;
-    gap: 0.45rem;
-  }
-
-  .cs-brand__logo-box {
-    height: 26px;
-    padding: 2px 4px;
-  }
-
-  .cs-brand__logo {
-    height: 20px;
-    max-width: 85px;
-  }
-
-  .cs-header__title {
-    font-size: 0.82rem;
-  }
-
-  .cs-header__clock {
-    display: none;
-  }
-
-  .cs-btn-icon {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
-  }
-
-  .cs-btn-icon svg.cs-icon {
-    width: 14px !important;
-    height: 14px !important;
-/* =========================================================================
+/* ==========================================================================
    OPTIMIZACIONES MÓVILES (CELULARES GAMA BAJA / FIELD FIRST)
-   ========================================================================= */
+   ========================================================================== */
 
 /* Contención de renderizado para 60 FPS en tablas largas */
 .cs-enc-row {
@@ -2065,75 +1980,172 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Barra de Navegación Inferior (Móvil) */
+/* Ocultar barra de pestañas obsoleta — el dashboard es 100% navegable y deslizable verticalmente */
 .cs-mobile-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08);
-  z-index: 999;
-  justify-content: space-around;
-  align-items: center;
+  display: none !important;
 }
 
-body.modo-oscuro .cs-mobile-nav {
-  background: rgba(15, 23, 42, 0.96);
-  border-top-color: #334155;
-  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.4);
+/* ==========================================================================
+   Responsive Breakpoints: Desktop / Tablet / Teléfono
+   ========================================================================== */
+
+/* TABLETS Y PANTALLAS MEDIANAS (≤ 1024px) */
+@media (max-width: 1024px) {
+  html, body {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cs-container {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0.5rem 0.65rem 2.5rem !important;
+  }
+
+  .cs-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 0.75rem;
+  }
+
+  .cs-map-section {
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Altura explícita garantizada en tablet para que MapLibre nunca quede en blanco */
+  .cs-map-wrapper {
+    height: 520px !important;
+    min-height: 480px !important;
+    position: relative !important;
+    width: 100% !important;
+  }
+
+  #map {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .cs-right-panel {
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem;
+  }
+
+  .cs-table-card {
+    height: auto !important;
+    min-height: 360px;
+  }
+
+  .cs-table-scroll-container {
+    max-height: 460px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Filtros en 2 columnas en pantallas medianas */
+  .cs-ribbon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem;
+  }
+
+  .cs-ribbon-field--date {
+    grid-column: 1 / -1 !important;
+  }
 }
 
-.cs-mobile-nav-btn {
-  flex: 1;
-  height: 100%;
-  border: none;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s ease;
-  min-height: 48px;
-}
+/* SMARTPHONES Y TABLETS VERTICALES (≤ 768px) */
+@media (max-width: 768px) {
+  :root {
+    --cs-header-content-h: auto;
+  }
 
-.cs-mobile-nav-btn .cs-icon {
-  width: 19px;
-  height: 19px;
-  transition: transform 0.15s ease;
-}
+  .cs-header {
+    height: auto !important;
+    min-height: 48px;
+    padding-top: max(4px, var(--sat));
+    padding-bottom: 4px;
+  }
 
-.cs-mobile-nav-btn.active {
-  color: var(--cs-teal);
-}
+  .cs-header__inner {
+    padding: 0 0.5rem;
+    gap: 0.4rem;
+    height: auto;
+    min-height: 42px;
+  }
 
-.cs-mobile-nav-btn.active .cs-icon {
-  transform: scale(1.1);
-}
+  .cs-brand__logo-box {
+    height: 26px;
+    padding: 2px 4px;
+  }
 
-body.modo-oscuro .cs-mobile-nav-btn.active {
-  color: #38bdf8;
-}
+  .cs-brand__logo {
+    height: 22px;
+    max-width: 85px;
+  }
 
-/* MEDIA QUERIES: TABLET Y PANTALLAS MEDIANAS (≤ 1100px) */
-@media (max-width: 1100px) {
+  /* Título universal en 2 líneas sin recortar prematuramente */
+  .cs-header__title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .cs-header__title {
+    font-size: 0.82rem;
+    line-height: 1.25;
+    font-weight: 800;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .cs-header__live-badge {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+  }
+
+  .cs-header__clock {
+    display: none;
+  }
+
+  .cs-btn-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .cs-btn-icon svg.cs-icon {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* KPIs: Compactos en grid 2×2 para iPhone */
   .cs-kpi-grid {
-    gap: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.4rem;
   }
 
   .cs-kpi-card {
-    padding: 0.5rem 0.65rem 0.6rem;
-    min-height: 64px;
-    gap: 0.3rem;
+    padding: 0.45rem 0.65rem 0.55rem;
+    min-height: 60px;
+    gap: 0.25rem;
   }
 
   .cs-kpi-card__value {
@@ -2145,198 +2157,109 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
     height: 28px;
   }
 
-  .cs-main-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.75rem;
-  }
-
-  .cs-map-section {
-    min-height: 480px;
-    height: 520px;
-  }
-
-  .cs-map-wrapper {
-    height: 480px !important;
-    min-height: 480px !important;
-  }
-}
-
-/* MEDIA QUERIES: TABLET Y MÓVIL (≤ 768px) */
-@media (max-width: 768px) {
-  .cs-mobile-nav {
-    display: flex;
-  }
-
-  .cs-container {
-    padding: 0.35rem 0.35rem calc(60px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .cs-main-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.5rem;
-  }
-
-  /* Modo Móvil: Mapa por defecto (100% de la pantalla para máxima visibilidad GPS) */
-  body.mobile-view-mapa [data-mobile-panel="kpis"],
-  body.mobile-view-mapa [data-mobile-panel="filtros"],
-  body.mobile-view-mapa [data-mobile-panel="equipo"] {
-    display: none !important;
-  }
-
-  body.mobile-view-mapa [data-mobile-panel="mapa"] {
-    display: flex !important;
-    flex-direction: column;
-    height: calc(100vh - 110px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
-    min-height: 420px;
-  }
-
-  body.mobile-view-mapa .cs-map-wrapper {
-    flex: 1;
-    height: 100% !important;
-    min-height: 100% !important;
-  }
-
-  /* Modo Móvil: Lista de Equipo */
-  body.mobile-view-equipo [data-mobile-panel="kpis"],
-  body.mobile-view-equipo [data-mobile-panel="filtros"],
-  body.mobile-view-equipo [data-mobile-panel="mapa"] {
-    display: none !important;
-  }
-
-  body.mobile-view-equipo [data-mobile-panel="equipo"] {
-    display: flex !important;
-    height: calc(100vh - 110px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  body.mobile-view-equipo .cs-table-card {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  body.mobile-view-equipo .cs-table-scroll-container {
-    flex: 1;
-    max-height: none !important;
-  }
-
-  /* Modo Móvil: Filtros & KPIs */
-  body.mobile-view-filtros [data-mobile-panel="mapa"],
-  body.mobile-view-filtros [data-mobile-panel="equipo"] {
-    display: none !important;
-  }
-
-  body.mobile-view-filtros [data-mobile-panel="filtros"] {
-    display: flex !important;
-  }
-
-  /* Grid siempre — NO flex — para los KPIs en vista filtros */
-  body.mobile-view-filtros [data-mobile-panel="kpis"] {
-    display: grid !important;
-    /* auto-fit ya garantiza 2 columnas en pantallas pequeñas */
-  }
-
-  .cs-footer {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --cs-header-content-h: 44px;
-  }
-
-  .cs-ribbon-grid {
-    grid-template-columns: 1fr;
-    gap: 0.45rem;
-  }
-
-  .cs-ribbon-main {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .cs-header__inner {
-    padding: 0 0.45rem;
-    gap: 0.35rem;
-  }
-
-  .cs-brand__logo {
-    height: 24px;
-    max-width: 90px;
-    width: auto;
-  }
-
-  .cs-header__title {
-    font-size: 0.76rem;
-    font-weight: 700;
-  }
-
-  /* KPIs compactos para iPhone — auto-fit ya da 2 columnas a <520px */
-  .cs-kpi-grid {
-    gap: 0.3rem;
-  }
-
-  .cs-kpi-card {
-    padding: 0.4rem 0.55rem 0.5rem;
-    min-height: 60px;
-    gap: 0.2rem;
-  }
-
-  .cs-kpi-top {
-    gap: 0.25rem;
-  }
-
-  .cs-kpi-card__value {
-    font-size: 1.25rem;
-  }
-
-  .cs-kpi-icon-wrap {
-    width: 26px;
-    height: 26px;
-  }
-
-  .cs-icon {
-    width: 14px;
-    height: 14px;
-  }
-
   .cs-kpi-badge {
-    font-size: 0.62rem;
-    letter-spacing: 0.02em;
+    font-size: 0.65rem;
   }
 
   .cs-kpi-sub {
-    font-size: 0.6rem;
+    font-size: 0.62rem;
   }
 
-  .cs-select {
-    min-height: 42px;
-    font-size: 0.75rem;
+  /* Filtros de Campo: 2 columnas, Fecha ocupa todo el ancho */
+  .cs-ribbon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.45rem;
+    width: 100%;
   }
 
-  .cs-toggle-btn {
-    min-height: 36px;
-    padding: 0.25rem 0.6rem;
-    font-size: 0.72rem;
+  .cs-ribbon-field {
+    min-width: 0;
+  }
+
+  .cs-field-label {
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cs-ribbon-field--date {
+    grid-column: 1 / -1 !important;
+  }
+
+  .cs-date-filter-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .cs-date-pills {
+    flex-wrap: wrap;
+  }
+
+  .cs-select-wrap--date {
+    flex: 1;
+    min-width: 110px;
+  }
+
+  /* Mapa en móvil: Altura cómoda, totalmente deslizable */
+  .cs-map-wrapper {
+    height: 440px !important;
+    min-height: 380px !important;
+    position: relative !important;
+  }
+
+  #map {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+/* SMARTPHONES PEQUEÑOS (≤ 480px) */
+@media (max-width: 480px) {
+  .cs-container {
+    padding: 0.35rem 0.4rem 2rem !important;
+  }
+
+  .cs-ribbon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.35rem;
+  }
+
+  .cs-ribbon-field--date {
+    grid-column: 1 / -1 !important;
   }
 
   .cs-date-pill {
-    min-height: 34px;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.65rem;
+  }
+
+  .cs-select {
+    min-height: 38px;
+    font-size: 0.75rem;
+    padding: 0.35rem 1.6rem 0.35rem 0.5rem;
+  }
+
+  .cs-map-wrapper {
+    height: 380px !important;
+    min-height: 340px !important;
   }
 
   .cs-sector-active-bar {
-    width: 92%;
-    max-width: calc(100% - 65px);
-    padding: 0.35rem 0.6rem;
+    width: 94%;
+    max-width: calc(100% - 20px);
+    padding: 0.3rem 0.5rem;
+    font-size: 0.72rem;
   }
 
   .cs-btn-gmaps {
-    min-height: 34px;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.68rem;
+    min-height: 30px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
   }
 }
 

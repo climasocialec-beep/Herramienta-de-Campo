@@ -223,39 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab;
                 navBtns.forEach(b => b.classList.toggle('active', b === btn));
-                document.body.classList.remove('mobile-view-mapa', 'mobile-view-equipo', 'mobile-view-filtros');
-                document.body.classList.add(`mobile-view-${tab}`);
-
                 if (tab === 'mapa' && map) {
-                    [60, 200, 500].forEach(ms =>
-                        setTimeout(() => map.resize(), ms)
-                    );
+                    setTimeout(() => map.resize(), 100);
                 }
             });
         });
-
-        // Prevenir que el scroll del body robe los gestos de paneo del mapa en Android Chrome e iOS.
-        // MapLibre llama preventDefault() en su canvas, pero el browser a veces lo ignora cuando
-        // el evento se origina en un elemento padre scrollable.
-        const mapWrapper = document.getElementById('map');
-        if (mapWrapper) {
-            mapWrapper.addEventListener('touchstart', (e) => {
-                // Solo prevenir si el touch viene directamente del canvas del mapa
-                if (e.target === mapWrapper || e.target.closest('#map')) {
-                    // No llamamos preventDefault() aquí — MapLibre lo hace en su canvas.
-                    // Solo marcamos que el mapa tiene el foco del gesto.
-                }
-            }, { passive: true });
-
-            // El evento touchmove SÍ debe prevenir default para bloquear scroll del body
-            mapWrapper.addEventListener('touchmove', (e) => {
-                e.stopPropagation();
-            }, { passive: true });
-        }
     }
 
     async function inicializar() {
-        document.body.classList.add('mobile-view-mapa');
         iniciarReloj();
         configurarModoOscuro();
         configurarNavegacionMovil();
@@ -1053,6 +1028,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
         window.map = map;
+
+        // Asegurar gestos táctiles fluidos (paneo con 1 dedo y zoom con 2 dedos) en tablet y móvil
+        try {
+            if (map.dragPan) map.dragPan.enable();
+            if (map.touchZoomRotate) map.touchZoomRotate.enable();
+        } catch (err) {
+            console.warn('[Map Gestures]', err);
+        }
+
+        // ResizeObserver para sincronización automática e instantánea del canvas en cualquier cambio de tamaño
+        const mapContainer = document.getElementById('map');
+        if (window.ResizeObserver && mapContainer) {
+            const ro = new ResizeObserver(() => {
+                if (map) map.resize();
+            });
+            ro.observe(mapContainer);
+        }
 
         map.on('error', (e) => {
             console.warn('[MapLibre Error]', e);
