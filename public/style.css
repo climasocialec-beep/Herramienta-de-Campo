@@ -2205,11 +2205,11 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
     display: none !important;
   }
 
-  body.mobile-view-filtros [data-mobile-panel="kpis"],
   body.mobile-view-filtros [data-mobile-panel="filtros"] {
     display: flex !important;
   }
 
+  /* Grid siempre — NO flex — para los KPIs en vista filtros */
   body.mobile-view-filtros [data-mobile-panel="kpis"] {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
@@ -2252,14 +2252,45 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
     font-weight: 700;
   }
 
-  .cs-kpi-grid {
+  /* KPIs: 2×2 con tarjetas compactas para iPhone */
+  .cs-kpi-grid,
+  body.mobile-view-filtros [data-mobile-panel="kpis"] {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.35rem;
   }
 
   .cs-kpi-card {
-    padding: 0.35rem 0.5rem;
-    min-height: 42px;
+    padding: 0.4rem 0.55rem 0.5rem;
+    min-height: 60px;
+    gap: 0.2rem;
+  }
+
+  .cs-kpi-top {
+    gap: 0.25rem;
+  }
+
+  .cs-kpi-card__value {
+    font-size: 1.25rem;
+  }
+
+  .cs-kpi-icon-wrap {
+    width: 26px;
+    height: 26px;
+  }
+
+  .cs-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .cs-kpi-badge {
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+  }
+
+  .cs-kpi-sub {
+    font-size: 0.6rem;
   }
 
   .cs-select {

@@ -227,9 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.classList.add(`mobile-view-${tab}`);
 
                 if (tab === 'mapa' && map) {
-                    setTimeout(() => {
-                        map.resize();
-                    }, 60);
+                    [60, 200, 500].forEach(ms =>
+                        setTimeout(() => map.resize(), ms)
+                    );
                 }
             });
         });
@@ -277,6 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     clearInterval(AppState.intervaloPolling);
                     AppState.intervaloPolling = null;
                 } else {
+                    // Restablecer el canvas del mapa si estaba oculto (Android Chrome/tablet)
+                    if (map) {
+                        setTimeout(() => map.resize(), 100);
+                        setTimeout(() => map.resize(), 500);
+                    }
                     cargarDatos(false);
                     if (!AppState.intervaloPolling) {
                         AppState.intervaloPolling = setInterval(() => cargarDatos(false), 180000);
@@ -917,6 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
             preserveDrawingBuffer: false,
             antialias: false,
             trackResize: true,
+            failIfMajorPerformanceCaveat: false,
             style: {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
@@ -1037,9 +1043,20 @@ document.addEventListener('DOMContentLoaded', () => {
             AppState.mapLoaded = true;
             configurarCapasWebGL();
             renderizarVista(false, false);
-            setTimeout(() => { if (map) map.resize(); }, 100);
-            setTimeout(() => { if (map) map.resize(); }, 400);
-            setTimeout(() => { if (map) map.resize(); }, 1200);
+            // Cascade de resizes para corregir canvas en Android Chrome/tablets
+            [50, 150, 300, 600, 1200, 2500].forEach(ms =>
+                setTimeout(() => { if (map) map.resize(); }, ms)
+            );
+        });
+
+        // Un resize adicional justo cuando el mapa termina de pintar todas las tiles
+        map.on('idle', () => {
+            if (map) map.resize();
+        });
+
+        // pageshow: captura el Back/Forward Cache de iOS Safari y Chrome Android
+        window.addEventListener('pageshow', (e) => {
+            if (map) setTimeout(() => map.resize(), 100);
         });
 
         window.addEventListener('resize', () => {
@@ -1047,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         window.addEventListener('orientationchange', () => {
             setTimeout(() => { if (map) map.resize(); }, 200);
+            setTimeout(() => { if (map) map.resize(); }, 600);
         });
     }
 
