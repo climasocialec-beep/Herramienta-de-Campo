@@ -1278,16 +1278,20 @@ body.modo-oscuro .cs-filter-chip:hover {
   background: var(--bg-subtle);
   border: 1px solid var(--border-medium);
   color: var(--text-soft);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 0.22rem 0.6rem;
-  border-radius: var(--radius-xs);
+  padding: 0.4rem 0.85rem;
+  min-height: 36px;
+  border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   transition: all var(--cs-transition);
+  -webkit-tap-highlight-color: transparent;
 }
+
+.cs-btn-reset .cs-icon { width: 14px; height: 14px; }
 
 .cs-btn-reset:hover {
   background: var(--border-subtle);
@@ -1296,10 +1300,43 @@ body.modo-oscuro .cs-filter-chip:hover {
 }
 
 .cs-btn-reset.has-active {
-  background: #e11d48;
+  background: linear-gradient(135deg, #e11d48, #be123c);
   border-color: #f43f5e;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(225, 29, 72, 0.45);
+  font-size: 0.82rem;
+  padding: 0.45rem 1rem;
+  min-height: 38px;
+  box-shadow: 0 2px 12px rgba(225, 29, 72, 0.5);
+  animation: cs-pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes cs-pulse-glow {
+  0%, 100% { box-shadow: 0 2px 12px rgba(225, 29, 72, 0.5); }
+  50% { box-shadow: 0 2px 20px rgba(225, 29, 72, 0.75); }
+}
+
+/* Botón "Limpiar todo" dentro de la barra de chips activos */
+.cs-chip-clear-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #e11d48;
+  color: #fff;
+  border: 1px solid #f43f5e;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  font-family: inherit;
+  white-space: nowrap;
+  min-height: 30px;
+  -webkit-tap-highlight-color: transparent;
+}
+.cs-chip-clear-all:hover {
+  background: #be123c;
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================

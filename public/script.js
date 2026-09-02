@@ -544,6 +544,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     UI.activeFilterChips.appendChild(el);
                 });
+                // Botón "Limpiar todo" inline dentro de los chips
+                if (chips.length > 1) {
+                    const clearAll = document.createElement('button');
+                    clearAll.type = 'button';
+                    clearAll.className = 'cs-chip-clear-all';
+                    clearAll.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Limpiar todo</span>`;
+                    clearAll.title = 'Restablecer todos los filtros';
+                    clearAll.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (UI.btnLimpiarFiltros) UI.btnLimpiarFiltros.click();
+                    });
+                    UI.activeFilterChips.appendChild(clearAll);
+                }
             } else {
                 UI.activeFilterChipsWrap.style.display = 'none';
                 UI.activeFilterChips.innerHTML = '';
