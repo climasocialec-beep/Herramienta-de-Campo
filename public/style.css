@@ -498,8 +498,10 @@ body.modo-oscuro .cs-btn-icon:hover {
    ========================================================================== */
 .cs-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.65rem;
+  /* auto-fit: se ajusta solo a CUALQUIER dispositivo (320px → 4K).
+     Por debajo de 4×130px disponibles, pasa automáticamente a 2 columnas. */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.55rem;
   flex-shrink: 0;
   width: 100%;
 }
@@ -748,12 +750,15 @@ body.modo-oscuro .cs-panel-header--map {
   min-height: 0;
   overflow: hidden;
   background-color: var(--bg-surface);
+  /* Evita que el browser intercepte eventos touch durante el paneo del mapa */
+  touch-action: none;
 }
 
 #map {
   width: 100%;
-  height: 100%;
+  height: 100%;   /* Hereda del wrapper — NO sobreescribir con px fijos */
   z-index: 1;
+  touch-action: none;
 }
 
 .maplibregl-canvas {
@@ -1975,16 +1980,11 @@ body.modo-oscuro .cs-point-badge {
     min-height: 500px;
   }
 
-  /* ⚠️ CRÍTICO: #map hereda height:100% del wrapper.
-     Si el wrapper es height:auto, #map queda 0px y MapLibre dibuja un canvas vacío.
-     Se fuerza px explícitos para romper ese ciclo. */
+  /* Wrapper con px fijos → #map hereda height:100% correctamente.
+     NO sobreescribir #map directamente (rompe las coordenadas touch). */
   .cs-map-wrapper {
     height: 480px !important;
     min-height: 480px !important;
-  }
-
-  #map {
-    height: 480px !important;
   }
 
   .cs-right-panel {
@@ -2121,8 +2121,7 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
 /* MEDIA QUERIES: TABLET Y PANTALLAS MEDIANAS (≤ 1100px) */
 @media (max-width: 1100px) {
   .cs-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .cs-kpi-card {
@@ -2153,10 +2152,6 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
   .cs-map-wrapper {
     height: 480px !important;
     min-height: 480px !important;
-  }
-
-  #map {
-    height: 480px !important;
   }
 }
 
@@ -2231,7 +2226,7 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
   /* Grid siempre — NO flex — para los KPIs en vista filtros */
   body.mobile-view-filtros [data-mobile-panel="kpis"] {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    /* auto-fit ya garantiza 2 columnas en pantallas pequeñas */
   }
 
   .cs-footer {
@@ -2271,12 +2266,9 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
     font-weight: 700;
   }
 
-  /* KPIs: 2×2 con tarjetas compactas para iPhone */
-  .cs-kpi-grid,
-  body.mobile-view-filtros [data-mobile-panel="kpis"] {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.35rem;
+  /* KPIs compactos para iPhone — auto-fit ya da 2 columnas a <520px */
+  .cs-kpi-grid {
+    gap: 0.3rem;
   }
 
   .cs-kpi-card {
