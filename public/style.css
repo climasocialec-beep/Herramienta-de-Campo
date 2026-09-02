@@ -1082,7 +1082,7 @@ body.modo-oscuro .cs-ribbon-title {
 
 .cs-ribbon-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.1fr 1.6fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(260px, 1.4fr);
   gap: 0.65rem;
   flex: 1;
   min-width: 0;
@@ -2287,3 +2287,221 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================================
+   BARRA FLOTANTE DE CONTROL DE CAPAS DEL MAPA (PRENDER / APAGAR)
+   ========================================================================= */
+.cs-map-layer-toggles {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  max-width: calc(100% - 60px);
+  pointer-events: auto;
+}
+
+.cs-layer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  color: var(--text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-layer-pill:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: var(--text-main, #0f172a);
+  transform: translateY(-1px);
+}
+
+.cs-layer-pill.active {
+  background: #ffffff;
+  border-color: #0284c7;
+  color: #0369a1;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.18);
+}
+
+.cs-layer-pill:not(.active) {
+  opacity: 0.55;
+  background: rgba(241, 245, 249, 0.85);
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.cs-layer-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.cs-layer-pill__dot--muestreo {
+  background: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.cs-layer-pill__dot--llegada {
+  background: #d97706;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.cs-layer-pill__dot--sectores {
+  background: #028090;
+  box-shadow: 0 0 0 2px rgba(2, 128, 144, 0.2);
+}
+
+.cs-layer-pill__dot--circ {
+  background: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+body.modo-oscuro .cs-layer-pill {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(51, 65, 85, 0.9);
+  color: #94a3b8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+body.modo-oscuro .cs-layer-pill.active {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+body.modo-oscuro .cs-layer-pill:not(.active) {
+  background: rgba(15, 23, 42, 0.7);
+  color: #64748b;
+}
+
+/* =========================================================================
+   POPUPS INTERACTIVOS DE PUNTOS DE MUESTREO Y LLEGADA
+   ========================================================================= */
+.maplibregl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+.maplibregl-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  font-size: 16px !important;
+  color: #64748b !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+.cs-map-popup {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 260px;
+  font-family: inherit;
+}
+
+.cs-popup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.cs-popup-badge--muestreo {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.cs-popup-badge--llegada {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cs-popup-title {
+  margin: 0.15rem 0 0.2rem 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.cs-popup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  color: #64748b;
+  gap: 0.5rem;
+}
+
+.cs-popup-row strong {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.cs-popup-btn-gmaps {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff !important;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.cs-popup-btn-gmaps:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0369a1, #075985);
+}
+
+@media (max-width: 640px) {
+  .cs-map-layer-toggles {
+    top: 6px;
+    right: 8px;
+    gap: 0.25rem;
+  }
+  .cs-layer-pill {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
+  }
+}
+

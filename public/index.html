@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=3.2.0">
+  <link rel="stylesheet" href="style.css?v=3.3.0">
 </head>
 <body>
 
@@ -181,6 +181,22 @@
             </div>
           </div>
 
+          <!-- Circunscripción -->
+          <div class="cs-ribbon-field">
+            <label for="circunscripcionFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Circunscripción</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="circunscripcionFilter" class="cs-select">
+                <option value="Todas">Todas las circunscripciones</option>
+                <option value="Circunscripción 1">Circunscripción 1 (Urbana)</option>
+                <option value="Circunscripción 2">Circunscripción 2 (Urbana)</option>
+                <option value="Zona Rural">Zona Rural (El Retiro)</option>
+              </select>
+            </div>
+          </div>
+
           <!-- Parroquia -->
           <div class="cs-ribbon-field">
             <label for="parroquiaFilter" class="cs-field-label">
@@ -218,10 +234,10 @@
                 <button type="button" class="cs-date-pill active" data-date-filter="Todas">Todas</button>
                 <button type="button" class="cs-date-pill" data-date-filter="Hoy">Hoy</button>
                 <button type="button" class="cs-date-pill" data-date-filter="Ayer">Ayer</button>
-                <button type="button" class="cs-date-pill" data-date-filter="Semana">Semana</button>
+                <button type="button" class="cs-date-pill" data-date-filter="Semana">7 días</button>
               </div>
               <div class="cs-select-wrap cs-select-wrap--date">
-                <select id="fechaFilter" class="cs-select cs-select--compact" title="Seleccionar fecha específica">
+                <select id="fechaFilter" class="cs-select cs-select--date" title="Seleccionar fecha específica">
                   <option value="Todas">Otras fechas…</option>
                 </select>
               </div>
@@ -251,7 +267,7 @@
           <div class="cs-label-toggle-group">
             <span class="cs-label-toggle-title">
               <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-              Etiquetas en Mapa:
+              Etiquetas:
             </span>
             <div class="cs-view-toggle" role="group" aria-label="Mostrar u ocultar etiquetas en el mapa">
               <button type="button" class="cs-toggle-btn" id="btnEtiquetasOn" title="Mostrar códigos de encuestas y sectores en el mapa">Mostrar</button>
@@ -261,6 +277,25 @@
         </div>
 
         <div class="cs-map-wrapper">
+          <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
+          <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
+            <button type="button" class="cs-layer-pill active" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo donde se levantarán encuestas">
+              <span class="cs-layer-pill__dot cs-layer-pill__dot--muestreo"></span>
+              <span>Muestreo (43)</span>
+            </button>
+            <button type="button" class="cs-layer-pill active" id="toggleLlegada" data-layer-group="llegada" title="Puntos de Llegada / Hitos a Sectores Censales">
+              <span class="cs-layer-pill__dot cs-layer-pill__dot--llegada"></span>
+              <span>Hitos de Llegada (28)</span>
+            </button>
+            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Polígonos de Sectores Censales">
+              <span class="cs-layer-pill__dot cs-layer-pill__dot--sectores"></span>
+              <span>Sectores (28)</span>
+            </button>
+            <button type="button" class="cs-layer-pill active" id="toggleCircunscripciones" data-layer-group="circunscripciones" title="Límites de Circunscripciones Urbanas">
+              <span class="cs-layer-pill__dot cs-layer-pill__dot--circ"></span>
+              <span>Circunscripción</span>
+            </button>
+          </div>
           <div id="map"></div>
 
           <!-- Leyenda Dinámica de Supervisores -->
@@ -362,7 +397,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.2.0"></script>
+  <script src="script.js?v=3.3.0"></script>
 
 </body>
 </html>

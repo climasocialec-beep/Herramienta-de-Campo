@@ -17,11 +17,18 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         encuestas: [],
         supervisorSeleccionado: 'Todos',
+        circunscripcionSeleccionada: 'Todas',
         sectorSeleccionado: 'Todos',
         parroquiaSeleccionada: 'Todas',
         fechaSeleccionada: 'Todas',
         encuestadorSeleccionado: null,
         mostrarEtiquetas: false,
+        capasVisibles: {
+            muestreo: true,
+            llegada: true,
+            sectores: true,
+            circunscripciones: true
+        },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
         filtroTabla: '',
         modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
@@ -30,10 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ubicacionSupervisor: null,
         markerSupervisor: null,
         mapLoaded: false,
+        circunscripcionesGeojson: null,
         parroquiasGeojson: null,
         parroquiasMap: new Map(),
         sectoresGeojson: null,
-        sectoresMap: new Map()
+        sectoresMap: new Map(),
+        puntosLlegadaGeojson: null,
+        puntosMuestreoGeojson: null
     };
     window.AppState = AppState;
 
@@ -70,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Filtros Cruzados
         supervisorFilter: document.getElementById('supervisorFilter'),
+        circunscripcionFilter: document.getElementById('circunscripcionFilter'),
         sectorFilter: document.getElementById('sectorFilter'),
         parroquiaFilter: document.getElementById('parroquiaFilter'),
         fechaFilter: document.getElementById('fechaFilter'),
@@ -79,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
         
-        // Mapa y Modos
+        // Mapa, Capas y Modos
         mapContainer: document.getElementById('map'),
         mapLegend: document.getElementById('mapLegend'),
         mapLegendItems: document.getElementById('mapLegendItems'),
@@ -87,6 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEtiquetasOn: document.getElementById('btnEtiquetasOn'),
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
+        toggleMuestreo: document.getElementById('toggleMuestreo'),
+        toggleLlegada: document.getElementById('toggleLlegada'),
+        toggleSectores: document.getElementById('toggleSectores'),
+        toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         
         // Tabla
         searchInput: document.getElementById('searchInput'),
@@ -263,11 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await cargarConfiguracion();
             await inicializarMapa();
             await Promise.all([cargarLimitesParroquiales(), cargarSectoresCensales()]);
-            
-            if (AppState.encuestas.length > 0) {
-                poblarFiltros();
-                renderizarVista(false, false);
-            }
+            poblarFiltros();
+            renderizarVista(false, false);
 
             await cargarDatos(AppState.encuestas.length === 0);
             
@@ -390,6 +402,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     onClear: () => {
                         AppState.supervisorSeleccionado = 'Todos';
                         if (UI.supervisorFilter) UI.supervisorFilter.value = 'Todos';
+                        poblarFiltros();
+                        renderizarVista(true, true);
+                    }
+                });
+            }
+        }
+        if (UI.circunscripcionFilter) {
+            const isAct = AppState.circunscripcionSeleccionada !== 'Todas';
+            UI.circunscripcionFilter.classList.toggle('is-active', isAct);
+            if (isAct) {
+                activeCount++;
+                chips.push({
+                    tipo: 'circunscripcion',
+                    label: `Circunscripción: ${AppState.circunscripcionSeleccionada}`,
+                    onClear: () => {
+                        AppState.circunscripcionSeleccionada = 'Todas';
+                        if (UI.circunscripcionFilter) UI.circunscripcionFilter.value = 'Todas';
                         poblarFiltros();
                         renderizarVista(true, true);
                     }
@@ -524,8 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function poblarFiltros() {
-        if (!AppState.encuestas || AppState.encuestas.length === 0) return;
-
         const selSup = AppState.supervisorSeleccionado;
         const selSec = AppState.sectorSeleccionado;
         const selPar = AppState.parroquiaSeleccionada;
@@ -538,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const parroquias = new Map();
         const fechas = new Map();
 
-        const encuestas = AppState.encuestas;
+        const encuestas = AppState.encuestas || [];
         const total = encuestas.length;
 
         for (let i = 0; i < total; i++) {
@@ -611,6 +638,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
+        const PARROQUIAS_POR_CIRCUNSCRIPCION = {
+            'Circunscripción 1': ['PUERTO BOLIVAR', 'MACHALA', 'JUBONES', 'JAMBELI'],
+            'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA'],
+            'Zona Rural': ['EL RETIRO']
+        };
+
+        // 1.1 Selector Circunscripción
+        if (UI.circunscripcionFilter) {
+            const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+            UI.circunscripcionFilter.innerHTML = `
+                <option value="Todas">Todas las circunscripciones</option>
+                <option value="Circunscripción 1">Circunscripción 1 (Urbana)</option>
+                <option value="Circunscripción 2">Circunscripción 2 (Urbana)</option>
+                <option value="Zona Rural">Zona Rural (El Retiro)</option>
+            `;
+            UI.circunscripcionFilter.value = actualCirc;
+        }
+
         // 2. Selector Sectores Censales (Universal & Dinámico)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
@@ -624,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const scNum = String(p.sc || '').trim();
                     const tipologia = String(p.tipologia || '').trim().toUpperCase();
                     const etiqueta = p.etiquetaSC || `${scNum}${tipologia}`;
-                    const parroquia = String(p.PARROQUIA || p.parroquia || '').trim();
+                    const parroquia = String(p.parroquia_especifica || p.nom_par || p.PARROQUIA || '').trim();
                     if (scNum && !mapaSectoresUnicos.has(scNum)) {
                         mapaSectoresUnicos.set(scNum, { sc: scNum, etiqueta, parroquia });
                     }
@@ -642,14 +687,31 @@ document.addEventListener('DOMContentLoaded', () => {
             listaSectores.forEach(item => {
                 const count = sectores.get(item.sc) || 0;
                 
-                // Si hay filtro activo (supervisor, encuestador, parroquia, fecha), SOLO mostrar sectores con encuestas en ese contexto
-                if (hayFiltroActivo && count === 0) {
+                // Si hay filtro activo de encuestas, SOLO mostrar sectores con encuestas en ese contexto
+                if (hayFiltroActivo && count === 0 && AppState.encuestas.length > 0) {
                     return;
                 }
 
+                const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+
+                // Filtrar por Circunscripción si está activa
+                if (AppState.circunscripcionSeleccionada !== 'Todas' && item.parroquia) {
+                    const permitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
+                    const nItem = normStr(item.parroquia);
+                    const match = permitidas.some(p => {
+                        const nP = normStr(p);
+                        return nItem.includes(nP) || nP.includes(nItem);
+                    });
+                    if (!match) return;
+                }
+
                 // Si hay filtro de parroquia y no coincide
-                if (targetPar && item.parroquia && !item.parroquia.toUpperCase().includes(targetPar) && !targetPar.includes(item.parroquia.toUpperCase()) && count === 0) {
-                    return;
+                if (targetPar && item.parroquia) {
+                    const nItem = normStr(item.parroquia);
+                    const nTarget = normStr(targetPar);
+                    if (!nItem.includes(nTarget) && !nTarget.includes(nItem)) {
+                        return;
+                    }
                 }
 
                 sectoresValidos.add(item.sc);
@@ -670,21 +732,47 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Selector Parroquias
+        // 3. Selector Parroquias (Filtrado en cascada por Circunscripción)
         if (UI.parroquiaFilter) {
             const actualPar = AppState.parroquiaSeleccionada || 'Todas';
             UI.parroquiaFilter.innerHTML = '<option value="Todas">Todas las parroquias</option>';
-            const parList = Array.from(parroquias.keys()).sort((a, b) => a.localeCompare(b, 'es'));
+            const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+            
+            let parList = [];
+            if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features) {
+                AppState.parroquiasGeojson.features.forEach(f => {
+                    const p = (f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '').toUpperCase();
+                    if (p && !parList.includes(p)) parList.push(p);
+                });
+            }
+            if (parList.length === 0) {
+                parList = Array.from(parroquias.keys());
+            }
+
+            // Filtrar por circunscripción si está activa
+            if (AppState.circunscripcionSeleccionada !== 'Todas') {
+                const permitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
+                parList = parList.filter(p => {
+                    const nP = normStr(p);
+                    return permitidas.some(pp => {
+                        const nPP = normStr(pp);
+                        return nP.includes(nPP) || nPP.includes(nP);
+                    });
+                });
+            }
+
+            parList.sort((a, b) => a.localeCompare(b, 'es'));
             const frag = document.createDocumentFragment();
             parList.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p;
-                opt.textContent = `${p} (${parroquias.get(p)} enc.)`;
+                const count = parroquias.get(p) || 0;
+                opt.textContent = count > 0 ? `${p} (${count} enc.)` : p;
                 frag.appendChild(opt);
             });
             UI.parroquiaFilter.appendChild(frag);
-            UI.parroquiaFilter.value = parroquias.has(actualPar) ? actualPar : 'Todas';
-            if (!parroquias.has(actualPar) && actualPar !== 'Todas') AppState.parroquiaSeleccionada = 'Todas';
+            UI.parroquiaFilter.value = parList.includes(actualPar) ? actualPar : 'Todas';
+            if (!parList.includes(actualPar) && actualPar !== 'Todas') AppState.parroquiaSeleccionada = 'Todas';
         }
 
         // 4. Selector Fechas
@@ -716,6 +804,24 @@ document.addEventListener('DOMContentLoaded', () => {
             filtradas = filtradas.filter(e => {
                 const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
                 return sup === AppState.supervisorSeleccionado;
+            });
+        }
+
+        // Filtro por Circunscripción
+        if (AppState.circunscripcionSeleccionada !== 'Todas') {
+            const PARROQUIAS_POR_CIRCUNSCRIPCION = {
+                'Circunscripción 1': ['PUERTO BOLIVAR', 'MACHALA', 'JUBONES', 'JAMBELI'],
+                'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA'],
+                'Zona Rural': ['EL RETIRO']
+            };
+            const parsPermitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
+            const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+            filtradas = filtradas.filter(e => {
+                const nP = normStr(obtenerParroquiaEncuesta(e));
+                return parsPermitidas.some(pp => {
+                    const nPP = normStr(pp);
+                    return nP.includes(nPP) || nPP.includes(nP);
+                });
             });
         }
 
@@ -842,21 +948,35 @@ document.addEventListener('DOMContentLoaded', () => {
     async function inicializarMapa() {
         if (!UI.mapContainer || !window.maplibregl) return;
 
-        // Pre-cargar ambos GeoJSONs antes de crear el mapa
-        // Esto elimina cualquier condición de carrera con las capas WebGL
+        // Pre-cargar GeoJSONs oficiales antes de crear el mapa (Cero Glitches)
         let sectoresData = { type: 'FeatureCollection', features: [] };
         let parroquiasData = { type: 'FeatureCollection', features: [] };
+        let circunscripcionesData = { type: 'FeatureCollection', features: [] };
+        let puntosLlegadaData = { type: 'FeatureCollection', features: [] };
+        let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const [resSec, resPar] = await Promise.all([
+            const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
                 fetch('assets/sectores_censales.geojson'),
-                fetch('assets/parroquias.geojson')
+                fetch('assets/parroquias.geojson'),
+                fetch('assets/circunscripciones.geojson'),
+                fetch('assets/puntos_llegada.geojson'),
+                fetch('assets/puntos_muestreo.geojson')
             ]);
             if (resSec.ok) sectoresData = await resSec.json();
             if (resPar.ok) parroquiasData = await resPar.json();
+            if (resCirc.ok) circunscripcionesData = await resCirc.json();
+            if (resLleg.ok) puntosLlegadaData = await resLleg.json();
+            if (resMuest.ok) puntosMuestreoData = await resMuest.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
+
+        AppState.sectoresGeojson = sectoresData;
+        AppState.parroquiasGeojson = parroquiasData;
+        AppState.circunscripcionesGeojson = circunscripcionesData;
+        AppState.puntosLlegadaGeojson = puntosLlegadaData;
+        AppState.puntosMuestreoGeojson = puntosMuestreoData;
 
         // Enriquecer sectores con etiquetaSC, bbox y centroid único
         const centroidesFeatures = [];
@@ -923,12 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nombre) AppState.parroquiasMap.set(nombre, f);
             });
             AppState.parroquiasGeojson = parroquiasData;
-            poblarFiltroParroquias(parroquiasData.features.map(f => ({
-                nombre: f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '',
-                tipo: f.properties.ESTADO || 'Parroquia',
-                canton: f.properties.CANTON || f.properties.canton || '',
-                cod: f.properties.CODPAR || ''
-            })));
+            poblarFiltros();
         }
 
         // Auto-calcular Bounding Box global y centro del cantón desde los datos vectoriales
@@ -999,6 +1114,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     'sectores-centroides-source': {
                         type: 'geojson',
                         data: AppState.sectoresCentroidesGeojson || { type: 'FeatureCollection', features: [] }
+                    },
+                    'circunscripciones-source': {
+                        type: 'geojson',
+                        data: circunscripcionesData
+                    },
+                    'puntos-llegada-source': {
+                        type: 'geojson',
+                        data: puntosLlegadaData
+                    },
+                    'puntos-muestreo-source': {
+                        type: 'geojson',
+                        data: puntosMuestreoData
                     }
                 },
                 layers: [
@@ -1009,6 +1136,46 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 19
                     },
+                    // 1. Circunscripciones Urbanas (Límites mayores)
+                    {
+                        id: 'circunscripciones-fill',
+                        type: 'fill',
+                        source: 'circunscripciones-source',
+                        paint: {
+                            'fill-color': '#4f46e5',
+                            'fill-opacity': 0.01
+                        }
+                    },
+                    {
+                        id: 'circunscripciones-line',
+                        type: 'line',
+                        source: 'circunscripciones-source',
+                        paint: {
+                            'line-color': '#4f46e5',
+                            'line-width': 2.6,
+                            'line-dasharray': [3, 2],
+                            'line-opacity': 0.85
+                        }
+                    },
+                    {
+                        id: 'circunscripciones-label',
+                        type: 'symbol',
+                        source: 'circunscripciones-source',
+                        minzoom: 10,
+                        maxzoom: 13.5,
+                        layout: {
+                            'text-field': ['get', 'circunscripcion'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': 13,
+                            'text-anchor': 'center'
+                        },
+                        paint: {
+                            'text-color': '#312e81',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 3.5
+                        }
+                    },
+                    // 2. Límites Parroquiales
                     {
                         id: 'parroquias-fill',
                         type: 'fill',
@@ -1028,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'line-opacity': 0.65
                         }
                     },
+                    // 3. Sectores Censales (Polígonos de Muestreo)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
@@ -1074,6 +1242,95 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-color': '#9a3412',
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 4.5
+                        }
+                    },
+                    // 4. Puntos de Llegada / Hitos de Acceso a Sectores (Discretos para no competir)
+                    {
+                        id: 'puntos-llegada-circle',
+                        type: 'circle',
+                        source: 'puntos-llegada-source',
+                        minzoom: 12.0,
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                12, 4.5,
+                                15, 6.5,
+                                18, 9.5
+                            ],
+                            'circle-color': '#d97706',
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-width': 1.8,
+                            'circle-opacity': 0.9
+                        }
+                    },
+                    {
+                        id: 'puntos-llegada-labels',
+                        type: 'symbol',
+                        source: 'puntos-llegada-source',
+                        minzoom: 14.5,
+                        layout: {
+                            'text-field': ['get', 'nombre_acortado'],
+                            'text-font': ['Open Sans Regular'],
+                            'text-size': 10.5,
+                            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                            'text-radial-offset': 0.7,
+                            'text-allow-overlap': false
+                        },
+                        paint: {
+                            'text-color': '#78350f',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 2.5
+                        }
+                    },
+                    // 5. Puntos de Muestreo Oficiales (Símbolo prominente y bonito)
+                    {
+                        id: 'puntos-muestreo-halo',
+                        type: 'circle',
+                        source: 'puntos-muestreo-source',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 6.5,
+                                13, 9.5,
+                                16, 13.5
+                            ],
+                            'circle-color': '#0284c7',
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-width': 2.5,
+                            'circle-opacity': 0.95
+                        }
+                    },
+                    {
+                        id: 'puntos-muestreo-dot',
+                        type: 'circle',
+                        source: 'puntos-muestreo-source',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 2.0,
+                                13, 3.5,
+                                16, 5.5
+                            ],
+                            'circle-color': '#ffffff'
+                        }
+                    },
+                    {
+                        id: 'puntos-muestreo-labels',
+                        type: 'symbol',
+                        source: 'puntos-muestreo-source',
+                        minzoom: 13.5,
+                        layout: {
+                            'text-field': ['get', 'nombre_referencia'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': 11.5,
+                            'text-variable-anchor': ['bottom', 'top', 'right', 'left'],
+                            'text-radial-offset': 0.85,
+                            'text-allow-overlap': false
+                        },
+                        paint: {
+                            'text-color': '#0369a1',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 3.0
                         }
                     }
                 ]
@@ -1400,11 +1657,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
         map.on('click', 'puntos-layer', abrirPopupEncuesta);
 
-        // Cursores
+        // Popup interactivo para Puntos de Muestreo (Prominentes)
+        map.on('click', 'puntos-muestreo-halo', (e) => {
+            if (!e.features || !e.features.length) return;
+            const p = e.features[0].properties;
+            const coords = e.features[0].geometry.coordinates;
+            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
+
+            new maplibregl.Popup({ offset: [0, -10], closeButton: true })
+                .setLngLat(coords)
+                .setHTML(`
+                    <div class="cs-map-popup">
+                        <div class="cs-popup-badge cs-popup-badge--muestreo">🎯 Punto de Muestreo #${p.codigo_muestra || ''}</div>
+                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Punto de Encuesta'}</h4>
+                        <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
+                        <div class="cs-popup-row"><span>Circunscripción:</span> <strong>${p.circunscripcion || ''}</strong></div>
+                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
+                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                            Cómo llegar (Google Maps)
+                        </a>
+                    </div>
+                `)
+                .addTo(map);
+        });
+
+        // Popup interactivo para Puntos de Llegada / Hitos de Acceso a Sectores
+        map.on('click', 'puntos-llegada-circle', (e) => {
+            if (!e.features || !e.features.length) return;
+            const p = e.features[0].properties;
+            const coords = e.features[0].geometry.coordinates;
+            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
+            const secCorto = p.sec_anm ? p.sec_anm.slice(-3) : '';
+
+            new maplibregl.Popup({ offset: [0, -8], closeButton: true })
+                .setLngLat(coords)
+                .setHTML(`
+                    <div class="cs-map-popup">
+                        <div class="cs-popup-badge cs-popup-badge--llegada">📍 Hito de Acceso · Sector ${secCorto}</div>
+                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Hito de Llegada'}</h4>
+                        <div class="cs-popup-row"><span>Tipo:</span> <strong>${p.tipo_referencia || 'Referencia'}</strong></div>
+                        <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
+                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
+                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                            Cómo llegar al Sector (Google Maps)
+                        </a>
+                    </div>
+                `)
+                .addTo(map);
+        });
+
+        // Cursores interactivos
         map.on('mouseenter', 'sectores-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'sectores-fill', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'puntos-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
+        map.on('mouseenter', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = ''; });
+        map.on('mouseenter', 'puntos-llegada-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'puntos-llegada-circle', () => { map.getCanvas().style.cursor = ''; });
+
+        // Conectar botones para Prender / Apagar capas en el mapa
+        const togglesMap = [
+            { btn: UI.toggleMuestreo, key: 'muestreo', layers: ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'] },
+            { btn: UI.toggleLlegada, key: 'llegada', layers: ['puntos-llegada-circle', 'puntos-llegada-labels'] },
+            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label'] },
+            { btn: UI.toggleCircunscripciones, key: 'circunscripciones', layers: ['circunscripciones-fill', 'circunscripciones-line', 'circunscripciones-label'] }
+        ];
+
+        togglesMap.forEach(({ btn, key, layers }) => {
+            if (!btn) return;
+            btn.onclick = () => {
+                const actual = AppState.capasVisibles[key];
+                const nuevo = !actual;
+                AppState.capasVisibles[key] = nuevo;
+                btn.classList.toggle('active', nuevo);
+                const vis = nuevo ? 'visible' : 'none';
+                layers.forEach(ly => {
+                    if (map.getLayer(ly)) {
+                        map.setLayoutProperty(ly, 'visibility', vis);
+                    }
+                });
+            };
+        });
 
         actualizarPoligonosMapa(false);
     }
@@ -1478,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            poblarFiltroParroquias(listaParroquias);
+            poblarFiltros();
             configurarCapasWebGL();
             actualizarPoligonosMapa(false);
         } catch (e) {
@@ -1531,20 +1865,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function poblarFiltroParroquias(lista) {
-        if (!UI.parroquiaFilter) return;
-        const actual = AppState.parroquiaSeleccionada || 'Todas';
-        UI.parroquiaFilter.innerHTML = '<option value="Todas">Todas</option>';
-
-        // Ordenar alfabéticamente
-        lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.nombre;
-            opt.textContent = `${p.nombre} (${p.tipo})`;
-            UI.parroquiaFilter.appendChild(opt);
-        });
-
-        UI.parroquiaFilter.value = actual;
+    function poblarFiltroParroquias() {
+        poblarFiltros();
     }
 
     function seleccionarParroquia(nombre) {
@@ -2213,6 +2535,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         AppState.encuestadorSeleccionado = null;
                     }
                 }
+                renderizarVista(true, true);
+            });
+        }
+
+        // 1.1 Filtro Circunscripción (Electoral / Territorial)
+        if (UI.circunscripcionFilter) {
+            UI.circunscripcionFilter.addEventListener('change', (e) => {
+                AppState.circunscripcionSeleccionada = e.target.value;
+                AppState.parroquiaSeleccionada = 'Todas';
+                AppState.sectorSeleccionado = 'Todos';
+                poblarFiltros();
                 renderizarVista(true, true);
             });
         }
