@@ -61,7 +61,12 @@ app.use(express.static(path.join(__dirname, "public"), {
         if (/\.(?:geojson|svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
             // Activos pesados (GeoJSON, fuentes e imágenes): 7 días de caché inmutable
             res.setHeader("Cache-Control", "public, max-age=604800, immutable");
-        } else if (/\.(?:html|css|js)$/i.test(filePath)) {
+        } else if (/\.html$/i.test(filePath)) {
+            // HTML: nunca almacenar en caché bajo ninguna circunstancia (evita cache residual en móviles)
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+        } else if (/\.(?:css|js)$/i.test(filePath)) {
             // Archivos de código: revalidación rápida con ETag
             res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         }
@@ -277,8 +282,13 @@ app.use("/api", (req, res) => {
     res.status(404).json({ error: "Ruta de API no encontrada." });
 });
 
-// Cualquier otra ruta → index (SPA)
+// Cualquier otra ruta → index (SPA con cero caché para móviles)
 app.use((req, res) => {
+    res.set({
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    });
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 

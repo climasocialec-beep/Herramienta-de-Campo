@@ -13,12 +13,12 @@ services:
       - key: API_TOKEN
         sync: false
       - key: NOMBRE_PROYECTO
-        value: Encuesta Cuenca 2026
+        value: Encuesta Cantonal Machala 2026
       - key: CAMPO_ENCUESTADOR
         value: C_digo_encuestador
       - key: CAMPO_SUPERVISOR
         value: C_digo_Supervisor
       - key: META_ENCUESTAS
-        value: 1000
+        value: 2500
       - key: CACHE_TTL_SEGUNDOS
         value: 90
