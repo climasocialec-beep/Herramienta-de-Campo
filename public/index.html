@@ -278,17 +278,17 @@
         <div class="cs-map-wrapper">
           <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
           <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-            <button type="button" class="cs-layer-pill active" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo donde se levantarán encuestas">
+            <button type="button" class="cs-layer-pill active" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo donde se levantarán encuestas" style="display:none;">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--muestreo"></span>
-              <span>Muestreo (43)</span>
+              <span id="lblToggleMuestreo">Muestreo</span>
             </button>
             <button type="button" class="cs-layer-pill active" id="toggleLlegada" data-layer-group="llegada" title="Puntos Referenciales dentro de Sectores Censales">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--llegada"></span>
-              <span>Pts. Referenciales (28)</span>
+              <span id="lblToggleLlegada">Pts. Referenciales</span>
             </button>
-            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Polígonos de Sectores Censales">
+            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Polígonos de Sectores Censales" style="display:none;">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--sectores"></span>
-              <span>Sectores (28)</span>
+              <span id="lblToggleSectores">Sectores</span>
             </button>
             <button type="button" class="cs-layer-pill active" id="toggleCircunscripciones" data-layer-group="circunscripciones" title="Límites de Circunscripciones Urbanas">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--circ"></span>

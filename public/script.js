@@ -1100,6 +1100,27 @@ document.addEventListener('DOMContentLoaded', () => {
             poblarFiltros();
         }
 
+        // Actualizar visualización y conteos de botones de capas según datos existentes
+        const numMuestreo = (puntosMuestreoData.features || []).length;
+        const numLlegada = (puntosLlegadaData.features || []).length;
+        const numSectores = (sectoresData.features || []).length;
+
+        if (UI.toggleMuestreo) {
+            UI.toggleMuestreo.style.display = numMuestreo > 0 ? 'inline-flex' : 'none';
+            const lbl = document.getElementById('lblToggleMuestreo');
+            if (lbl) lbl.textContent = `Muestreo (${numMuestreo})`;
+        }
+        if (UI.toggleLlegada) {
+            UI.toggleLlegada.style.display = numLlegada > 0 ? 'inline-flex' : 'none';
+            const lbl = document.getElementById('lblToggleLlegada');
+            if (lbl) lbl.textContent = `Pts. Referenciales (${numLlegada})`;
+        }
+        if (UI.toggleSectores) {
+            UI.toggleSectores.style.display = numSectores > 0 ? 'inline-flex' : 'none';
+            const lbl = document.getElementById('lblToggleSectores');
+            if (lbl) lbl.textContent = `Sectores (${numSectores})`;
+        }
+
         // Auto-calcular Bounding Box global y centro del cantón desde los datos vectoriales
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
         const featuresParaBBox = (sectoresData.features && sectoresData.features.length > 0)
