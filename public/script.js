@@ -913,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         map = new maplibregl.Map({
             container: 'map',
             fadeDuration: 0,
-            maxTileCacheSize: 45,
+            maxTileCacheSize: 60,
             preserveDrawingBuffer: false,
             antialias: false,
             trackResize: true,
@@ -921,14 +921,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
-                    'osm-hot-tiles': {
+                    'carto-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-                            'https://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
+                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
                         ],
                         tileSize: 256,
-                        attribution: '&copy; OpenStreetMap contributors · Humanitarian map style · Clima Social'
+                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO · Clima Social'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -945,9 +947,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'osm-hot-layer',
+                        id: 'carto-layer',
                         type: 'raster',
-                        source: 'osm-hot-tiles',
+                        source: 'carto-tiles',
                         minzoom: 0,
                         maxzoom: 19
                     },
@@ -1023,21 +1025,30 @@ document.addEventListener('DOMContentLoaded', () => {
             center: [-78.9983, -2.9334],
             zoom: 12.0,
             minZoom: 8,
-            maxZoom: 19,
-            fadeDuration: 0,
-            maxTileCacheSize: 60,
-            trackResize: true,
-            preserveDrawingBuffer: false,
-            localIdeographFontFamily: false
+            maxZoom: 19
         });
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
         window.map = map;
 
+        map.on('error', (e) => {
+            console.warn('[MapLibre Error]', e);
+        });
+
         map.on('load', () => {
             AppState.mapLoaded = true;
             configurarCapasWebGL();
             renderizarVista(false, false);
+            setTimeout(() => { if (map) map.resize(); }, 100);
+            setTimeout(() => { if (map) map.resize(); }, 400);
+            setTimeout(() => { if (map) map.resize(); }, 1200);
+        });
+
+        window.addEventListener('resize', () => {
+            if (map) map.resize();
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => { if (map) map.resize(); }, 200);
         });
     }
 

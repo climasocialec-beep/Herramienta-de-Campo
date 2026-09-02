@@ -498,8 +498,8 @@ body.modo-oscuro .cs-btn-icon:hover {
    ========================================================================== */
 .cs-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.6rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
   flex-shrink: 0;
   width: 100%;
 }
@@ -508,13 +508,13 @@ body.modo-oscuro .cs-btn-icon:hover {
   position: relative;
   background-color: var(--bg-surface);
   border-radius: var(--radius-md);
-  padding: 0.45rem 0.85rem;
+  padding: 0.55rem 0.85rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 48px;
+  min-height: 58px;
   overflow: hidden;
   transition: transform var(--cs-transition), box-shadow var(--cs-transition), border-color var(--cs-transition);
 }
@@ -530,13 +530,13 @@ body.modo-oscuro .cs-btn-icon:hover {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 /* Iconos Circulares Sutiles */
 .cs-kpi-icon-wrap {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -547,41 +547,45 @@ body.modo-oscuro .cs-btn-icon:hover {
 .cs-kpi-info {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  gap: 0.05rem;
+  justify-content: center;
+  flex: 1 1 auto;
+  gap: 0.1rem;
   min-width: 0;
 }
 
 .cs-kpi-badge {
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--text-soft);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
 }
 
 .cs-kpi-sub {
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   font-weight: 500;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .cs-kpi-figure {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .cs-kpi-card__value {
-  font-size: 1.55rem;
-  font-weight: 700;
+  font-size: 1.45rem;
+  font-weight: 800;
   color: var(--text-main);
   line-height: 1;
   font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
   letter-spacing: -0.03em;
+  white-space: nowrap;
 }
 
 /* Variantes de Color para KPIs */
@@ -2109,6 +2113,37 @@ body.modo-oscuro .cs-mobile-nav {
 
 body.modo-oscuro .cs-mobile-nav-btn.active {
   color: #38bdf8;
+}
+
+/* MEDIA QUERIES: TABLET Y PANTALLAS MEDIANAS (≤ 1100px) */
+@media (max-width: 1100px) {
+  .cs-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem;
+  }
+
+  .cs-kpi-card {
+    padding: 0.5rem 0.75rem;
+    min-height: 52px;
+  }
+
+  .cs-kpi-card__value {
+    font-size: 1.35rem;
+  }
+
+  .cs-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  .cs-map-section {
+    min-height: 480px;
+    height: 520px;
+  }
+
+  .cs-map-wrapper {
+    min-height: 440px;
+  }
 }
 
 /* MEDIA QUERIES: TABLET Y MÓVIL (≤ 768px) */
