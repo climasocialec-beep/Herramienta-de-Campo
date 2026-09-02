@@ -666,13 +666,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Usar catálogo canónico único del GeoJSON
             const mapaSectoresUnicos = new Map();
+            const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
+
             if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
                 AppState.sectoresGeojson.features.forEach(f => {
                     const p = f.properties || {};
                     const scNum = String(p.sc || '').trim();
                     const tipologia = String(p.tipologia || '').trim().toUpperCase();
                     const etiqueta = p.etiquetaSC || `${scNum}${tipologia}`;
-                    const parroquia = String(p.parroquia_especifica || p.nom_par || p.PARROQUIA || '').trim();
+                    const parroquia = String(p.parroquia || p.parroquia_especifica || p.nom_par || p.PARROQUIA || '').trim();
+
+                    // Si hay una parroquia seleccionada y no un sector específico, filtrar sectores pertenecientes
+                    if (parActivaNorm && parroquia) {
+                        const pNorm = normTexto(parroquia);
+                        if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
+                            return; // No pertenece a la parroquia activa
+                        }
+                    }
+
                     if (scNum && !mapaSectoresUnicos.has(scNum)) {
                         mapaSectoresUnicos.set(scNum, { sc: scNum, etiqueta, parroquia });
                     }
@@ -752,8 +763,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 parList = Array.from(parroquias.keys());
             }
 
-            // Filtrar por circunscripción si está activa
-            if (AppState.circunscripcionSeleccionada !== 'Todas') {
+            // Filtrar por sector seleccionado si está activo (Cascada Sector ➔ Parroquia)
+            if (AppState.sectorSeleccionado !== 'Todos') {
+                const targetSC = String(AppState.sectorSeleccionado).trim();
+                const secMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                const parSector = secMeta ? String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim() : '';
+                if (parSector) {
+                    const normParSec = normStr(parSector);
+                    const parEncontrada = parList.find(p => normStr(p).includes(normParSec) || normParSec.includes(normStr(p)));
+                    if (parEncontrada) {
+                        parList = [parEncontrada];
+                    }
+                }
+            } else if (AppState.circunscripcionSeleccionada !== 'Todas') {
+                // Filtrar por circunscripción si está activa y no hay sector puntual
                 const permitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
                 parList = parList.filter(p => {
                     const nP = normStr(p);
@@ -958,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.4.0';
+            const cacheBuster = '?v=3.5.0';
             const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
                 fetch('assets/sectores_censales.geojson' + cacheBuster),
                 fetch('assets/parroquias.geojson' + cacheBuster),
@@ -1036,6 +1059,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tipologia = String(p.tipologia || '').trim().toUpperCase();
                 f.properties.sc = sc;
                 f.properties.etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
+                const parSector = String(p.parroquia_especifica || p.nom_par || p.PARROQUIA || p.parroquia || '').trim();
+                if (parSector) f.properties.parroquia = parSector;
                 if (f.geometry) {
                     const bbox = calcularBBOX(f.geometry);
                     f.properties.bbox = bbox;
@@ -1064,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             sc: sc,
                             tipologia: tipologia,
                             etiquetaSC: f.properties.etiquetaSC,
-                            parroquia: p.PARROQUIA || p.parroquia || ''
+                            parroquia: parSector
                         }
                     });
                 }
@@ -1380,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-halo-width': 2.5
                         }
                     },
-                    // 5. Puntos de Muestreo Oficiales (Símbolo prominente y bonito)
+                    // 5. Puntos de Muestreo Oficiales (Símbolo discreto, elegante y profesional)
                     {
                         id: 'puntos-muestreo-halo',
                         type: 'circle',
@@ -1388,13 +1413,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 6.5,
-                                13, 9.5,
-                                16, 13.5
+                                10, 4.0,
+                                13, 5.5,
+                                16, 7.5
                             ],
-                            'circle-color': '#0284c7',
+                            'circle-color': '#0d9488', // Teal/Esmeralda sobrio y distinguido
                             'circle-stroke-color': '#ffffff',
-                            'circle-stroke-width': 2.5,
+                            'circle-stroke-width': 2.0,
                             'circle-opacity': 0.95
                         }
                     },
@@ -1405,9 +1430,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 2.0,
-                                13, 3.5,
-                                16, 5.5
+                                10, 1.5,
+                                13, 2.0,
+                                16, 2.8
                             ],
                             'circle-color': '#ffffff'
                         }
@@ -1416,19 +1441,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: 'puntos-muestreo-labels',
                         type: 'symbol',
                         source: 'puntos-muestreo-source',
-                        minzoom: 13.5,
+                        minzoom: 13.0,
                         layout: {
-                            'text-field': ['get', 'nombre_referencia'],
+                            'text-field': [
+                                'coalesce',
+                                ['get', 'etiqueta_completa'],
+                                ['get', 'nombre_referencia'],
+                                ''
+                            ],
                             'text-font': ['Open Sans Bold'],
-                            'text-size': 11.5,
+                            'text-size': 10.5,
                             'text-variable-anchor': ['bottom', 'top', 'right', 'left'],
-                            'text-radial-offset': 0.85,
+                            'text-radial-offset': 0.75,
                             'text-allow-overlap': false
                         },
                         paint: {
-                            'text-color': '#0369a1',
+                            'text-color': '#0f766e',
                             'text-halo-color': '#ffffff',
-                            'text-halo-width': 3.0
+                            'text-halo-width': 2.5
                         }
                     }
                 ]
@@ -1773,9 +1803,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 .setHTML(`
                     <div class="cs-map-popup">
                         <div class="cs-popup-badge cs-popup-badge--muestreo">🎯 Punto de Muestreo #${p.codigo_muestra || ''}</div>
-                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Punto de Encuesta'}</h4>
+                        <h4 class="cs-popup-title">${p.etiqueta_completa || p.nombre_referencia || 'Punto de Muestreo'}</h4>
                         <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
                         <div class="cs-popup-row"><span>Circunscripción:</span> <strong>${p.circunscripcion || ''}</strong></div>
+                        ${p.tipologia ? `<div class="cs-popup-row"><span>Tipología:</span> <strong>${p.tipologia}</strong></div>` : ''}
                         <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
                             <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                             Cómo llegar (Google Maps)
@@ -1976,6 +2007,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function seleccionarParroquia(nombre) {
         AppState.parroquiaSeleccionada = nombre;
         if (UI.parroquiaFilter) UI.parroquiaFilter.value = nombre;
+        
+        // Si el sector seleccionado no pertenece a esta nueva parroquia, resetear a 'Todos'
+        if (AppState.sectorSeleccionado !== 'Todos') {
+            const secMeta = AppState.sectoresMap.get(AppState.sectorSeleccionado);
+            const parSec = secMeta ? String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim().toUpperCase() : '';
+            if (nombre !== 'Todas' && parSec && !parSec.includes(nombre) && !nombre.includes(parSec)) {
+                AppState.sectorSeleccionado = 'Todos';
+            }
+        }
+        poblarFiltros();
         renderizarVista(true, true);
     }
 
@@ -2171,18 +2212,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (AppState.circunscripcionSeleccionada !== 'Todas') {
                 // Nivel 3: Zoom a la Circunscripción seleccionada
-                let circBbox = null;
-                if (AppState.circunscripcionSeleccionada === 'Circunscripción 1') {
-                    // Corredor urbano Circunscripción 1 (Puerto Bolívar, Machala, Jubones, Jambelí)
-                    circBbox = [[-80.006, -3.276], [-79.940, -3.238]];
-                } else if (AppState.circunscripcionSeleccionada === 'Circunscripción 2') {
-                    // Corredor urbano Circunscripción 2 (El Cambio, 9 de Mayo, La Providencia)
-                    circBbox = [[-79.970, -3.296], [-79.885, -3.260]];
+                const circMeta = AppState.circunscripcionesMap ? AppState.circunscripcionesMap.get(AppState.circunscripcionSeleccionada) : null;
+                let circBbox = circMeta ? circMeta.bbox : null;
+                
+                if (!circBbox) {
+                    if (AppState.circunscripcionSeleccionada === 'Circunscripción 1') {
+                        // BBox calculado de Circunscripción 1
+                        circBbox = [[-80.0044, -3.2742], [-79.8945, -3.1706]];
+                    } else if (AppState.circunscripcionSeleccionada === 'Circunscripción 2') {
+                        // BBox calculado de Circunscripción 2
+                        circBbox = [[-80.0294, -3.3557], [-79.8388, -3.2301]];
+                    }
                 }
                 if (circBbox) {
                     map.fitBounds(circBbox, {
                         padding: { top: 60, bottom: 50, left: 50, right: 50 },
-                        maxZoom: 14.2,
+                        maxZoom: 14.5,
                         duration: 900
                     });
                 }
@@ -2744,10 +2789,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 3. Filtro Sector Censal
+        // 3. Filtro Sector Censal (Con auto-sincronización a Parroquia)
         if (UI.sectorFilter) {
             UI.sectorFilter.addEventListener('change', (e) => {
-                AppState.sectorSeleccionado = e.target.value;
+                const secVal = e.target.value;
+                AppState.sectorSeleccionado = secVal;
+                
+                if (secVal !== 'Todos') {
+                    // Obtener parroquia asociada al sector
+                    const secMeta = AppState.sectoresMap.get(secVal) || (parseInt(secVal, 10) ? AppState.sectoresMap.get(String(parseInt(secVal, 10))) : null);
+                    const parSector = secMeta ? String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim() : '';
+                    if (parSector) {
+                        AppState.parroquiaSeleccionada = parSector.toUpperCase();
+                    }
+                }
+                
+                poblarFiltros();
                 renderizarVista(true, true);
             });
         }
