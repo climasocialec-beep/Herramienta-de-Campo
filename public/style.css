@@ -508,13 +508,14 @@ body.modo-oscuro .cs-btn-icon:hover {
   position: relative;
   background-color: var(--bg-surface);
   border-radius: var(--radius-md);
-  padding: 0.55rem 0.85rem;
+  padding: 0.65rem 0.85rem 0.75rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: 58px;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-height: 68px;
   overflow: hidden;
   transition: transform var(--cs-transition), box-shadow var(--cs-transition), border-color var(--cs-transition);
 }
@@ -525,18 +526,17 @@ body.modo-oscuro .cs-btn-icon:hover {
   border-color: var(--border-medium);
 }
 
-.cs-kpi-card__main {
+.cs-kpi-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 0.6rem;
 }
 
 /* Iconos Circulares Sutiles */
 .cs-kpi-icon-wrap {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -544,48 +544,43 @@ body.modo-oscuro .cs-btn-icon:hover {
   flex-shrink: 0;
 }
 
-.cs-kpi-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1 1 auto;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.cs-kpi-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-soft);
-  white-space: nowrap;
-  line-height: 1.15;
-}
-
-.cs-kpi-sub {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
 .cs-kpi-figure {
   display: flex;
   align-items: baseline;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .cs-kpi-card__value {
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   font-weight: 800;
   color: var(--text-main);
   line-height: 1;
   font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
   letter-spacing: -0.03em;
   white-space: nowrap;
+}
+
+.cs-kpi-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  width: 100%;
+}
+
+.cs-kpi-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-soft);
+  line-height: 1.2;
+}
+
+.cs-kpi-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 /* Variantes de Color para KPIs */

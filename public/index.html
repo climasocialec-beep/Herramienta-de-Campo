@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=2.4.0">
+  <link rel="stylesheet" href="style.css?v=2.5.0">
 </head>
 <body>
 
@@ -87,66 +87,67 @@
   <main class="cs-container">
 
     <!-- ===== FILA DE INDICADORES CLAVE (KPIS MODERNOS · CLIMA SOCIAL) ===== -->
+    <!-- ===== FILA DE INDICADORES CLAVE (KPIS MODERNOS · CLIMA SOCIAL) ===== -->
     <section class="cs-kpi-grid" data-mobile-panel="kpis" aria-label="Indicadores clave">
 
       <div class="cs-kpi-card cs-kpi-card--teal">
-        <div class="cs-kpi-card__main">
+        <div class="cs-kpi-top">
           <div class="cs-kpi-icon-wrap">
             <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </div>
-          <div class="cs-kpi-info">
-            <span class="cs-kpi-badge">Total Recolectadas</span>
-            <span class="cs-kpi-sub" id="kpiMeta">Meta: 2,500</span>
           </div>
           <div class="cs-kpi-figure">
             <span class="cs-kpi-card__value" id="kpiTotal">0</span>
           </div>
         </div>
+        <div class="cs-kpi-bottom">
+          <span class="cs-kpi-badge">Total Recolectadas</span>
+          <span class="cs-kpi-sub" id="kpiMeta">Meta: 2,500</span>
+        </div>
         <div class="cs-progress-bar"><div class="cs-progress-bar__fill" id="barraAvance" style="width:0%"></div></div>
       </div>
 
       <div class="cs-kpi-card cs-kpi-card--green">
-        <div class="cs-kpi-card__main">
+        <div class="cs-kpi-top">
           <div class="cs-kpi-icon-wrap">
             <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div class="cs-kpi-info">
-            <span class="cs-kpi-badge">Encuestas Hoy</span>
-            <span class="cs-kpi-sub">Jornada actual</span>
           </div>
           <div class="cs-kpi-figure">
             <span class="cs-kpi-card__value" id="kpiHoy">0</span>
           </div>
         </div>
+        <div class="cs-kpi-bottom">
+          <span class="cs-kpi-badge">Encuestas Hoy</span>
+          <span class="cs-kpi-sub">Jornada actual</span>
+        </div>
       </div>
 
       <div class="cs-kpi-card cs-kpi-card--amber">
-        <div class="cs-kpi-card__main">
+        <div class="cs-kpi-top">
           <div class="cs-kpi-icon-wrap">
             <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="cs-kpi-info">
-            <span class="cs-kpi-badge">Pendientes</span>
-            <span class="cs-kpi-sub">Faltan para la meta</span>
           </div>
           <div class="cs-kpi-figure">
             <span class="cs-kpi-card__value" id="kpiPendientes">0</span>
           </div>
         </div>
+        <div class="cs-kpi-bottom">
+          <span class="cs-kpi-badge">Pendientes</span>
+          <span class="cs-kpi-sub">Faltan para la meta</span>
+        </div>
       </div>
 
       <div class="cs-kpi-card cs-kpi-card--purple">
-        <div class="cs-kpi-card__main">
+        <div class="cs-kpi-top">
           <div class="cs-kpi-icon-wrap">
             <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-          <div class="cs-kpi-info">
-            <span class="cs-kpi-badge">Avance General</span>
-            <span class="cs-kpi-sub">Cumplimiento del proyecto</span>
           </div>
           <div class="cs-kpi-figure">
             <span class="cs-kpi-card__value" id="kpiAvance">0%</span>
           </div>
+        </div>
+        <div class="cs-kpi-bottom">
+          <span class="cs-kpi-badge">Avance General</span>
+          <span class="cs-kpi-sub">Cumplimiento del proyecto</span>
         </div>
       </div>
 
@@ -361,7 +362,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=2.4.0"></script>
+  <script src="script.js?v=2.5.0"></script>
 
 </body>
 </html>

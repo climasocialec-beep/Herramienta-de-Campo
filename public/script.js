@@ -921,16 +921,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
-                    'carto-tiles': {
+                    'esri-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
                         ],
                         tileSize: 256,
-                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO · Clima Social'
+                        attribution: '&copy; Esri &mdash; OpenStreetMap &amp; Clima Social'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -947,9 +945,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'carto-layer',
+                        id: 'esri-layer',
                         type: 'raster',
-                        source: 'carto-tiles',
+                        source: 'esri-tiles',
                         minzoom: 0,
                         maxzoom: 19
                     },
