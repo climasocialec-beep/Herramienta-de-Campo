@@ -28,8 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarEtiquetas: false,
         capasVisibles: {
             muestreo: true,
-            llegada: true,
-            sectores: true,
             circunscripciones: true
         },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
@@ -43,10 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
         circunscripcionesGeojson: null,
         parroquiasGeojson: null,
         parroquiasMap: new Map(),
-        sectoresGeojson: null,
-        sectoresMap: new Map(),
-        puntosLlegadaGeojson: null,
-        puntosMuestreoGeojson: null
+        puntosMuestreoGeojson: null,
+        puntosMuestreoMap: new Map(),
+        sectoresMap: new Map() // Mantiene compatibilidad hacia atrás para resolución de muestra (1 al 70)
     };
     window.AppState = AppState;
 
@@ -102,8 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
         toggleMuestreo: document.getElementById('toggleMuestreo'),
-        toggleLlegada: document.getElementById('toggleLlegada'),
-        toggleSectores: document.getElementById('toggleSectores'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         
         // Tabla
@@ -280,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await cargarConfiguracion();
             await inicializarMapa();
-            await Promise.all([cargarLimitesParroquiales(), cargarSectoresCensales()]);
+            await cargarLimitesParroquiales();
             poblarFiltros();
             renderizarVista(false, false);
 
@@ -658,45 +653,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (actualCirc === 'Zona Rural') AppState.circunscripcionSeleccionada = 'Todas';
         }
 
-        // 2. Selector Unificado de Muestra Territorial (Sectores Censales y Puntos de Muestreo: 1 al 70)
+        // 2. Selector de Puntos de Muestreo (1 al 70)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
-            UI.sectorFilter.innerHTML = '<option value="Todos">Todos (1 al 70)</option>';
+            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los puntos (1 al 70)</option>';
             
-            // Catálogo unificado de 1 al 70 proveniente de sectores y puntos de muestreo
-            const mapaMuestraUnica = new Map();
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
+            const listaMuestra = [];
 
-            // 1. Sectores Censales (Polígonos: Códigos 1..15 y 41..52)
-            if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
-                AppState.sectoresGeojson.features.forEach(f => {
-                    const p = f.properties || {};
-                    const scNum = String(p.codigo_muestra || p.sc || '').trim();
-                    const tipologia = String(p.tipologia || '').trim().toUpperCase();
-                    const etiqueta = p.etiquetaSC || `${scNum}${tipologia}`;
-                    const parroquia = String(p.parroquia || p.parroquia_especifica || p.nom_par || p.PARROQUIA || '').trim();
-                    const ref = p.punto_referencial || '';
-
-                    if (parActivaNorm && parroquia) {
-                        const pNorm = normTexto(parroquia);
-                        if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
-                            return;
-                        }
-                    }
-
-                    if (scNum && !mapaMuestraUnica.has(scNum)) {
-                        mapaMuestraUnica.set(scNum, {
-                            sc: scNum,
-                            tipo: 'Sector',
-                            etiqueta: `Sector ${etiqueta}`,
-                            detalle: ref ? `Sector ${etiqueta} — ${ref}` : `Sector ${etiqueta}`,
-                            parroquia: parroquia
-                        });
-                    }
-                });
-            }
-
-            // 2. Puntos de Muestreo (Puntos: Códigos 16..40 y 53..70)
             if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features) {
                 AppState.puntosMuestreoGeojson.features.forEach(f => {
                     const p = f.properties || {};
@@ -713,22 +677,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    if (codNum && !mapaMuestraUnica.has(codNum)) {
-                        mapaMuestraUnica.set(codNum, {
-                            sc: codNum,
-                            tipo: 'Muestreo',
-                            etiqueta: `Pto. ${codNum} (${tipologia})`,
-                            detalle: nombrePto ? `Pto. ${codNum} (${tipologia}) — ${nombrePto}` : `Pto. ${codNum} (${tipologia})`,
-                            parroquia: parroquia
-                        });
-                    }
+                    listaMuestra.push({
+                        sc: codNum,
+                        etiqueta: `${codNum}${tipologia}`,
+                        detalle: p.etiqueta_completa || `Pto. ${codNum} (${tipologia}) — ${nombrePto}`,
+                        parroquia: parroquia
+                    });
                 });
             }
 
             // Ordenamiento natural numérico exacto del 1 al 70
-            const listaMuestra = Array.from(mapaMuestraUnica.values()).sort((a, b) => {
-                return (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0);
-            });
+            listaMuestra.sort((a, b) => (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0));
             
             const frag = document.createDocumentFragment();
             const sectoresValidos = new Set();
@@ -1006,34 +965,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!UI.mapContainer || !window.maplibregl) return;
 
         // Pre-cargar GeoJSONs oficiales antes de crear el mapa (Cero Glitches)
-        let sectoresData = { type: 'FeatureCollection', features: [] };
         let parroquiasData = { type: 'FeatureCollection', features: [] };
         let circunscripcionesData = { type: 'FeatureCollection', features: [] };
-        let puntosLlegadaData = { type: 'FeatureCollection', features: [] };
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.6.2';
-            const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
-                fetch('assets/sectores_censales.geojson' + cacheBuster),
+            const cacheBuster = '?v=3.7.0';
+            const [resPar, resCirc, resMuest] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/circunscripciones.geojson' + cacheBuster),
-                fetch('assets/puntos_llegada.geojson' + cacheBuster),
                 fetch('assets/puntos_muestreo.geojson' + cacheBuster)
             ]);
-            if (resSec.ok) sectoresData = await resSec.json();
             if (resPar.ok) parroquiasData = await resPar.json();
             if (resCirc.ok) circunscripcionesData = await resCirc.json();
-            if (resLleg.ok) puntosLlegadaData = await resLleg.json();
             if (resMuest.ok) puntosMuestreoData = await resMuest.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
 
-        AppState.sectoresGeojson = sectoresData;
         AppState.parroquiasGeojson = parroquiasData;
         AppState.circunscripcionesGeojson = circunscripcionesData;
-        AppState.puntosLlegadaGeojson = puntosLlegadaData;
         AppState.puntosMuestreoGeojson = puntosMuestreoData;
 
         // Puntos únicos representativos para etiquetas de Circunscripción (evita duplicación en MultiPolygons)
@@ -1082,65 +1033,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Enriquecer sectores con etiquetaSC, bbox y centroid único
-        const centroidesFeatures = [];
-        if (sectoresData.features) {
-            sectoresData.features.forEach(f => {
-                const p = f.properties || {};
-                const sc = String(p.codigo_muestra || p.sc || p.sec_anm || '').trim();
-                const tipologia = String(p.tipologia || '').trim().toUpperCase();
-                f.properties.sc = sc;
-                f.properties.etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
-                const parSector = String(p.parroquia_especifica || p.nom_par || p.PARROQUIA || p.parroquia || '').trim();
-                if (parSector) f.properties.parroquia = parSector;
-                if (f.geometry) {
-                    const bbox = calcularBBOX(f.geometry);
-                    f.properties.bbox = bbox;
-                    f.properties._bbox_w = bbox[0][0];
-                    f.properties._bbox_s = bbox[0][1];
-                    f.properties._bbox_e = bbox[1][0];
-                    f.properties._bbox_n = bbox[1][1];
-                    const cx = (bbox[0][0] + bbox[1][0]) / 2;
-                    const cy = (bbox[0][1] + bbox[1][1]) / 2;
-                    f.properties._cx = cx;
-                    f.properties._cy = cy;
-                    f.properties.centroid = [cx, cy];
-                    if (sc) {
-                        AppState.sectoresMap.set(sc, f.properties);
-                        AppState.sectoresMap.set(f.properties.etiquetaSC, f.properties);
-                        const n = parseInt(sc, 10);
-                        if (!isNaN(n)) AppState.sectoresMap.set(String(n), f.properties);
-                    }
-                    centroidesFeatures.push({
-                        type: 'Feature',
-                        geometry: {
-                            type: 'Point',
-                            coordinates: [cx, cy]
-                        },
-                        properties: {
-                            sc: sc,
-                            tipologia: tipologia,
-                            etiquetaSC: f.properties.etiquetaSC,
-                            parroquia: parSector
-                        }
-                    });
-                }
-            });
-            AppState.sectoresGeojson = sectoresData;
-            AppState.sectoresCentroidesGeojson = {
-                type: 'FeatureCollection',
-                features: centroidesFeatures
-            };
-        }
-
-        // Indexar Puntos de Muestreo (Códigos 16..40 y 53..70) en AppState.puntosMuestreoMap y AppState.sectoresMap
+        // Indexar los 70 Puntos de Muestreo en AppState.puntosMuestreoMap y AppState.sectoresMap
         AppState.puntosMuestreoMap = new Map();
+        AppState.sectoresMap = new Map();
         if (puntosMuestreoData.features) {
             puntosMuestreoData.features.forEach(f => {
                 const p = f.properties || {};
                 const cod = String(p.codigo_muestra || '').trim();
                 const tip = String(p.tipologia || '').trim().toUpperCase();
-                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.nombre_referencia || ''}`;
+                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.nombre_acortado || p.nombre_referencia || ''}`;
                 p.sc = cod;
                 p.tipologia = tip;
                 p.etiquetaSC = `${cod}${tip}`;
@@ -1152,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (f.geometry && f.geometry.coordinates) {
                     const coords = f.geometry.coordinates;
                     centroid = [coords[0], coords[1]];
-                    // Pequeño bbox de 0.003 grados (~300m) para encuadre focalizado
+                    // Bbox de 0.003 grados (~300m) para encuadre focalizado
                     const delta = 0.0025;
                     bbox = [
                         [coords[0] - delta, coords[1] - delta],
@@ -1164,7 +1065,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (cod) {
                     AppState.puntosMuestreoMap.set(cod, p);
-                    // También agregar a sectoresMap para cobertura universal de 1 a 70
                     AppState.sectoresMap.set(cod, p);
                     AppState.sectoresMap.set(`${cod}${tip}`, p);
                     const n = parseInt(cod, 10);
@@ -1201,31 +1101,18 @@ document.addEventListener('DOMContentLoaded', () => {
             poblarFiltros();
         }
 
-        // Actualizar visualización y conteos de botones de capas según datos existentes
+        // Actualizar visualización del botón de capa de Muestreo
         const numMuestreo = (puntosMuestreoData.features || []).length;
-        const numLlegada = (puntosLlegadaData.features || []).length;
-        const numSectores = (sectoresData.features || []).length;
-
         if (UI.toggleMuestreo) {
             UI.toggleMuestreo.style.display = numMuestreo > 0 ? 'inline-flex' : 'none';
             const lbl = document.getElementById('lblToggleMuestreo');
             if (lbl) lbl.textContent = `Muestreo (${numMuestreo})`;
         }
-        if (UI.toggleLlegada) {
-            UI.toggleLlegada.style.display = numLlegada > 0 ? 'inline-flex' : 'none';
-            const lbl = document.getElementById('lblToggleLlegada');
-            if (lbl) lbl.textContent = `Pts. Referenciales (${numLlegada})`;
-        }
-        if (UI.toggleSectores) {
-            UI.toggleSectores.style.display = numSectores > 0 ? 'inline-flex' : 'none';
-            const lbl = document.getElementById('lblToggleSectores');
-            if (lbl) lbl.textContent = `Sectores (${numSectores})`;
-        }
 
         // Auto-calcular Bounding Box global y centro del cantón desde los datos vectoriales
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
-        const featuresParaBBox = (sectoresData.features && sectoresData.features.length > 0)
-            ? sectoresData.features
+        const featuresParaBBox = (puntosMuestreoData.features && puntosMuestreoData.features.length > 0)
+            ? puntosMuestreoData.features
             : (parroquiasData.features || []);
 
         featuresParaBBox.forEach(f => {
@@ -1285,14 +1172,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: 'geojson',
                         data: parroquiasData
                     },
-                    'sectores-source': {
-                        type: 'geojson',
-                        data: sectoresData
-                    },
-                    'sectores-centroides-source': {
-                        type: 'geojson',
-                        data: AppState.sectoresCentroidesGeojson || { type: 'FeatureCollection', features: [] }
-                    },
                     'circunscripciones-source': {
                         type: 'geojson',
                         data: circunscripcionesData
@@ -1300,10 +1179,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'circunscripciones-labels-source': {
                         type: 'geojson',
                         data: circunscripcionesLabelsData
-                    },
-                    'puntos-llegada-source': {
-                        type: 'geojson',
-                        data: puntosLlegadaData
                     },
                     'puntos-muestreo-source': {
                         type: 'geojson',
@@ -1395,94 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'line-opacity': 0.65
                         }
                     },
-                    // 3. Sectores Censales (Polígonos de Muestreo)
-                    {
-                        id: 'sectores-fill',
-                        type: 'fill',
-                        source: 'sectores-source',
-                        paint: {
-                            'fill-color': '#028090',
-                            'fill-opacity': 0.18
-                        }
-                    },
-                    {
-                        id: 'sectores-line',
-                        type: 'line',
-                        source: 'sectores-source',
-                        paint: {
-                            'line-color': '#028090',
-                            'line-width': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 2.5,
-                                14, 4.0,
-                                17, 6.0
-                            ],
-                            'line-opacity': 1.0
-                        }
-                    },
-                    {
-                        id: 'sectores-label',
-                        type: 'symbol',
-                        source: 'sectores-centroides-source',
-                        layout: {
-                            'text-field': ['get', 'etiquetaSC'],
-                            'text-font': ['Open Sans Bold'],
-                            'text-size': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 13,
-                                13, 17,
-                                16, 26
-                            ],
-                            'text-anchor': 'center',
-                            'text-allow-overlap': true,
-                            'text-ignore-placement': true,
-                            'visibility': AppState.mostrarEtiquetas ? 'visible' : 'none'
-                        },
-                        paint: {
-                            'text-color': '#9a3412',
-                            'text-halo-color': '#ffffff',
-                            'text-halo-width': 4.5
-                        }
-                    },
-                    // 4. Puntos de Llegada / Hitos de Acceso a Sectores (Discretos para no competir)
-                    {
-                        id: 'puntos-llegada-circle',
-                        type: 'circle',
-                        source: 'puntos-llegada-source',
-                        minzoom: 12.0,
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                12, 4.5,
-                                15, 6.5,
-                                18, 9.5
-                            ],
-                            'circle-color': '#d97706',
-                            'circle-stroke-color': '#ffffff',
-                            'circle-stroke-width': 1.8,
-                            'circle-opacity': 0.9
-                        }
-                    },
-                    {
-                        id: 'puntos-llegada-labels',
-                        type: 'symbol',
-                        source: 'puntos-llegada-source',
-                        minzoom: 14.5,
-                        layout: {
-                            'text-field': ['get', 'nombre_acortado'],
-                            'text-font': ['Open Sans Regular'],
-                            'text-size': 10.5,
-                            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-                            'text-radial-offset': 0.7,
-                            'text-allow-overlap': false
-                        },
-                        paint: {
-                            'text-color': '#78350f',
-                            'text-halo-color': '#ffffff',
-                            'text-halo-width': 2.5
-                        }
-                    },
-                    // 5. Puntos de Muestreo Oficiales (Símbolo discreto, elegante y profesional)
+                    // 3. Puntos de Muestreo Oficiales (70 Hitos consolidados)
                     {
                         id: 'puntos-muestreo-halo',
                         type: 'circle',
@@ -1804,37 +1592,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // =====================================================================
         // EVENTOS E INTERACTIVIDAD WEBGL
         // =====================================================================
-        // Clic en Sector Censal
-        map.on('click', 'sectores-fill', (e) => {
-            if (!e.features || !e.features.length) return;
-            const p = e.features[0].properties;
-            const sc = String(p.sc || p.codigo_sc || '').trim();
-            const etiqueta = p.etiquetaSC || `${p.sc || ''}${p.tipologia || ''}`;
-            const coords = e.lngLat;
-            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
-
-            if (sc && UI.sectorFilter) {
-                AppState.sectorSeleccionado = sc;
-                UI.sectorFilter.value = sc;
-                renderizarVista(true, true);
-            }
-
-            new maplibregl.Popup({ offset: [0, -10], closeButton: true })
-                .setLngLat(coords)
-                .setHTML(`
-                    <div style="font-family:'Inter',sans-serif;padding:3px;min-width:170px;text-align:center;">
-                        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.92rem;color:#0f172a;margin-bottom:6px;">
-                            Sector Censal <strong>${etiqueta}</strong>
-                        </div>
-                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-btn-gmaps" style="display:inline-flex;justify-content:center;width:100%;margin-top:2px;">
-                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar (Google Maps)
-                        </a>
-                    </div>
-                `)
-                .addTo(map);
-        });
-
         // Manejador común de popup para puntos de encuesta
         const abrirPopupEncuesta = (e) => {
             if (!e.features || !e.features.length) return;
@@ -1857,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>Sup #${p.supervisor}</span>
                         </div>
                         <p style="margin:4px 0;font-size:0.8rem;"><strong>Parroquia:</strong> ${p.parroquia}</p>
-                        ${p.sc ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Sector Censal:</strong> ${p.sc}${p.tipologia ? ` (Tipología ${p.tipologia})` : ''}</p>` : ''}
+                        ${p.sc ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Punto de Muestreo:</strong> #${p.sc}${p.tipologia ? ` (Tipología ${p.tipologia})` : ''}</p>` : ''}
                         ${p.barrio ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Barrio:</strong> ${p.barrio}</p>` : ''}
                         <p style="margin:4px 0;font-size:0.75rem;color:#64748b;">Fecha: ${p.fecha}</p>
                         ${distInfo}
@@ -1868,12 +1625,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         map.on('click', 'puntos-layer', abrirPopupEncuesta);
 
-        // Popup interactivo para Puntos de Muestreo (Prominentes)
+        // Popup interactivo para Puntos de Muestreo (70 Hitos oficiales)
         map.on('click', 'puntos-muestreo-halo', (e) => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
             const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
+            const cod = String(p.codigo_muestra || p.sc || '').trim();
+
+            // Sincronizar con el filtro de puntos de muestreo si se hace clic
+            if (cod && UI.sectorFilter) {
+                AppState.sectorSeleccionado = cod;
+                UI.sectorFilter.value = cod;
+                renderizarVista(true, false);
+            }
 
             new maplibregl.Popup({ offset: [0, -10], closeButton: true })
                 .setLngLat(coords)
@@ -1893,46 +1658,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 .addTo(map);
         });
 
-        // Popup interactivo para Puntos Referenciales dentro de Sectores Censales
-        map.on('click', 'puntos-llegada-circle', (e) => {
-            if (!e.features || !e.features.length) return;
-            const p = e.features[0].properties;
-            const coords = e.features[0].geometry.coordinates;
-            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
-            const secCorto = p.sec_anm ? p.sec_anm.slice(-3) : '';
-
-            new maplibregl.Popup({ offset: [0, -8], closeButton: true })
-                .setLngLat(coords)
-                .setHTML(`
-                    <div class="cs-map-popup">
-                        <div class="cs-popup-badge cs-popup-badge--llegada">📌 Pto. Referencial · Sector ${secCorto}</div>
-                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Punto Referencial'}</h4>
-                        <div class="cs-popup-row"><span>Tipo:</span> <strong>${p.tipo_referencia || 'Referencia'}</strong></div>
-                        <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
-                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
-                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar (Google Maps)
-                        </a>
-                    </div>
-                `)
-                .addTo(map);
-        });
-
         // Cursores interactivos
-        map.on('mouseenter', 'sectores-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'sectores-fill', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'puntos-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = ''; });
-        map.on('mouseenter', 'puntos-llegada-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'puntos-llegada-circle', () => { map.getCanvas().style.cursor = ''; });
 
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
             { btn: UI.toggleMuestreo, key: 'muestreo', layers: ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'] },
-            { btn: UI.toggleLlegada, key: 'llegada', layers: ['puntos-llegada-circle', 'puntos-llegada-labels'] },
-            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label'] },
             { btn: UI.toggleCircunscripciones, key: 'circunscripciones', layers: ['circunscripciones-fill', 'circunscripciones-line', 'circunscripciones-label'] }
         ];
 
@@ -1964,9 +1698,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (map.getLayer('puntos-micro-label-layer')) {
             map.setLayoutProperty('puntos-micro-label-layer', 'visibility', show);
-        }
-        if (map.getLayer('sectores-label')) {
-            map.setLayoutProperty('sectores-label', 'visibility', show);
         }
     }
 
@@ -2033,48 +1764,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarSectoresCensales() {
-        try {
-            if (AppState.sectoresGeojson && AppState.sectoresGeojson.features && AppState.sectoresGeojson.features.length > 0) {
-                return; // Ya cargado en inicializarMapa
-            }
-            const res = await fetch('assets/sectores_censales.geojson');
-            if (!res.ok) return;
-            const geojsonData = await res.json();
-
-            AppState.sectoresGeojson = geojsonData;
-            AppState.sectoresMap.clear();
-
-            if (geojsonData.features) {
-                geojsonData.features.forEach(f => {
-                    const p = f.properties || {};
-                    const sc = String(p.codigo_muestra || p.sc || p.sec_anm || p.codigo_sc || p.sc_cuenca_sc || '').trim();
-                    const tipologia = String(p.tipologia || p.tipologia_sc || '').trim().toUpperCase();
-                    const etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
-                    f.properties.sc = sc;
-                    f.properties.etiquetaSC = etiquetaSC;
-
-                    let bbox = null;
-                    let centroid = null;
-                    if (f.geometry) {
-                        bbox = calcularBBOX(f.geometry);
-                        centroid = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
-                    }
-
-                    const meta = { feature: f, bbox, centroid, etiquetaSC };
-                    if (sc) {
-                        AppState.sectoresMap.set(sc, meta);
-                        const numSc = parseInt(sc, 10);
-                        if (!isNaN(numSc)) AppState.sectoresMap.set(String(numSc), meta);
-                        AppState.sectoresMap.set(etiquetaSC, meta);
-                    }
-                });
-            }
-
-            configurarCapasWebGL();
-            actualizarPoligonosMapa(false);
-        } catch (e) {
-            console.warn('No se pudo cargar la capa de sectores censales:', e);
-        }
+        // Sectores censales unificados en los 70 puntos de muestreo oficiales (puntos_muestreo.geojson)
+        return;
     }
 
     function poblarFiltroParroquias() {
@@ -2085,10 +1776,10 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.parroquiaSeleccionada = nombre;
         if (UI.parroquiaFilter) UI.parroquiaFilter.value = nombre;
         
-        // Si el sector seleccionado no pertenece a esta nueva parroquia, resetear a 'Todos'
+        // Si el punto de muestreo seleccionado no pertenece a esta nueva parroquia, resetear a 'Todos'
         if (AppState.sectorSeleccionado !== 'Todos') {
             const secMeta = AppState.sectoresMap.get(AppState.sectorSeleccionado);
-            const parSec = secMeta ? String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim().toUpperCase() : '';
+            const parSec = secMeta ? String(secMeta.parroquia || '').trim().toUpperCase() : '';
             if (nombre !== 'Todas' && parSec && !parSec.includes(nombre) && !nombre.includes(parSec)) {
                 AppState.sectorSeleccionado = 'Todos';
             }
@@ -2171,101 +1862,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Polígonos de Sectores Censales y Barra Flotante
+        // 2. Barra Flotante de Punto de Muestreo Activo
         const barraSector = document.getElementById('barraSectorActivo');
         const sectorTitulo = document.getElementById('sectorActivoTitulo');
         const btnGmaps = document.getElementById('btnRutaGoogleMaps');
 
-        if (map.getLayer('sectores-fill') && map.getLayer('sectores-line') && map.getLayer('sectores-label')) {
-            const isTodos = (AppState.sectorSeleccionado === 'Todos');
-            const targetSC = String(AppState.sectorSeleccionado).trim();
-
-            if (isTodos) {
-                // Mostrar todos los sectores censales con bordes ámbar/naranja de alto contraste
-                map.setFilter('sectores-fill', null);
-                map.setLayoutProperty('sectores-fill', 'visibility', 'visible');
-                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.15);
-
-                map.setFilter('sectores-line', null);
-                map.setLayoutProperty('sectores-line', 'visibility', 'visible');
-                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
-                map.setPaintProperty('sectores-line', 'line-width', [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    10, 2.0,
-                    13, 3.2,
-                    16, 5.0
-                ]);
-                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
-
-                map.setFilter('sectores-label', null);
-                map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
-                map.setLayoutProperty('sectores-label', 'text-size', [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    10, 12,
-                    13, 16,
-                    16, 24
-                ]);
-                map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
-                map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
-                map.setPaintProperty('sectores-label', 'text-halo-width', 4.5);
-
-                if (barraSector) barraSector.style.display = 'none';
-            } else {
-                const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
-                const isPuntoMuestreo = sectorMeta && sectorMeta.esPuntoMuestreo;
-
-                if (isPuntoMuestreo) {
-                    // Si se seleccionó un punto de muestreo directo (16..40 o 53..70), ocultar polígonos de sectores
-                    map.setLayoutProperty('sectores-fill', 'visibility', 'none');
-                    map.setLayoutProperty('sectores-line', 'visibility', 'none');
-                    map.setLayoutProperty('sectores-label', 'visibility', 'none');
-                } else {
-                    // FILTRAR Y DESTACAR ÚNICAMENTE EL POLÍGONO DEL SECTOR CENSAL
-                    const filterSC = ['==', ['to-string', ['get', 'sc']], targetSC];
-
-                    map.setLayoutProperty('sectores-fill', 'visibility', 'visible');
-                    map.setFilter('sectores-fill', filterSC);
-                    map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
-                    map.setPaintProperty('sectores-fill', 'fill-opacity', 0.30);
-
-                    map.setLayoutProperty('sectores-line', 'visibility', 'visible');
-                    map.setFilter('sectores-line', filterSC);
-                    map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
-                    map.setPaintProperty('sectores-line', 'line-width', 5.0);
-                    map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
-
-                    map.setFilter('sectores-label', filterSC);
-                    map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
-                    map.setLayoutProperty('sectores-label', 'text-size', [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        12, 18,
-                        15, 26,
-                        17, 34
-                    ]);
-                    map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
-                    map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
-                    map.setPaintProperty('sectores-label', 'text-halo-width', 5.0);
-                }
-
-                if (sectorMeta) {
-                    const etiqueta = sectorMeta.etiqueta_muestra || sectorMeta.etiquetaSC || `Muestra #${targetSC}`;
-                    const centroid = sectorMeta.centroid;
-
-                    if (barraSector && sectorTitulo && btnGmaps && centroid) {
-                        sectorTitulo.textContent = isPuntoMuestreo ? `Punto #${targetSC} — ${sectorMeta.nombre_acortado || sectorMeta.nombre_referencia || ''}` : `Sector ${sectorMeta.etiquetaSC || targetSC}`;
-                        btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${centroid[1].toFixed(6)},${centroid[0].toFixed(6)}`;
-                        barraSector.style.display = 'flex';
-                    }
-                } else if (barraSector) {
-                    barraSector.style.display = 'none';
-                }
+        const targetSC = String(AppState.sectorSeleccionado).trim();
+        if (targetSC === 'Todos') {
+            if (barraSector) barraSector.style.display = 'none';
+        } else {
+            const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+            if (sectorMeta && barraSector && sectorTitulo && btnGmaps && sectorMeta.centroid) {
+                sectorTitulo.textContent = `Punto #${targetSC} — ${sectorMeta.nombre_acortado || sectorMeta.nombre_referencia || ''}`;
+                btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${sectorMeta.centroid[1].toFixed(6)},${sectorMeta.centroid[0].toFixed(6)}`;
+                barraSector.style.display = 'flex';
+            } else if (barraSector) {
+                barraSector.style.display = 'none';
             }
         }
 
@@ -2412,9 +2024,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (map.getLayer('puntos-micro-label-layer')) {
             map.setLayoutProperty('puntos-micro-label-layer', 'visibility', showLabels);
-        }
-        if (map.getLayer('sectores-label')) {
-            map.setLayoutProperty('sectores-label', 'visibility', showLabels);
         }
 
         if (UI.mapStats) {

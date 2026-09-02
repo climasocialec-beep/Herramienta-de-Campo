@@ -21,13 +21,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload de activos críticos del mapa -->
-  <link rel="preload" href="assets/parroquias.geojson?v=3.6.2" as="fetch" crossorigin>
+  <link rel="preload" href="assets/parroquias.geojson?v=3.7.0" as="fetch" crossorigin>
 
   <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=3.6.2">
+  <link rel="stylesheet" href="style.css?v=3.7.0">
 </head>
 <body>
 
@@ -208,15 +208,15 @@
             </div>
           </div>
 
-          <!-- Sector Censal / Punto de Muestreo (1 al 70) -->
+          <!-- Puntos de Muestreo (1 al 70) -->
           <div class="cs-ribbon-field">
             <label for="sectorFilter" class="cs-field-label">
-              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-              <span>Sector / Muestreo</span>
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Punto Muestreo</span>
             </label>
             <div class="cs-select-wrap">
               <select id="sectorFilter" class="cs-select">
-                <option value="Todos">Todos (1 al 70)</option>
+                <option value="Todos">Todos los puntos (1 al 70)</option>
               </select>
             </div>
           </div>
@@ -276,17 +276,9 @@
         <div class="cs-map-wrapper">
           <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
           <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-            <button type="button" class="cs-layer-pill active" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo donde se levantarán encuestas" style="display:none;">
+            <button type="button" class="cs-layer-pill active" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo (70 hitos)">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--muestreo"></span>
-              <span id="lblToggleMuestreo">Muestreo</span>
-            </button>
-            <button type="button" class="cs-layer-pill active" id="toggleLlegada" data-layer-group="llegada" title="Puntos Referenciales dentro de Sectores Censales">
-              <span class="cs-layer-pill__dot cs-layer-pill__dot--llegada"></span>
-              <span id="lblToggleLlegada">Pts. Referenciales</span>
-            </button>
-            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Polígonos de Sectores Censales" style="display:none;">
-              <span class="cs-layer-pill__dot cs-layer-pill__dot--sectores"></span>
-              <span id="lblToggleSectores">Sectores</span>
+              <span id="lblToggleMuestreo">Muestreo (70)</span>
             </button>
             <button type="button" class="cs-layer-pill active" id="toggleCircunscripciones" data-layer-group="circunscripciones" title="Límites de Circunscripciones Urbanas">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--circ"></span>
@@ -303,11 +295,11 @@
             <div class="cs-map-legend__items" id="mapLegendItems"></div>
           </div>
           
-          <!-- Barra flotante de navegación para Sector Censal activo -->
+          <!-- Barra flotante de navegación para Punto de Muestreo activo -->
           <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
             <div class="cs-sector-active-info">
-              <span class="cs-sector-active-icon">📍</span>
-              <span class="cs-sector-active-title" id="sectorActivoTitulo">Sector Censal</span>
+              <span class="cs-sector-active-icon">🎯</span>
+              <span class="cs-sector-active-title" id="sectorActivoTitulo">Punto de Muestreo</span>
             </div>
             <a id="btnRutaGoogleMaps" class="cs-btn-gmaps" href="#" target="_blank" rel="noopener noreferrer">
               <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
@@ -394,7 +386,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.6.2"></script>
+  <script src="script.js?v=3.7.0"></script>
 
 </body>
 </html>
