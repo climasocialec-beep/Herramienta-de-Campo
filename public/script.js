@@ -241,9 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
         configurarNavegacionMovil();
         configurarEventos();
 
-        // 1. Boot Instantáneo desde Caché Local Offline (0ms)
+        // 1. Limpieza de caché previa y Boot Instantáneo Machala 2026
         try {
-            const cached = localStorage.getItem('cs_encuestas_cache');
+            if (localStorage.getItem('cs_encuestas_cache')) {
+                localStorage.removeItem('cs_encuestas_cache');
+            }
+            const cached = localStorage.getItem('cs_encuestas_machala_v1');
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -296,16 +299,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function cargarConfiguracion() {
         try {
-            const res = await fetch('/api/config');
+            const res = await fetch('/api/config', { cache: 'no-store' });
             if (res.ok) {
                 const configData = await res.json();
                 AppState.config = { ...AppState.config, ...configData };
             }
             if (UI.tituloProyecto) {
-                UI.tituloProyecto.textContent = AppState.config.nombreProyecto || 'Encuesta Cantonal Machala 2026';
+                let nom = AppState.config.nombreProyecto || 'Encuesta Cantonal Machala 2026';
+                if (nom.toLowerCase().includes('cuenca')) {
+                    nom = 'Encuesta Cantonal Machala 2026';
+                    AppState.config.nombreProyecto = nom;
+                }
+                UI.tituloProyecto.textContent = nom;
+                document.title = 'Clima Social · ' + nom;
             }
             if (UI.kpiMeta) {
-                UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 2500).toLocaleString()}`;
+                UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 0).toLocaleString()}`;
             }
         } catch (e) {
             console.warn('Usando configuración por defecto');
@@ -319,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.badgeTexto) UI.badgeTexto.textContent = 'Sincronizando…';
 
         try {
-            const res = await fetch('/api/encuestas');
+            const res = await fetch('/api/encuestas', { cache: 'no-store' });
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
             
             const data = await res.json();
@@ -332,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar en caché local para operatividad 100% offline
             try {
-                localStorage.setItem('cs_encuestas_cache', JSON.stringify(AppState.encuestas));
+                localStorage.setItem('cs_encuestas_machala_v1', JSON.stringify(AppState.encuestas));
             } catch (e) {
                 console.warn('[Cache] Error al guardar caché:', e);
             }

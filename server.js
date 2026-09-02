@@ -220,9 +220,13 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/config", (req, res) => {
-    res.set("Cache-Control", "public, max-age=300");
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    let nombre = process.env.NOMBRE_PROYECTO || "Encuesta Cantonal Machala 2026";
+    if (nombre.toLowerCase().includes("cuenca") || !process.env.NOMBRE_PROYECTO) {
+        nombre = "Encuesta Cantonal Machala 2026";
+    }
     res.json({
-        nombreProyecto: process.env.NOMBRE_PROYECTO || "Encuesta Cantonal Machala 2026",
+        nombreProyecto: nombre,
         metaEncuestas: Number(process.env.META_ENCUESTAS) || 0,
         campoEncuestador: process.env.CAMPO_ENCUESTADOR || "C_digo_encuestador",
         campoSupervisor: process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor",
