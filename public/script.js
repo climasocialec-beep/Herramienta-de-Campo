@@ -643,8 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const PARROQUIAS_POR_CIRCUNSCRIPCION = {
             'Circunscripción 1': ['PUERTO BOLIVAR', 'MACHALA', 'JUBONES', 'JAMBELI'],
-            'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA'],
-            'Zona Rural': ['EL RETIRO']
+            'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA']
         };
 
         // 1.1 Selector Circunscripción
@@ -654,9 +653,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <option value="Todas">Todas las circunscripciones</option>
                 <option value="Circunscripción 1">Circunscripción 1 (Urbana)</option>
                 <option value="Circunscripción 2">Circunscripción 2 (Urbana)</option>
-                <option value="Zona Rural">Zona Rural (El Retiro)</option>
             `;
-            UI.circunscripcionFilter.value = actualCirc;
+            // Limpiar si tenía Zona Rural seleccionada
+            UI.circunscripcionFilter.value = (actualCirc === 'Zona Rural') ? 'Todas' : actualCirc;
+            if (actualCirc === 'Zona Rural') AppState.circunscripcionSeleccionada = 'Todas';
         }
 
         // 2. Selector Sectores Censales (Universal & Dinámico)
@@ -814,8 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (AppState.circunscripcionSeleccionada !== 'Todas') {
             const PARROQUIAS_POR_CIRCUNSCRIPCION = {
                 'Circunscripción 1': ['PUERTO BOLIVAR', 'MACHALA', 'JUBONES', 'JAMBELI'],
-                'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA'],
-                'Zona Rural': ['EL RETIRO']
+                'Circunscripción 2': ['EL CAMBIO', '9 DE MAYO', 'LA PROVIDENCIA']
             };
             const parsPermitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
             const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
@@ -2005,10 +2004,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Circunscripción 2', 1.0,
                     0.30
                 ]);
-            } else if (AppState.circunscripcionSeleccionada === 'Zona Rural') {
-                map.setPaintProperty('circunscripciones-fill', 'fill-opacity', 0.01);
-                map.setPaintProperty('circunscripciones-line', 'line-width', 1.2);
-                map.setPaintProperty('circunscripciones-line', 'line-opacity', 0.25);
             }
         }
 
@@ -2161,10 +2156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (AppState.circunscripcionSeleccionada === 'Circunscripción 2') {
                     // Corredor urbano Circunscripción 2 (El Cambio, 9 de Mayo, La Providencia)
                     circBbox = [[-79.970, -3.296], [-79.885, -3.260]];
-                } else if (AppState.circunscripcionSeleccionada === 'Zona Rural') {
-                    // Zona Rural (El Retiro)
-                    const featRetiro = AppState.parroquiasMap.get('EL RETIRO') || AppState.parroquiasMap.get('ELRETIRO');
-                    circBbox = featRetiro ? featRetiro.bbox : [[-80.038, -3.436], [-79.884, -3.304]];
                 }
                 if (circBbox) {
                     map.fitBounds(circBbox, {
