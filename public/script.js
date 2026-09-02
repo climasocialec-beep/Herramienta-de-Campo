@@ -476,8 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.fechaFilter) {
             const isCustomDate = AppState.fechaSeleccionada !== 'Todas' && 
                                  AppState.fechaSeleccionada !== 'Hoy' && 
-                                 AppState.fechaSeleccionada !== 'Ayer' && 
-                                 AppState.fechaSeleccionada !== 'Semana';
+                                 AppState.fechaSeleccionada !== 'Ayer';
             UI.fechaFilter.classList.toggle('is-active', isCustomDate);
             if (isCustomDate) {
                 UI.fechaFilter.value = AppState.fechaSeleccionada;
@@ -489,7 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let fecLabel = `Fecha: ${AppState.fechaSeleccionada}`;
             if (AppState.fechaSeleccionada === 'Hoy') fecLabel = 'Fecha: Hoy';
             else if (AppState.fechaSeleccionada === 'Ayer') fecLabel = 'Fecha: Ayer';
-            else if (AppState.fechaSeleccionada === 'Semana') fecLabel = 'Fecha: Esta semana';
 
             chips.push({
                 tipo: 'fecha',
@@ -591,10 +589,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selFec !== 'Todas') {
                 const hoyStr = new Date().toISOString().split('T')[0];
                 const ayerStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                const haceSieteDiasStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
                 if (selFec === 'Hoy') matchFec = (fec === hoyStr);
                 else if (selFec === 'Ayer') matchFec = (fec === ayerStr);
-                else if (selFec === 'Semana') matchFec = (fec >= haceSieteDiasStr && fec <= hoyStr);
                 else matchFec = (fec === selFec);
             }
             const matchEnc = (!selEnc || encCod === String(selEnc));
@@ -914,7 +910,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const hoyObj = new Date();
             const hoyStr = hoyObj.toISOString().split('T')[0];
             const ayerStr = new Date(hoyObj.getTime() - 86400000).toISOString().split('T')[0];
-            const haceSieteDiasStr = new Date(hoyObj.getTime() - 7 * 86400000).toISOString().split('T')[0];
 
             filtradas = filtradas.filter(e => {
                 const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
@@ -924,8 +919,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return fec === hoyStr;
                 } else if (AppState.fechaSeleccionada === 'Ayer') {
                     return fec === ayerStr;
-                } else if (AppState.fechaSeleccionada === 'Semana') {
-                    return fec >= haceSieteDiasStr && fec <= hoyStr;
                 } else {
                     return fec === AppState.fechaSeleccionada;
                 }
@@ -1020,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.6.0';
+            const cacheBuster = '?v=3.6.1';
             const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
                 fetch('assets/sectores_censales.geojson' + cacheBuster),
                 fetch('assets/parroquias.geojson' + cacheBuster),
