@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.config = { ...AppState.config, ...configData };
             }
             if (UI.tituloProyecto) {
-                UI.tituloProyecto.textContent = AppState.config.nombreProyecto || 'Supervisión de Campo';
+                UI.tituloProyecto.textContent = AppState.config.nombreProyecto || 'Encuesta Cantonal Machala 2026';
             }
             if (UI.kpiMeta) {
                 UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 2500).toLocaleString()}`;
@@ -939,8 +939,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        let mapCenter = [-78.9983, -2.9334]; // Fallback por defecto si no hay capas
+        let mapCenter = [-79.9554, -3.2581]; // Coordenadas de Machala, El Oro
         let initialBounds = null;
+        AppState.cantonBbox = [[-80.05, -3.35], [-79.85, -3.15]]; // BBox preliminar de Machala
 
         if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
             mapCenter = [(globalMinX + globalMaxX) / 2, (globalMinY + globalMaxY) / 2];

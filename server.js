@@ -29,15 +29,14 @@ function limpiarVar(val) {
 }
 
 const PORT = Number(process.env.PORT) || 3001;
-const ASSET_ID = limpiarVar(process.env.ASSET_ID);
-const API_TOKEN = limpiarVar(process.env.API_TOKEN);
+const ASSET_ID = limpiarVar(process.env.ASSET_ID_MACHALA || "");
+const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
 
-if (!ASSET_ID || !API_TOKEN) {
-    console.error("[SUPERVISOR] ⚠  Faltan variables de entorno: ASSET_ID y/o API_TOKEN.");
-    console.error("[SUPERVISOR]    Verifica las variables de entorno en Render o archivo .env.");
+if (!ASSET_ID) {
+    console.log("[SUPERVISOR] ℹ  Esperando configuración de nuevo formulario para Encuesta Cantonal Machala 2026.");
 }
 
 // =======================================
@@ -223,13 +222,13 @@ app.get("/api/health", (req, res) => {
 app.get("/api/config", (req, res) => {
     res.set("Cache-Control", "public, max-age=300");
     res.json({
-        nombreProyecto: process.env.NOMBRE_PROYECTO || "Supervisión de Campo",
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 1600,
+        nombreProyecto: process.env.NOMBRE_PROYECTO || "Encuesta Cantonal Machala 2026",
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 0,
         campoEncuestador: process.env.CAMPO_ENCUESTADOR || "C_digo_encuestador",
         campoSupervisor: process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor",
-        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : null,
-        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : null,
-        zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : null
+        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -79.9554,
+        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -3.2581,
+        zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 12.5
     });
 });
 
@@ -240,7 +239,7 @@ app.get("/api/encuestas", async (req, res) => {
                 total: 0,
                 resultados: [],
                 obtenidoEn: Date.now(),
-                mensaje: "Esperando configuración de nuevo ASSET_ID"
+                mensaje: "Esperando configuración de nuevo formulario para Encuesta Cantonal Machala 2026"
             });
         }
         const datos = await obtenerDatosKobo();
