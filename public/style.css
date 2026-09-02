@@ -1972,11 +1972,19 @@ body.modo-oscuro .cs-point-badge {
 
   .cs-map-section {
     height: auto !important;
+    min-height: 500px;
   }
 
+  /* ⚠️ CRÍTICO: #map hereda height:100% del wrapper.
+     Si el wrapper es height:auto, #map queda 0px y MapLibre dibuja un canvas vacío.
+     Se fuerza px explícitos para romper ese ciclo. */
   .cs-map-wrapper {
-    height: 420px !important;
-    min-height: 420px !important;
+    height: 480px !important;
+    min-height: 480px !important;
+  }
+
+  #map {
+    height: 480px !important;
   }
 
   .cs-right-panel {
@@ -2118,12 +2126,18 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
   }
 
   .cs-kpi-card {
-    padding: 0.5rem 0.75rem;
-    min-height: 52px;
+    padding: 0.5rem 0.65rem 0.6rem;
+    min-height: 64px;
+    gap: 0.3rem;
   }
 
   .cs-kpi-card__value {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
+  }
+
+  .cs-kpi-icon-wrap {
+    width: 28px;
+    height: 28px;
   }
 
   .cs-main-grid {
@@ -2137,7 +2151,12 @@ body.modo-oscuro .cs-mobile-nav-btn.active {
   }
 
   .cs-map-wrapper {
-    min-height: 440px;
+    height: 480px !important;
+    min-height: 480px !important;
+  }
+
+  #map {
+    height: 480px !important;
   }
 }
 
