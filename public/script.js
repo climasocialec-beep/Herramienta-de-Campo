@@ -863,8 +863,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sectoresData.features) {
             sectoresData.features.forEach(f => {
                 const p = f.properties || {};
-                const sc = String(p.sc || '').trim();
+                const sc = String(p.codigo_muestra || p.sc || p.sec_anm || '').trim();
                 const tipologia = String(p.tipologia || '').trim().toUpperCase();
+                f.properties.sc = sc;
                 f.properties.etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
                 if (f.geometry) {
                     const bbox = calcularBBOX(f.geometry);
@@ -1500,9 +1501,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (geojsonData.features) {
                 geojsonData.features.forEach(f => {
                     const p = f.properties || {};
-                    const sc = String(p.sc || p.codigo_sc || p.sc_cuenca_sc || '').trim();
+                    const sc = String(p.codigo_muestra || p.sc || p.sec_anm || p.codigo_sc || p.sc_cuenca_sc || '').trim();
                     const tipologia = String(p.tipologia || p.tipologia_sc || '').trim().toUpperCase();
                     const etiquetaSC = sc ? `${sc}${tipologia}` : tipologia;
+                    f.properties.sc = sc;
                     f.properties.etiquetaSC = etiquetaSC;
 
                     let bbox = null;
