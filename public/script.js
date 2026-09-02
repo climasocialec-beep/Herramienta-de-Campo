@@ -1764,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .addTo(map);
         });
 
-        // Popup interactivo para Puntos de Llegada / Hitos de Acceso a Sectores
+        // Popup interactivo para Puntos Referenciales dentro de Sectores Censales
         map.on('click', 'puntos-llegada-circle', (e) => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
@@ -1776,13 +1776,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 .setLngLat(coords)
                 .setHTML(`
                     <div class="cs-map-popup">
-                        <div class="cs-popup-badge cs-popup-badge--llegada">📍 Hito de Acceso · Sector ${secCorto}</div>
-                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Hito de Llegada'}</h4>
+                        <div class="cs-popup-badge cs-popup-badge--llegada">📌 Pto. Referencial · Sector ${secCorto}</div>
+                        <h4 class="cs-popup-title">${p.nombre_referencia || 'Punto Referencial'}</h4>
                         <div class="cs-popup-row"><span>Tipo:</span> <strong>${p.tipo_referencia || 'Referencia'}</strong></div>
                         <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
                         <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
                             <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar al Sector (Google Maps)
+                            Cómo llegar (Google Maps)
                         </a>
                     </div>
                 `)
