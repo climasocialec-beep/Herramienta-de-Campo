@@ -21,13 +21,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload de activos críticos del mapa -->
-  <link rel="preload" href="assets/parroquias.geojson?v=3.5.0" as="fetch" crossorigin>
+  <link rel="preload" href="assets/parroquias.geojson?v=3.6.0" as="fetch" crossorigin>
 
   <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=3.5.0">
+  <link rel="stylesheet" href="style.css?v=3.6.0">
 </head>
 <body>
 
@@ -208,15 +208,15 @@
             </div>
           </div>
 
-          <!-- Sector Censal -->
+          <!-- Sector Censal / Punto de Muestreo (1 al 70) -->
           <div class="cs-ribbon-field">
             <label for="sectorFilter" class="cs-field-label">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-              <span>Sector Censal</span>
+              <span>Sector / Muestreo</span>
             </label>
             <div class="cs-select-wrap">
               <select id="sectorFilter" class="cs-select">
-                <option value="Todos">Todos los sectores</option>
+                <option value="Todos">Todos (1 al 70)</option>
               </select>
             </div>
           </div>
@@ -395,7 +395,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.5.0"></script>
+  <script src="script.js?v=3.6.0"></script>
 
 </body>
 </html>

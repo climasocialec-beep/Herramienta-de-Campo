@@ -450,9 +450,12 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.sectorFilter.classList.toggle('is-active', isAct);
             if (isAct) {
                 activeCount++;
+                const secMeta = AppState.sectoresMap.get(AppState.sectorSeleccionado);
+                const isPM = secMeta && secMeta.esPuntoMuestreo;
+                const chipLbl = isPM ? `Punto #${AppState.sectorSeleccionado}` : `Sector: ${AppState.sectorSeleccionado}`;
                 chips.push({
                     tipo: 'sector',
-                    label: `Sector: ${AppState.sectorSeleccionado}`,
+                    label: chipLbl,
                     onClear: () => {
                         AppState.sectorSeleccionado = 'Todos';
                         if (UI.sectorFilter) UI.sectorFilter.value = 'Todos';
@@ -659,49 +662,85 @@ document.addEventListener('DOMContentLoaded', () => {
             if (actualCirc === 'Zona Rural') AppState.circunscripcionSeleccionada = 'Todas';
         }
 
-        // 2. Selector Sectores Censales (Universal & Dinámico)
+        // 2. Selector Unificado de Muestra Territorial (Sectores Censales y Puntos de Muestreo: 1 al 70)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
-            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores</option>';
+            UI.sectorFilter.innerHTML = '<option value="Todos">Todos (1 al 70)</option>';
             
-            // Usar catálogo canónico único del GeoJSON
-            const mapaSectoresUnicos = new Map();
+            // Catálogo unificado de 1 al 70 proveniente de sectores y puntos de muestreo
+            const mapaMuestraUnica = new Map();
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
 
+            // 1. Sectores Censales (Polígonos: Códigos 1..15 y 41..52)
             if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
                 AppState.sectoresGeojson.features.forEach(f => {
                     const p = f.properties || {};
-                    const scNum = String(p.sc || '').trim();
+                    const scNum = String(p.codigo_muestra || p.sc || '').trim();
                     const tipologia = String(p.tipologia || '').trim().toUpperCase();
                     const etiqueta = p.etiquetaSC || `${scNum}${tipologia}`;
                     const parroquia = String(p.parroquia || p.parroquia_especifica || p.nom_par || p.PARROQUIA || '').trim();
+                    const ref = p.punto_referencial || '';
 
-                    // Si hay una parroquia seleccionada y no un sector específico, filtrar sectores pertenecientes
                     if (parActivaNorm && parroquia) {
                         const pNorm = normTexto(parroquia);
                         if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
-                            return; // No pertenece a la parroquia activa
+                            return;
                         }
                     }
 
-                    if (scNum && !mapaSectoresUnicos.has(scNum)) {
-                        mapaSectoresUnicos.set(scNum, { sc: scNum, etiqueta, parroquia });
+                    if (scNum && !mapaMuestraUnica.has(scNum)) {
+                        mapaMuestraUnica.set(scNum, {
+                            sc: scNum,
+                            tipo: 'Sector',
+                            etiqueta: `Sector ${etiqueta}`,
+                            detalle: ref ? `Sector ${etiqueta} — ${ref}` : `Sector ${etiqueta}`,
+                            parroquia: parroquia
+                        });
                     }
                 });
             }
 
-            // Ordenamiento natural de sectores 1..77
-            const listaSectores = Array.from(mapaSectoresUnicos.values()).sort((a, b) => {
+            // 2. Puntos de Muestreo (Puntos: Códigos 16..40 y 53..70)
+            if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features) {
+                AppState.puntosMuestreoGeojson.features.forEach(f => {
+                    const p = f.properties || {};
+                    const codNum = String(p.codigo_muestra || '').trim();
+                    const tipologia = String(p.tipologia || '').trim().toUpperCase();
+                    const etiqueta = `${codNum}${tipologia}`;
+                    const parroquia = String(p.parroquia || '').trim();
+                    const nombrePto = p.nombre_acortado || p.nombre_referencia || '';
+
+                    if (parActivaNorm && parroquia) {
+                        const pNorm = normTexto(parroquia);
+                        if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
+                            return;
+                        }
+                    }
+
+                    if (codNum && !mapaMuestraUnica.has(codNum)) {
+                        mapaMuestraUnica.set(codNum, {
+                            sc: codNum,
+                            tipo: 'Muestreo',
+                            etiqueta: `Pto. ${codNum} (${tipologia})`,
+                            detalle: nombrePto ? `Pto. ${codNum} (${tipologia}) — ${nombrePto}` : `Pto. ${codNum} (${tipologia})`,
+                            parroquia: parroquia
+                        });
+                    }
+                });
+            }
+
+            // Ordenamiento natural numérico exacto del 1 al 70
+            const listaMuestra = Array.from(mapaMuestraUnica.values()).sort((a, b) => {
                 return (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0);
             });
             
             const frag = document.createDocumentFragment();
             const sectoresValidos = new Set();
 
-            listaSectores.forEach(item => {
+            listaMuestra.forEach(item => {
                 const count = sectores.get(item.sc) || 0;
                 
-                // Si hay filtro activo de encuestas, SOLO mostrar sectores con encuestas en ese contexto
+                // Si hay filtro activo de encuestas, SOLO mostrar ítems con encuestas en ese contexto
                 if (hayFiltroActivo && count === 0 && AppState.encuestas.length > 0) {
                     return;
                 }
@@ -732,8 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const opt = document.createElement('option');
                 opt.value = item.sc;
-                opt.textContent = count > 0 ? `Sector ${item.etiqueta} (${count})` : `Sector ${item.etiqueta}`;
-                opt.title = `Sector ${item.etiqueta}${item.parroquia ? ` — ${item.parroquia}` : ''}${count > 0 ? ` (${count} encuestas)` : ''}`;
+                opt.textContent = count > 0 ? `${item.detalle} (${count} enc.)` : item.detalle;
+                opt.title = `${item.detalle}${item.parroquia ? ` [${item.parroquia}]` : ''}${count > 0 ? ` (${count} encuestas)` : ''}`;
                 frag.appendChild(opt);
             });
             UI.sectorFilter.appendChild(frag);
@@ -981,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.5.0';
+            const cacheBuster = '?v=3.6.0';
             const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
                 fetch('assets/sectores_censales.geojson' + cacheBuster),
                 fetch('assets/parroquias.geojson' + cacheBuster),
@@ -1101,6 +1140,49 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Indexar Puntos de Muestreo (Códigos 16..40 y 53..70) en AppState.puntosMuestreoMap y AppState.sectoresMap
+        AppState.puntosMuestreoMap = new Map();
+        if (puntosMuestreoData.features) {
+            puntosMuestreoData.features.forEach(f => {
+                const p = f.properties || {};
+                const cod = String(p.codigo_muestra || '').trim();
+                const tip = String(p.tipologia || '').trim().toUpperCase();
+                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.nombre_referencia || ''}`;
+                p.sc = cod;
+                p.tipologia = tip;
+                p.etiquetaSC = `${cod}${tip}`;
+                p.etiqueta_muestra = etiq;
+                p.esPuntoMuestreo = true;
+
+                let bbox = null;
+                let centroid = null;
+                if (f.geometry && f.geometry.coordinates) {
+                    const coords = f.geometry.coordinates;
+                    centroid = [coords[0], coords[1]];
+                    // Pequeño bbox de 0.003 grados (~300m) para encuadre focalizado
+                    const delta = 0.0025;
+                    bbox = [
+                        [coords[0] - delta, coords[1] - delta],
+                        [coords[0] + delta, coords[1] + delta]
+                    ];
+                    p.bbox = bbox;
+                    p.centroid = centroid;
+                }
+
+                if (cod) {
+                    AppState.puntosMuestreoMap.set(cod, p);
+                    // También agregar a sectoresMap para cobertura universal de 1 a 70
+                    AppState.sectoresMap.set(cod, p);
+                    AppState.sectoresMap.set(`${cod}${tip}`, p);
+                    const n = parseInt(cod, 10);
+                    if (!isNaN(n)) {
+                        AppState.puntosMuestreoMap.set(String(n), p);
+                        AppState.sectoresMap.set(String(n), p);
+                    }
+                }
+            });
+        }
+
         // Enriquecer parroquias con bbox y construir diccionario dinámico de códigos
         AppState.diccionarioParroquias = AppState.diccionarioParroquias || {};
         AppState.parroquiasMap.clear();
@@ -1195,14 +1277,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
-                    'esri-tiles': {
+                    'osm-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-                            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
                         ],
                         tileSize: 256,
-                        attribution: '&copy; Esri &mdash; OpenStreetMap &amp; Clima Social'
+                        maxzoom: 19,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1235,11 +1319,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'esri-layer',
+                        id: 'osm-layer',
                         type: 'raster',
-                        source: 'esri-tiles',
+                        source: 'osm-tiles',
                         minzoom: 0,
-                        maxzoom: 19
+                        maxzoom: 22
                     },
                     // 1. Circunscripciones Urbanas (Límites mayores diferenciados por color)
                     {
@@ -1468,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bounds: initialBounds || undefined,
             fitBoundsOptions: initialBounds ? { padding: 35, maxZoom: 14 } : undefined,
             minZoom: 8,
-            maxZoom: 19,
+            maxZoom: 20,
             interactive: true,
             dragPan: true,
             scrollZoom: true,
@@ -2139,39 +2223,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (barraSector) barraSector.style.display = 'none';
             } else {
-                // FILTRAR Y DESTACAR ÚNICAMENTE EL SECTOR SELECCIONADO
-                const filterSC = ['==', ['to-string', ['get', 'sc']], targetSC];
-
-                map.setFilter('sectores-fill', filterSC);
-                map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.30);
-
-                map.setFilter('sectores-line', filterSC);
-                map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
-                map.setPaintProperty('sectores-line', 'line-width', 5.0);
-                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
-
-                map.setFilter('sectores-label', filterSC);
-                map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
-                map.setLayoutProperty('sectores-label', 'text-size', [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    12, 18,
-                    15, 26,
-                    17, 34
-                ]);
-                map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
-                map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
-                map.setPaintProperty('sectores-label', 'text-halo-width', 5.0);
-
                 const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                const isPuntoMuestreo = sectorMeta && sectorMeta.esPuntoMuestreo;
+
+                if (isPuntoMuestreo) {
+                    // Si se seleccionó un punto de muestreo directo (16..40 o 53..70), ocultar polígonos de sectores
+                    map.setLayoutProperty('sectores-fill', 'visibility', 'none');
+                    map.setLayoutProperty('sectores-line', 'visibility', 'none');
+                    map.setLayoutProperty('sectores-label', 'visibility', 'none');
+                } else {
+                    // FILTRAR Y DESTACAR ÚNICAMENTE EL POLÍGONO DEL SECTOR CENSAL
+                    const filterSC = ['==', ['to-string', ['get', 'sc']], targetSC];
+
+                    map.setLayoutProperty('sectores-fill', 'visibility', 'visible');
+                    map.setFilter('sectores-fill', filterSC);
+                    map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
+                    map.setPaintProperty('sectores-fill', 'fill-opacity', 0.30);
+
+                    map.setLayoutProperty('sectores-line', 'visibility', 'visible');
+                    map.setFilter('sectores-line', filterSC);
+                    map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
+                    map.setPaintProperty('sectores-line', 'line-width', 5.0);
+                    map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
+
+                    map.setFilter('sectores-label', filterSC);
+                    map.setLayoutProperty('sectores-label', 'visibility', AppState.mostrarEtiquetas ? 'visible' : 'none');
+                    map.setLayoutProperty('sectores-label', 'text-size', [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        12, 18,
+                        15, 26,
+                        17, 34
+                    ]);
+                    map.setPaintProperty('sectores-label', 'text-color', '#9a3412');
+                    map.setPaintProperty('sectores-label', 'text-halo-color', '#ffffff');
+                    map.setPaintProperty('sectores-label', 'text-halo-width', 5.0);
+                }
+
                 if (sectorMeta) {
-                    const etiqueta = sectorMeta.etiquetaSC || targetSC;
+                    const etiqueta = sectorMeta.etiqueta_muestra || sectorMeta.etiquetaSC || `Muestra #${targetSC}`;
                     const centroid = sectorMeta.centroid;
 
                     if (barraSector && sectorTitulo && btnGmaps && centroid) {
-                        sectorTitulo.textContent = `Sector ${etiqueta}`;
+                        sectorTitulo.textContent = isPuntoMuestreo ? `Punto #${targetSC} — ${sectorMeta.nombre_acortado || sectorMeta.nombre_referencia || ''}` : `Sector ${sectorMeta.etiquetaSC || targetSC}`;
                         btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${centroid[1].toFixed(6)},${centroid[0].toFixed(6)}`;
                         barraSector.style.display = 'flex';
                     }
@@ -2186,14 +2281,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // =====================================================================
         if (ajustarCamara) {
             if (AppState.sectorSeleccionado !== 'Todos') {
-                // Nivel 1: Zoom al Sector Censal seleccionado
+                // Nivel 1: Zoom al Sector Censal o Punto de Muestreo seleccionado (1 al 70)
                 const targetSC = String(AppState.sectorSeleccionado).trim();
                 const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
                 const bbox = sectorMeta ? (sectorMeta.bbox || (sectorMeta.feature && sectorMeta.feature.properties && sectorMeta.feature.properties.bbox)) : null;
                 if (bbox) {
                     map.fitBounds(bbox, {
                         padding: { top: 75, bottom: 60, left: 60, right: 60 },
-                        maxZoom: 16.5,
+                        maxZoom: sectorMeta && sectorMeta.esPuntoMuestreo ? 17.5 : 16.5,
                         duration: 900
                     });
                 }
