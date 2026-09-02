@@ -958,12 +958,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
+            const cacheBuster = '?v=3.4.0';
             const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
-                fetch('assets/sectores_censales.geojson'),
-                fetch('assets/parroquias.geojson'),
-                fetch('assets/circunscripciones.geojson'),
-                fetch('assets/puntos_llegada.geojson'),
-                fetch('assets/puntos_muestreo.geojson')
+                fetch('assets/sectores_censales.geojson' + cacheBuster),
+                fetch('assets/parroquias.geojson' + cacheBuster),
+                fetch('assets/circunscripciones.geojson' + cacheBuster),
+                fetch('assets/puntos_llegada.geojson' + cacheBuster),
+                fetch('assets/puntos_muestreo.geojson' + cacheBuster)
             ]);
             if (resSec.ok) sectoresData = await resSec.json();
             if (resPar.ok) parroquiasData = await resPar.json();

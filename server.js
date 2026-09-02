@@ -58,9 +58,12 @@ app.use(express.static(path.join(__dirname, "public"), {
     dotfiles: "deny",
     etag: true,
     setHeaders: (res, filePath) => {
-        if (/\.(?:geojson|svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
-            // Activos pesados (GeoJSON, fuentes e imágenes): 7 días de caché inmutable
+        if (/\.(?:svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
+            // Fuentes e imágenes estáticas
             res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        } else if (/\.geojson$/i.test(filePath)) {
+            // GeoJSON: revalidación inmediata (permite actualizar capas sin caché residual)
+            res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         } else if (/\.html$/i.test(filePath)) {
             // HTML: nunca almacenar en caché bajo ninguna circunstancia (evita cache residual en móviles)
             res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
