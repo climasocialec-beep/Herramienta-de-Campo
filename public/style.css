@@ -2035,6 +2035,7 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
     min-height: 480px !important;
     position: relative !important;
     width: 100% !important;
+    touch-action: none !important;
   }
 
   #map {
@@ -2043,6 +2044,7 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    touch-action: none !important;
   }
 
   .cs-right-panel {

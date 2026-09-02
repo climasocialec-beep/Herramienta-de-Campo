@@ -1049,13 +1049,91 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('[Map Gestures]', err);
         }
 
-        // ResizeObserver para sincronización automática e instantánea del canvas en cualquier cambio de tamaño
+        // =====================================================================
+        // CONTROLADOR UNIVERSAL DE GESTOS TÁCTILES Y DE RATÓN
+        // Garantiza paneo y navegación 100% fluidos en iOS Safari, Android Chrome y PC
+        // =====================================================================
         const mapContainer = document.getElementById('map');
-        if (window.ResizeObserver && mapContainer) {
-            const ro = new ResizeObserver(() => {
-                if (map) map.resize();
+        if (mapContainer) {
+            let isTouching = false;
+            let lastTouchX = 0, lastTouchY = 0;
+            let pinchInitialDist = 0;
+            let isMouseDown = false;
+            let lastMouseX = 0, lastMouseY = 0;
+
+            // --- Soporte Táctil (Móvil / Tablet) ---
+            mapContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isTouching = true;
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+                } else if (e.touches.length === 2) {
+                    isTouching = true;
+                    pinchInitialDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: true });
+
+            mapContainer.addEventListener('touchmove', (e) => {
+                if (!isTouching || !map) return;
+
+                // Bloquea estrictamente el scroll vertical del navegador para que MapLibre reciba el gesto
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
+
+                if (e.touches.length === 1) {
+                    const curX = e.touches[0].clientX;
+                    const curY = e.touches[0].clientY;
+                    const dx = curX - lastTouchX;
+                    const dy = curY - lastTouchY;
+
+                    // Si el handler interno de MapLibre está pausado por el SO, forzamos paneo directo
+                    if (!map.dragPan.isActive()) {
+                        map.panBy([-dx, -dy], { duration: 0 });
+                    }
+                    lastTouchX = curX;
+                    lastTouchY = curY;
+                } else if (e.touches.length === 2 && pinchInitialDist > 0) {
+                    const curDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const zoomDelta = Math.log2(curDist / pinchInitialDist);
+                    if (Math.abs(zoomDelta) > 0.03 && !map.touchZoomRotate.isActive()) {
+                        map.setZoom(map.getZoom() + zoomDelta * 0.12);
+                        pinchInitialDist = curDist;
+                    }
+                }
+            }, { passive: false });
+
+            const endTouch = () => { isTouching = false; pinchInitialDist = 0; };
+            mapContainer.addEventListener('touchend', endTouch, { passive: true });
+            mapContainer.addEventListener('touchcancel', endTouch, { passive: true });
+
+            // --- Soporte Ratón / Trackpad (PC / Laptop) ---
+            mapContainer.addEventListener('mousedown', (e) => {
+                if (e.button === 0) {
+                    isMouseDown = true;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
             });
-            ro.observe(mapContainer);
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isMouseDown || !map) return;
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                if (!map.dragPan.isActive()) {
+                    map.panBy([-dx, -dy], { duration: 0 });
+                }
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
         }
 
         map.on('error', (e) => {
@@ -1066,15 +1144,9 @@ document.addEventListener('DOMContentLoaded', () => {
             AppState.mapLoaded = true;
             configurarCapasWebGL();
             renderizarVista(false, false);
-            // Cascade de resizes para corregir canvas en Android Chrome/tablets
-            [50, 150, 300, 600, 1200, 2500].forEach(ms =>
-                setTimeout(() => { if (map) map.resize(); }, ms)
-            );
-        });
-
-        // Un resize adicional justo cuando el mapa termina de pintar todas las tiles
-        map.on('idle', () => {
-            if (map) map.resize();
+            // Asegurar dimensiones óptimas
+            setTimeout(() => { if (map) map.resize(); }, 150);
+            setTimeout(() => { if (map) map.resize(); }, 600);
         });
 
         // pageshow: captura el Back/Forward Cache de iOS Safari y Chrome Android
@@ -1082,9 +1154,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (map) setTimeout(() => map.resize(), 100);
         });
 
-        window.addEventListener('resize', () => {
-            if (map) map.resize();
-        });
         window.addEventListener('orientationchange', () => {
             setTimeout(() => { if (map) map.resize(); }, 200);
             setTimeout(() => { if (map) map.resize(); }, 600);
