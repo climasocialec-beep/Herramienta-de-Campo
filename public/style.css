@@ -2502,6 +2502,39 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
   .cs-layer-pill {
     padding: 0.2rem 0.45rem;
     font-size: 0.65rem;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #ffffff !important;
+  }
+}
+
+/* =========================================================================
+   OPTIMIZACIÓN DE GPU Y MEMORIA PARA TELÉFONOS DE 1-2GB RAM (Galaxy A01 Core)
+   Elimina recalculo de sombras pesadas y desenfoques gaussianos en WebGL
+   ========================================================================= */
+#map, .maplibregl-canvas {
+  touch-action: none !important;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (max-width: 768px) {
+  /* Sustituir backdrop-filter por fondos planos opacos para liberar la GPU PowerVR */
+  .cs-ribbon-bar,
+  .cs-mobile-nav,
+  .cs-panel-header,
+  .cs-toast,
+  .cs-map-layer-toggles {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .cs-mobile-nav {
+    background: #0f172a !important;
+  }
+  /* Optimización de sombras para evitar caídas de FPS */
+  .cs-card, .cs-metric-card, .cs-table-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
   }
 }
 

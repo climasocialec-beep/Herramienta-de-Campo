@@ -1013,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.6.1';
+            const cacheBuster = '?v=3.6.2';
             const [resSec, resPar, resCirc, resLleg, resMuest] = await Promise.all([
                 fetch('assets/sectores_censales.geojson' + cacheBuster),
                 fetch('assets/parroquias.geojson' + cacheBuster),
@@ -1261,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         map = new maplibregl.Map({
             container: 'map',
             fadeDuration: 0,
-            maxTileCacheSize: 60,
+            maxTileCacheSize: 25, // Optimizado para 1-2GB RAM (Galaxy A01 Core) - Previene cierres por OOM
             preserveDrawingBuffer: false,
             antialias: false,
             trackResize: true,
