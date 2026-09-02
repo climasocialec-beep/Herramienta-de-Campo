@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             await cargarConfiguracion();
-            inicializarMapa();
+            await inicializarMapa();
             await Promise.all([cargarLimitesParroquiales(), cargarSectoresCensales()]);
             
             if (AppState.encuestas.length > 0) {
@@ -1023,16 +1023,28 @@ document.addEventListener('DOMContentLoaded', () => {
             center: [-78.9983, -2.9334],
             zoom: 12.0,
             minZoom: 8,
-            maxZoom: 19
+            maxZoom: 19,
+            interactive: true,
+            dragPan: true,
+            scrollZoom: true,
+            boxZoom: true,
+            dragRotate: false,
+            keyboard: true,
+            doubleClickZoom: true,
+            touchZoomRotate: true,
+            touchPitch: false,
+            cooperativeGestures: false
         });
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
         window.map = map;
 
-        // Asegurar gestos táctiles fluidos (paneo con 1 dedo y zoom con 2 dedos) en tablet y móvil
+        // Asegurar gestos de navegación y paneo activos en todos los dispositivos
         try {
             if (map.dragPan) map.dragPan.enable();
             if (map.touchZoomRotate) map.touchZoomRotate.enable();
+            if (map.scrollZoom) map.scrollZoom.enable();
+            if (map.doubleClickZoom) map.doubleClickZoom.enable();
         } catch (err) {
             console.warn('[Map Gestures]', err);
         }
