@@ -970,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.7.0';
+            const cacheBuster = '?v=3.7.1';
             const [resPar, resCirc, resMuest] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/circunscripciones.geojson' + cacheBuster),
@@ -1053,8 +1053,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (f.geometry && f.geometry.coordinates) {
                     const coords = f.geometry.coordinates;
                     centroid = [coords[0], coords[1]];
-                    // Bbox de 0.003 grados (~300m) para encuadre focalizado
-                    const delta = 0.0025;
+                    // Bbox ultra-focalizado (~130m a la redonda) para visualización nítida y detallada de calles
+                    const delta = 0.0012;
                     bbox = [
                         [coords[0] - delta, coords[1] - delta],
                         [coords[0] + delta, coords[1] + delta]
@@ -1280,7 +1280,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 'interpolate', ['linear'], ['zoom'],
                                 10, 4.0,
                                 13, 5.5,
-                                16, 7.5
+                                16, 7.5,
+                                19, 9.5
                             ],
                             'circle-color': '#0d9488', // Teal/Esmeralda sobrio y distinguido
                             'circle-stroke-color': '#ffffff',
@@ -1297,7 +1298,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 'interpolate', ['linear'], ['zoom'],
                                 10, 1.5,
                                 13, 2.0,
-                                16, 2.8
+                                16, 2.8,
+                                19, 3.5
                             ],
                             'circle-color': '#ffffff'
                         }
@@ -1892,9 +1894,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bbox = sectorMeta ? (sectorMeta.bbox || (sectorMeta.feature && sectorMeta.feature.properties && sectorMeta.feature.properties.bbox)) : null;
                 if (bbox) {
                     map.fitBounds(bbox, {
-                        padding: { top: 75, bottom: 60, left: 60, right: 60 },
-                        maxZoom: sectorMeta && sectorMeta.esPuntoMuestreo ? 17.5 : 16.5,
-                        duration: 900
+                        padding: { top: 60, bottom: 50, left: 50, right: 50 },
+                        maxZoom: 18.2,
+                        duration: 850
                     });
                 }
             } else if (AppState.parroquiaSeleccionada !== 'Todas') {
