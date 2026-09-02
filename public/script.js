@@ -175,6 +175,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = campo(encuesta, 'parroquia') || campo(encuesta, 'PARROQUIA') || campo(encuesta, 'nom_parroquia');
         if (!val) return '';
         const strVal = String(val).trim();
+        // 1. Diccionario dinámico generado a partir del GeoJSON cargado
+        if (AppState.diccionarioParroquias && AppState.diccionarioParroquias[strVal]) {
+            return AppState.diccionarioParroquias[strVal];
+        }
+        // 2. Fallbacks estáticos
         if (DICCIONARIO_PARROQUIAS[strVal]) return DICCIONARIO_PARROQUIAS[strVal];
         const padded = strVal.padStart(4, '0');
         if (DICCIONARIO_PARROQUIAS[padded]) return DICCIONARIO_PARROQUIAS[padded];
@@ -892,10 +897,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Enriquecer parroquias con bbox
+        // Enriquecer parroquias con bbox y construir diccionario dinámico de códigos
+        AppState.diccionarioParroquias = AppState.diccionarioParroquias || {};
         if (parroquiasData.features) {
             parroquiasData.features.forEach(f => {
                 const p = f.properties || {};
                 const nombre = (p.nombre || p.PARROQUIA || p.name || '').toUpperCase();
+                const cod = p.CODPAR || p.cod || p.codigo || '';
+                if (cod && nombre) {
+                    AppState.diccionarioParroquias[String(cod).trim()] = nombre;
+                    const n = parseInt(cod, 10);
+                    if (!isNaN(n)) AppState.diccionarioParroquias[String(n)] = nombre;
+                }
                 if (f.geometry) f.properties.bbox = calcularBBOX(f.geometry);
                 if (nombre) AppState.parroquiasMap.set(nombre, f);
             });
@@ -903,9 +916,43 @@ document.addEventListener('DOMContentLoaded', () => {
             poblarFiltroParroquias(parroquiasData.features.map(f => ({
                 nombre: f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '',
                 tipo: f.properties.ESTADO || 'Parroquia',
-                canton: f.properties.CANTON || 'Cuenca',
+                canton: f.properties.CANTON || f.properties.canton || '',
                 cod: f.properties.CODPAR || ''
             })));
+        }
+
+        // Auto-calcular Bounding Box global y centro del cantón desde los datos vectoriales
+        let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
+        const featuresParaBBox = (sectoresData.features && sectoresData.features.length > 0)
+            ? sectoresData.features
+            : (parroquiasData.features || []);
+
+        featuresParaBBox.forEach(f => {
+            if (f.geometry) {
+                const b = calcularBBOX(f.geometry);
+                if (b) {
+                    if (b[0][0] < globalMinX) globalMinX = b[0][0];
+                    if (b[0][1] < globalMinY) globalMinY = b[0][1];
+                    if (b[1][0] > globalMaxX) globalMaxX = b[1][0];
+                    if (b[1][1] > globalMaxY) globalMaxY = b[1][1];
+                }
+            }
+        });
+
+        let mapCenter = [-78.9983, -2.9334]; // Fallback por defecto si no hay capas
+        let initialBounds = null;
+
+        if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
+            mapCenter = [(globalMinX + globalMaxX) / 2, (globalMinY + globalMaxY) / 2];
+            initialBounds = [[globalMinX, globalMinY], [globalMaxX, globalMaxY]];
+            AppState.cantonBbox = initialBounds;
+        }
+
+        // Si se especifican coordenadas de centro en la configuración del servidor, tienen prioridad
+        if (AppState.config) {
+            if (AppState.config.centroLng && AppState.config.centroLat) {
+                mapCenter = [AppState.config.centroLng, AppState.config.centroLat];
+            }
         }
 
         // Crear el mapa con sectores y parroquias YA incluidos en el estilo
@@ -1020,8 +1067,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 ]
             },
-            center: [-78.9983, -2.9334],
-            zoom: 12.0,
+            center: mapCenter,
+            zoom: (AppState.config && AppState.config.zoomInicial) ? AppState.config.zoomInicial : 12.0,
+            bounds: initialBounds || undefined,
+            fitBoundsOptions: initialBounds ? { padding: 35, maxZoom: 14 } : undefined,
             minZoom: 8,
             maxZoom: 19,
             interactive: true,
@@ -1398,12 +1447,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const listaParroquias = [];
 
             if (geojsonData.features) {
+                AppState.diccionarioParroquias = AppState.diccionarioParroquias || {};
                 geojsonData.features.forEach(f => {
                     const p = f.properties || {};
                     const nombre = p.nombre || p.PARROQUIA || p.name || 'Parroquia';
-                    const canton = p.CANTON || 'Cuenca';
+                    const canton = p.CANTON || p.canton || '';
                     const tipo = p.ESTADO || 'Rural';
-                    const cod = p.CODPAR || '';
+                    const cod = p.CODPAR || p.cod || p.codigo || '';
+
+                    if (cod && nombre) {
+                        AppState.diccionarioParroquias[String(cod).trim()] = nombre.toUpperCase();
+                        const n = parseInt(cod, 10);
+                        if (!isNaN(n)) AppState.diccionarioParroquias[String(n)] = nombre.toUpperCase();
+                    }
 
                     listaParroquias.push({ nombre, canton, tipo, cod });
                     const bbox = f.geometry ? calcularBBOX(f.geometry) : null;
@@ -1661,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 microEtiqueta = tipologia;
             }
 
-            const parroquia = obtenerParroquiaEncuesta(enc) || 'Cuenca';
+            const parroquia = obtenerParroquiaEncuesta(enc) || '';
             const barrio = enc.barrio || campo(enc, 'BARRIO_O_SECTOR') || campo(enc, 'barrio');
             const fecha = enc._submission_time ? enc._submission_time.replace('T', ' ').substring(0, 19) : 'Sin fecha';
 
@@ -1713,12 +1769,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Auto-centrar cámara si se solicitó explícitamente
         if (ajustarCamara && features.length > 0 && !AppState.ubicacionSupervisor) {
-            // Filtrar outliers extremos para que 1 encuesta de prueba en Quito no aleje el mapa de Cuenca
-            const cuencaPoints = features.filter(f => {
+            // Filtrar outliers que caigan fuera del cantón actual con margen de tolerancia (0.20°)
+            const cantonBbox = AppState.cantonBbox;
+            const validPoints = cantonBbox ? features.filter(f => {
                 const [lng, lat] = f.geometry.coordinates;
-                return lat >= -3.3 && lat <= -2.5 && lng >= -79.5 && lng <= -78.7;
-            });
-            const pts = cuencaPoints.length > 0 ? cuencaPoints : features;
+                return lat >= cantonBbox[0][1] - 0.20 && lat <= cantonBbox[1][1] + 0.20 &&
+                       lng >= cantonBbox[0][0] - 0.20 && lng <= cantonBbox[1][0] + 0.20;
+            }) : features;
+            const pts = validPoints.length > 0 ? validPoints : features;
             let bMinLng = Infinity, bMinLat = Infinity, bMaxLng = -Infinity, bMaxLat = -Infinity;
             pts.forEach(f => {
                 const [lng, lat] = f.geometry.coordinates;

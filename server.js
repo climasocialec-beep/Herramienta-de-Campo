@@ -226,7 +226,10 @@ app.get("/api/config", (req, res) => {
         nombreProyecto: process.env.NOMBRE_PROYECTO || "Supervisión de Campo",
         metaEncuestas: Number(process.env.META_ENCUESTAS) || 1600,
         campoEncuestador: process.env.CAMPO_ENCUESTADOR || "C_digo_encuestador",
-        campoSupervisor: process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor"
+        campoSupervisor: process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor",
+        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : null,
+        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : null,
+        zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : null
     });
 });
 
