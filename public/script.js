@@ -1896,6 +1896,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 3. Filtrar puntos de muestreo según parroquia y circunscripción seleccionadas
+        const muestreoLayers = ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'];
+        let muestreoFilter = null; // null = sin filtro = mostrar todos
+
+        if (AppState.sectorSeleccionado !== 'Todos') {
+            // Si hay sector específico, mostrar solo ese punto
+            const scNum = parseInt(AppState.sectorSeleccionado, 10);
+            muestreoFilter = ['==', ['get', 'codigo_muestra'], scNum];
+        } else if (AppState.parroquiaSeleccionada !== 'Todas') {
+            // Filtrar por parroquia (case-insensitive via upcase)
+            const targetPar = AppState.parroquiaSeleccionada.toUpperCase();
+            muestreoFilter = ['==', ['upcase', ['get', 'parroquia']], targetPar];
+        } else if (AppState.circunscripcionSeleccionada !== 'Todas') {
+            // Mapear nombre con tilde a nombre sin tilde del GeoJSON
+            const circMap = {
+                'Circunscripción 1': 'Circunscripcion Urbana 1',
+                'Circunscripción 2': 'Circunscripcion Urbana 2'
+            };
+            const circGeoVal = circMap[AppState.circunscripcionSeleccionada] || AppState.circunscripcionSeleccionada;
+            muestreoFilter = ['==', ['get', 'circunscripcion'], circGeoVal];
+        }
+
+        muestreoLayers.forEach(layerId => {
+            if (map.getLayer(layerId)) {
+                map.setFilter(layerId, muestreoFilter);
+            }
+        });
+
         // =====================================================================
         // 3. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
         // =====================================================================
