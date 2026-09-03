@@ -1666,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${p.tipologia ? `<div class="cs-popup-row"><span>Tipología:</span> <strong>${p.tipologia}</strong></div>` : ''}
                         <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
                             <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar (Google Maps)
+                            Cómo llegar
                         </a>
                     </div>
                 `)
