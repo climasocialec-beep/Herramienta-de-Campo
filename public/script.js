@@ -1224,58 +1224,45 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Zonas de Atención Prioritaria / Alerta (Zonas de calor suaves + punto sutil)
+                    // 1. Zonas de Atención Prioritaria / Alerta (Zonas de calor rojas visibles y continuas)
                     {
                         id: 'zonas-alerta-heat',
                         type: 'heatmap',
                         source: 'zonas-alerta-source',
-                        maxzoom: 17,
+                        maxzoom: 20,
                         paint: {
-                            'heatmap-weight': 1,
+                            'heatmap-weight': 1.0,
                             'heatmap-intensity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 0.4,
-                                14, 0.7,
-                                17, 1.0
+                                10, 0.8,
+                                13, 1.2,
+                                16, 1.6,
+                                19, 2.0
                             ],
                             'heatmap-color': [
                                 'interpolate', ['linear'], ['heatmap-density'],
-                                0, 'rgba(254, 243, 199, 0)',
-                                0.25, 'rgba(253, 230, 138, 0.25)',
-                                0.5, 'rgba(251, 146, 60, 0.35)',
-                                0.75, 'rgba(249, 115, 22, 0.45)',
-                                1, 'rgba(225, 29, 72, 0.55)'
+                                0, 'rgba(255, 255, 255, 0)',
+                                0.15, 'rgba(254, 215, 170, 0.35)', // Melocotón suave
+                                0.35, 'rgba(251, 146, 60, 0.60)',  // Naranja
+                                0.60, 'rgba(239, 68, 68, 0.78)',   // Rojo vivo
+                                0.85, 'rgba(220, 38, 38, 0.88)',   // Rojo intenso
+                                1.0, 'rgba(153, 27, 27, 0.95)'     // Carmesí profundo núcleo
                             ],
                             'heatmap-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 12,
-                                13, 22,
-                                16, 38
+                                10, 18,
+                                12, 28,
+                                14, 45,
+                                16, 75,
+                                18, 110
                             ],
                             'heatmap-opacity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 0.5,
-                                15, 0.65,
-                                17, 0.3
+                                10, 0.65,
+                                14, 0.75,
+                                17, 0.80,
+                                19, 0.70
                             ]
-                        }
-                    },
-                    {
-                        id: 'zonas-alerta-circle',
-                        type: 'circle',
-                        source: 'zonas-alerta-source',
-                        minzoom: 13,
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                13, 3.5,
-                                16, 5.0,
-                                19, 7.0
-                            ],
-                            'circle-color': '#f97316',
-                            'circle-stroke-color': '#ffffff',
-                            'circle-stroke-width': 1.2,
-                            'circle-opacity': 0.85
                         }
                     },
                     // 2. Circunscripciones Urbanas (Límites mayores diferenciados por color)
@@ -1755,7 +1742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const togglesMap = [
             { btn: UI.toggleMuestreo, key: 'muestreo', layers: ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'] },
             { btn: UI.toggleCircunscripciones, key: 'circunscripciones', layers: ['circunscripciones-fill', 'circunscripciones-line', 'circunscripciones-label'] },
-            { btn: UI.toggleAlerta, key: 'alerta', layers: ['zonas-alerta-heat', 'zonas-alerta-circle'] }
+            { btn: UI.toggleAlerta, key: 'alerta', layers: ['zonas-alerta-heat'] }
         ];
 
         togglesMap.forEach(({ btn, key, layers }) => {
