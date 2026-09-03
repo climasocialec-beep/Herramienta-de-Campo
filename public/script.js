@@ -1224,44 +1224,46 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Zonas de Atención Prioritaria / Alerta (Zonas de calor rojas visibles y continuas)
+                    // 1. Zonas de Atención Prioritaria / Alerta (Zonas de calor uniformes, rojas y suaves sin núcleo oscuro)
                     {
                         id: 'zonas-alerta-heat',
                         type: 'heatmap',
                         source: 'zonas-alerta-source',
                         maxzoom: 20,
                         paint: {
-                            'heatmap-weight': 1.0,
+                            // Peso base alto para que puntos únicos/aislados sean claramente visibles
+                            'heatmap-weight': 1.8,
                             'heatmap-intensity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 0.8,
-                                13, 1.2,
-                                16, 1.6,
-                                19, 2.0
+                                10, 1.2,
+                                13, 1.5,
+                                16, 1.8,
+                                19, 2.2
                             ],
+                            // Gradiente armónico: de ámbar/naranja traslúcido a rojo coral brillante (sin tonos oscuros/negruzcos)
                             'heatmap-color': [
                                 'interpolate', ['linear'], ['heatmap-density'],
                                 0, 'rgba(255, 255, 255, 0)',
-                                0.15, 'rgba(254, 215, 170, 0.35)', // Melocotón suave
-                                0.35, 'rgba(251, 146, 60, 0.60)',  // Naranja
-                                0.60, 'rgba(239, 68, 68, 0.78)',   // Rojo vivo
-                                0.85, 'rgba(220, 38, 38, 0.88)',   // Rojo intenso
-                                1.0, 'rgba(153, 27, 27, 0.95)'     // Carmesí profundo núcleo
+                                0.10, 'rgba(251, 146, 60, 0.30)',  // Naranja suave
+                                0.30, 'rgba(249, 115, 22, 0.55)',  // Naranja vivo
+                                0.55, 'rgba(239, 68, 68, 0.70)',   // Rojo coral
+                                0.80, 'rgba(225, 29, 72, 0.80)',   // Rojo vibrante
+                                1.0,  'rgba(225, 29, 72, 0.85)'    // Rojo vibrante homogéneo
                             ],
                             'heatmap-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 18,
-                                12, 28,
-                                14, 45,
-                                16, 75,
-                                18, 110
+                                10, 22,
+                                12, 35,
+                                14, 55,
+                                16, 85,
+                                18, 125
                             ],
                             'heatmap-opacity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 0.65,
-                                14, 0.75,
-                                17, 0.80,
-                                19, 0.70
+                                10, 0.70,
+                                14, 0.80,
+                                17, 0.85,
+                                19, 0.75
                             ]
                         }
                     },
