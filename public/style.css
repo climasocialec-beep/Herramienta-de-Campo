@@ -2411,6 +2411,11 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
   box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.25);
 }
 
+.cs-layer-pill__dot--alerta {
+  background: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);
+}
+
 body.modo-oscuro .cs-layer-pill {
   background: rgba(30, 41, 59, 0.92);
   border-color: rgba(51, 65, 85, 0.9);

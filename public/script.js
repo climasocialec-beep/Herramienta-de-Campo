@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarEtiquetas: false,
         capasVisibles: {
             muestreo: true,
-            circunscripciones: true
+            circunscripciones: true,
+            alerta: true
         },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
         filtroTabla: '',
@@ -100,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mapStats: document.getElementById('mapStats'),
         toggleMuestreo: document.getElementById('toggleMuestreo'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
+        toggleAlerta: document.getElementById('toggleAlerta'),
         
         // Tabla
         searchInput: document.getElementById('searchInput'),
@@ -981,17 +983,20 @@ document.addEventListener('DOMContentLoaded', () => {
         let parroquiasData = { type: 'FeatureCollection', features: [] };
         let circunscripcionesData = { type: 'FeatureCollection', features: [] };
         let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
+        let zonasAlertaData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=3.7.1';
-            const [resPar, resCirc, resMuest] = await Promise.all([
+            const cacheBuster = '?v=3.8.0';
+            const [resPar, resCirc, resMuest, resAlerta] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/circunscripciones.geojson' + cacheBuster),
-                fetch('assets/puntos_muestreo.geojson' + cacheBuster)
+                fetch('assets/puntos_muestreo.geojson' + cacheBuster),
+                fetch('assets/zonas_alerta.geojson' + cacheBuster)
             ]);
             if (resPar.ok) parroquiasData = await resPar.json();
             if (resCirc.ok) circunscripcionesData = await resCirc.json();
             if (resMuest.ok) puntosMuestreoData = await resMuest.json();
+            if (resAlerta.ok) zonasAlertaData = await resAlerta.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
@@ -999,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.parroquiasGeojson = parroquiasData;
         AppState.circunscripcionesGeojson = circunscripcionesData;
         AppState.puntosMuestreoGeojson = puntosMuestreoData;
+        AppState.zonasAlertaGeojson = zonasAlertaData;
 
         // Puntos únicos representativos para etiquetas de Circunscripción (evita duplicación en MultiPolygons)
         const circunscripcionesLabelsData = {
@@ -1122,6 +1128,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lbl) lbl.textContent = `Muestreo (${numMuestreo})`;
         }
 
+        // Actualizar visualización del botón de Zonas de Alerta
+        const numAlerta = (zonasAlertaData.features || []).length;
+        if (UI.toggleAlerta) {
+            UI.toggleAlerta.style.display = numAlerta > 0 ? 'inline-flex' : 'none';
+            const lblAlerta = document.getElementById('lblToggleAlerta');
+            if (lblAlerta) lblAlerta.textContent = `Alerta (${numAlerta})`;
+        }
+
         // Auto-calcular Bounding Box global y centro del cantón desde los datos vectoriales
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
         const featuresParaBBox = (puntosMuestreoData.features && puntosMuestreoData.features.length > 0)
@@ -1196,6 +1210,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     'puntos-muestreo-source': {
                         type: 'geojson',
                         data: puntosMuestreoData
+                    },
+                    'zonas-alerta-source': {
+                        type: 'geojson',
+                        data: zonasAlertaData
                     }
                 },
                 layers: [
@@ -1206,7 +1224,61 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Circunscripciones Urbanas (Límites mayores diferenciados por color)
+                    // 1. Zonas de Atención Prioritaria / Alerta (Zonas de calor suaves + punto sutil)
+                    {
+                        id: 'zonas-alerta-heat',
+                        type: 'heatmap',
+                        source: 'zonas-alerta-source',
+                        maxzoom: 17,
+                        paint: {
+                            'heatmap-weight': 1,
+                            'heatmap-intensity': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 0.4,
+                                14, 0.7,
+                                17, 1.0
+                            ],
+                            'heatmap-color': [
+                                'interpolate', ['linear'], ['heatmap-density'],
+                                0, 'rgba(254, 243, 199, 0)',
+                                0.25, 'rgba(253, 230, 138, 0.25)',
+                                0.5, 'rgba(251, 146, 60, 0.35)',
+                                0.75, 'rgba(249, 115, 22, 0.45)',
+                                1, 'rgba(225, 29, 72, 0.55)'
+                            ],
+                            'heatmap-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 12,
+                                13, 22,
+                                16, 38
+                            ],
+                            'heatmap-opacity': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 0.5,
+                                15, 0.65,
+                                17, 0.3
+                            ]
+                        }
+                    },
+                    {
+                        id: 'zonas-alerta-circle',
+                        type: 'circle',
+                        source: 'zonas-alerta-source',
+                        minzoom: 13,
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                13, 3.5,
+                                16, 5.0,
+                                19, 7.0
+                            ],
+                            'circle-color': '#f97316',
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-width': 1.2,
+                            'circle-opacity': 0.85
+                        }
+                    },
+                    // 2. Circunscripciones Urbanas (Límites mayores diferenciados por color)
                     {
                         id: 'circunscripciones-fill',
                         type: 'fill',
@@ -1682,7 +1754,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
             { btn: UI.toggleMuestreo, key: 'muestreo', layers: ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'] },
-            { btn: UI.toggleCircunscripciones, key: 'circunscripciones', layers: ['circunscripciones-fill', 'circunscripciones-line', 'circunscripciones-label'] }
+            { btn: UI.toggleCircunscripciones, key: 'circunscripciones', layers: ['circunscripciones-fill', 'circunscripciones-line', 'circunscripciones-label'] },
+            { btn: UI.toggleAlerta, key: 'alerta', layers: ['zonas-alerta-heat', 'zonas-alerta-circle'] }
         ];
 
         togglesMap.forEach(({ btn, key, layers }) => {
