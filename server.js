@@ -29,7 +29,7 @@ function limpiarVar(val) {
 }
 
 const PORT = Number(process.env.PORT) || 3001;
-const ASSET_ID = limpiarVar(process.env.ASSET_ID_MACHALA || "");
+const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_MACHALA || "");
 const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
