@@ -1645,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
-            const gmapsUrl = `geo:${coords[1]},${coords[0]}?q=${coords[1]},${coords[0]}`;
+            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
             const cod = String(p.codigo_muestra || p.sc || '').trim();
 
             // Sincronizar con el filtro de puntos de muestreo si se hace clic
@@ -1666,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${p.tipologia ? `<div class="cs-popup-row"><span>Tipología:</span> <strong>${p.tipologia}</strong></div>` : ''}
                         <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
                             <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar
+                            Cómo llegar (Google Maps)
                         </a>
                     </div>
                 `)
@@ -1889,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
             if (sectorMeta && barraSector && sectorTitulo && btnGmaps && sectorMeta.centroid) {
                 sectorTitulo.textContent = `Punto #${targetSC} — ${sectorMeta.nombre_acortado || sectorMeta.nombre_referencia || ''}`;
-                btnGmaps.href = `geo:${sectorMeta.centroid[1].toFixed(6)},${sectorMeta.centroid[0].toFixed(6)}?q=${sectorMeta.centroid[1].toFixed(6)},${sectorMeta.centroid[0].toFixed(6)}`;
+                btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${sectorMeta.centroid[1].toFixed(6)},${sectorMeta.centroid[0].toFixed(6)}`;
                 barraSector.style.display = 'flex';
             } else if (barraSector) {
                 barraSector.style.display = 'none';
