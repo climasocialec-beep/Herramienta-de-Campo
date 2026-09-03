@@ -1252,18 +1252,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             ],
                             'heatmap-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 22,
-                                12, 35,
-                                14, 55,
-                                16, 85,
-                                18, 125
+                                10, 14,
+                                12, 22,
+                                14, 35,
+                                16, 52,
+                                18, 75
                             ],
                             'heatmap-opacity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 0.70,
-                                14, 0.80,
-                                17, 0.85,
-                                19, 0.75
+                                10, 0.65,
+                                14, 0.72,
+                                17, 0.75,
+                                19, 0.65
                             ]
                         }
                     },
