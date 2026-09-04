@@ -354,7 +354,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await res.json();
             const rawEncuestas = data.resultados || [];
-            AppState.encuestas = rawEncuestas;
+            AppState.encuestas = rawEncuestas.filter(e => {
+                const codEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+                const codSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+                return codEnc !== '98' && codSup !== '98';
+            });
 
             // Guardar en caché local para operatividad 100% offline
             try {
