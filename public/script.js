@@ -1600,13 +1600,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 10.0,
-                        13, 12.5,
-                        16, 15.5
+                        10, 3.5,
+                        13, 5.0,
+                        16, 7.0,
+                        19, 9.0
                     ],
-                    'circle-stroke-width': 2.0,
+                    'circle-stroke-width': 1.5,
                     'circle-stroke-color': '#ffffff',
-                    'circle-opacity': 1.0
+                    'circle-opacity': 0.95
                 }
             });
 
@@ -1622,9 +1623,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 10.0,
-                        13, 12.0,
-                        16, 14.5
+                        13, 8.0,
+                        16, 9.5,
+                        19, 11.0
                     ],
                     'text-offset': [0, 0],
                     'text-anchor': 'center',
@@ -1635,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 paint: {
                     'text-color': '#ffffff',
                     'text-halo-color': 'rgba(0, 0, 0, 0.95)',
-                    'text-halo-width': 1.6
+                    'text-halo-width': 1.2
                 }
             });
 
@@ -1651,11 +1652,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        11, 9.5,
-                        14, 11.5,
-                        17, 13.5
+                        13, 8.5,
+                        16, 10.0,
+                        19, 11.5
                     ],
-                    'text-offset': [0, -1.35],
+                    'text-offset': [0, -1.1],
                     'text-anchor': 'bottom',
                     'text-allow-overlap': false,
                     'text-optional': true,
@@ -1664,8 +1665,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 paint: {
                     'text-color': '#0f172a',
                     'text-halo-color': '#ffffff',
-                    'text-halo-width': 2.5,
-                    'text-halo-blur': 0.3
+                    'text-halo-width': 2.0,
+                    'text-halo-blur': 0.2
                 }
             });
         }
