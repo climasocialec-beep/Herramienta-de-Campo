@@ -121,15 +121,37 @@ function normalizarEncuesta(raw) {
         geo = [Number(raw._geolocation[0]), Number(raw._geolocation[1])];
     }
 
-    const campoEnc = process.env.CAMPO_ENCUESTADOR || "C_digo_encuestador";
-    const campoSup = process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor";
+    const campoEnc = process.env.CAMPO_ENCUESTADOR || "codencu";
+    const campoSup = process.env.CAMPO_SUPERVISOR || "codsup";
 
-    const encuestador = extraerValor(raw, [campoEnc, "C_digo_encuestador", "encuestador", "cod_encuestador"]);
-    const supervisor = extraerValor(raw, [campoSup, "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
-    const sc = extraerValor(raw, ["sc", "codigo_sc", "sector_censal"]);
+    const encuestador = extraerValor(raw, [campoEnc, "codencu", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
+    const supervisor = extraerValor(raw, [campoSup, "codsup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
+    const sc = extraerValor(raw, ["p_ref", "sc", "codigo_sc", "sector_censal"]);
     const tipologia = (extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipo_sc"]) || "").toUpperCase();
-    const barrio = extraerValor(raw, ["BARRIO_O_SECTOR", "barrio", "sector", "barrio_sector"]);
-    const parroquia = extraerValor(raw, ["PARROQUIA", "parroquia", "nom_parroquia", "parr"]);
+    const barrio = extraerValor(raw, ["barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
+    
+    // Parroquia: puede venir como código (1..8) o como texto
+    const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]);
+    const MAPA_PARROQUIAS_MACHALA = {
+        "1": "9 DE MAYO",
+        "2": "EL CAMBIO",
+        "3": "JAMBELI",
+        "4": "JUBONES",
+        "5": "LA PROVIDENCIA",
+        "6": "MACHALA",
+        "7": "PUERTO BOLIVAR",
+        "8": "EL RETIRO"
+    };
+    const parroquia = MAPA_PARROQUIAS_MACHALA[String(rawParroquia).trim()] || rawParroquia;
+
+    // Circunscripción
+    const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]);
+    const MAPA_CIRCUNSCRIPCIONES = {
+        "1": "Circunscripción 1",
+        "2": "Circunscripción 2",
+        "3": "Zona Rural"
+    };
+    const circunscripcion = MAPA_CIRCUNSCRIPCIONES[String(rawCircuns).trim()] || rawCircuns;
 
     return {
         _id: id,
@@ -144,7 +166,8 @@ function normalizarEncuesta(raw) {
         sc,
         tipologia,
         barrio,
-        parroquia
+        parroquia,
+        circunscripcion
     };
 }
 
@@ -235,9 +258,9 @@ app.get("/api/config", (req, res) => {
     }
     res.json({
         nombreProyecto: nombre,
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 0,
-        campoEncuestador: process.env.CAMPO_ENCUESTADOR || "C_digo_encuestador",
-        campoSupervisor: process.env.CAMPO_SUPERVISOR || "C_digo_Supervisor",
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 700,
+        campoEncuestador: process.env.CAMPO_ENCUESTADOR || "codencu",
+        campoSupervisor: process.env.CAMPO_SUPERVISOR || "codsup",
         centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -79.9554,
         centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -3.2581,
         zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 12.5

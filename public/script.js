@@ -159,12 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (encuesta[nombreCorto] !== undefined) return encuesta[nombreCorto];
         
         // Fast paths directos para rendimiento instantáneo
-        if (nombreCorto === 'sc' && encuesta.sc !== undefined) return encuesta.sc;
+        if ((nombreCorto === 'sc' || nombreCorto === 'p_ref') && (encuesta.sc !== undefined || encuesta.p_ref !== undefined)) return encuesta.sc !== undefined ? encuesta.sc : encuesta.p_ref;
         if ((nombreCorto === 'tipologia' || nombreCorto === 'TIPOLOGIA') && encuesta.tipologia !== undefined) return encuesta.tipologia;
         if ((nombreCorto === 'parroquia' || nombreCorto === 'PARROQUIA' || nombreCorto === 'nom_parroquia') && encuesta.parroquia !== undefined) return encuesta.parroquia;
         if ((nombreCorto === 'barrio' || nombreCorto === 'BARRIO_O_SECTOR') && encuesta.barrio !== undefined) return encuesta.barrio;
-        if (nombreCorto === 'C_digo_encuestador' && encuesta.encuestador !== undefined) return encuesta.encuestador;
-        if (nombreCorto === 'C_digo_Supervisor' && encuesta.supervisor !== undefined) return encuesta.supervisor;
+        if ((nombreCorto === 'C_digo_encuestador' || nombreCorto === 'codencu') && encuesta.encuestador !== undefined) return encuesta.encuestador;
+        if ((nombreCorto === 'C_digo_Supervisor' || nombreCorto === 'codsup') && encuesta.supervisor !== undefined) return encuesta.supervisor;
 
         const keys = Object.keys(encuesta);
         for (let i = 0; i < keys.length; i++) {
@@ -175,50 +175,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // MAPEO DE CÓDIGOS DE PARROQUIA (CUENCA / AZUAY)
+    // MAPEO DE CÓDIGOS DE PARROQUIA (MACHALA / EL ORO)
     // =========================================================================
     const DICCIONARIO_PARROQUIAS = {
-        '5075': 'BELLAVISTA',
-        '5080': 'CAÑARIBAMBA',
-        '5135': 'EL BATAN',
-        '5330': 'EL VECINO',
-        '6865': 'HERMANO MIGUEL',
-        '5450': 'HUAYNACAPAC',
-        '5140': 'MACHANGARA',
-        '5290': 'MONAY',
-        '5875': 'RAMIREZ DAVALOS',
-        '5905': 'SAGRARIO',
-        '5930': 'SAN BLAS',
-        '6010': 'SAN SEBASTIAN',
-        '6090': 'SUCRE',
-        '5360': 'TOTORACOCHA',
-        '5370': 'YANUNCAY',
-        '285': 'BAÑOS',
-        '0285': 'BAÑOS',
-        '845': 'CHAUCHA / ANGAS',
-        '0845': 'CHAUCHA / ANGAS',
-        '860': 'CHECA JIDCAY',
-        '0860': 'CHECA JIDCAY',
-        '905': 'CHIQUINTAD',
-        '0905': 'CHIQUINTAD',
-        '730': 'CUMBE',
-        '0730': 'CUMBE',
-        '2255': 'LLACAO',
-        '2430': 'MOLLETURO',
-        '2570': 'MULTI / NULTI',
-        '2595': 'OCTAVIO CORDERO PALACIOS',
-        '2680': 'PACCHA',
-        '3105': 'QUINGEO',
-        '3165': 'RICAURTE',
-        '3460': 'SAN JOAQUIN',
-        '3685': 'SANTA ANA',
-        '3795': 'SAYAUSI',
-        '3850': 'SIDCAY',
-        '3870': 'SININCAY',
-        '3980': 'TARQUI',
-        '4095': 'TURI',
-        '4200': 'VALLE',
-        '4225': 'VICTORIA DEL PORTETE'
+        '1': '9 DE MAYO',
+        '2': 'EL CAMBIO',
+        '3': 'JAMBELI',
+        '4': 'JUBONES',
+        '5': 'LA PROVIDENCIA',
+        '6': 'MACHALA',
+        '7': 'PUERTO BOLIVAR',
+        '8': 'EL RETIRO',
+        '6490': '9 DE MAYO',
+        '6795': 'EL CAMBIO',
+        '7510': 'JAMBELI',
+        '7505': 'JUBONES',
+        '5565': 'LA PROVIDENCIA',
+        '5625': 'MACHALA',
+        '5805': 'PUERTO BOLIVAR'
     };
 
     function obtenerParroquiaEncuesta(encuesta) {
@@ -229,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (AppState.diccionarioParroquias && AppState.diccionarioParroquias[strVal]) {
             return AppState.diccionarioParroquias[strVal];
         }
-        // 2. Fallbacks estáticos
+        // 2. Fallbacks estáticos (códigos 1..8 del XLSForm o CODPAR del INEC)
         if (DICCIONARIO_PARROQUIAS[strVal]) return DICCIONARIO_PARROQUIAS[strVal];
         const padded = strVal.padStart(4, '0');
         if (DICCIONARIO_PARROQUIAS[padded]) return DICCIONARIO_PARROQUIAS[padded];
