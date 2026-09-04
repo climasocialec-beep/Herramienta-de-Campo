@@ -218,10 +218,9 @@ async function obtenerDatosKobo() {
         }
 
         // Normalización ultra-ligera en memoria: reduce payload en un 95%
-        // Se excluye código 98 (pruebas de campo)
+        // Código 98 (pruebas de campo) activado temporalmente
         const resultados = resultadosRaw
-            .map(normalizarEncuesta)
-            .filter(e => String(e.encuestador).trim() !== "98" && String(e.supervisor).trim() !== "98");
+            .map(normalizarEncuesta);
 
         cache.datos = { total: resultados.length, resultados, obtenidoEn: Date.now() };
         cache.timestamp = Date.now();
