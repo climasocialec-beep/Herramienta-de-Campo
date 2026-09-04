@@ -4,6 +4,41 @@
  * Modo Puntos Individuales vs Clusters y Seguimiento en Tiempo Real.
  */
 
+// =========================================================================
+// PROTECCIÓN DE CLIENTE Y PRIVACIDAD DE CÓDIGO EN PRODUCCIÓN
+// Deshabilita accesos directos de DevTools, clic derecho y limpia consola
+// =========================================================================
+(function() {
+    // 1. Bloqueo de Clic Derecho (Menú contextual de inspección)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    }, { passive: false });
+
+    // 2. Bloqueo de Teclas de Inspección (F12, Ctrl+Shift+I/J/C, Ctrl+U)
+    document.addEventListener('keydown', function(e) {
+        if (
+            e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+            (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's'))
+        ) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, { passive: false });
+
+    // 3. Suprimir salida de consola en cliente
+    try {
+        if (window.console) {
+            const noop = function() {};
+            window.console.log = noop;
+            window.console.info = noop;
+            window.console.debug = noop;
+            window.console.dir = noop;
+        }
+    } catch (_) {}
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // Normalizador universal de texto (remueve tildes, diacríticos y espacios)
     const normTexto = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
