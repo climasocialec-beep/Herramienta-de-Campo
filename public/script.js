@@ -1889,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 paint: {
                     'circle-color': [
                         'case',
-                        ['get', 'tieneAlerta'],
+                        ['==', ['get', 'tieneAlerta'], true],
                         '#dc2626',
                         ['coalesce', ['get', 'color'], '#e11d48']
                     ],
@@ -1904,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ],
                     'circle-stroke-width': [
                         'case',
-                        ['get', 'tieneAlerta'],
+                        ['==', ['get', 'tieneAlerta'], true],
                         2.5,
                         1.5
                     ],
@@ -1921,9 +1921,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 layout: {
                     'text-field': [
                         'case',
-                        ['get', 'tieneAlerta'],
+                        ['==', ['get', 'tieneAlerta'], true],
                         '!',
-                        ['to-string', ['get', 'encuestador']]
+                        ['to-string', ['coalesce', ['get', 'encuestador'], '']]
                     ],
                     'text-font': ['Open Sans Bold'],
                     'text-size': [
