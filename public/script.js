@@ -1999,7 +1999,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `)
                 .addTo(map);
-        });
+        };
+
+        map.on('click', 'puntos-layer', abrirPopupEncuesta);
 
         // Popup interactivo para Puntos de Muestreo (70 Hitos oficiales)
         map.on('click', 'puntos-muestreo-halo', (e) => {
