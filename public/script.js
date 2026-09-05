@@ -947,8 +947,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
-
                 // Filtrar por Circunscripción si está activa
                 if (AppState.circunscripcionSeleccionada !== 'Todas' && item.parroquia) {
                     const permitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
@@ -973,8 +971,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const opt = document.createElement('option');
                 opt.value = item.sc;
-                opt.textContent = count > 0 ? `${item.detalle} (${count} enc.)` : item.detalle;
-                opt.title = `${item.detalle}${item.parroquia ? ` [${item.parroquia}]` : ''}${count > 0 ? ` (${count} encuestas)` : ''}`;
+                if (count >= 10) {
+                    opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
+                    opt.style.color = '#059669';
+                    opt.style.fontWeight = '700';
+                } else if (count > 0) {
+                    opt.textContent = `🟡 ${item.detalle} (${count}/10)`;
+                    opt.style.color = '#d97706';
+                } else {
+                    opt.textContent = `⚪ ${item.detalle} (0/10)`;
+                    opt.style.color = '#64748b';
+                }
+                opt.title = `${item.detalle}${item.parroquia ? ` [${item.parroquia}]` : ''} · ${count}/10 encuestas recolectadas`;
                 frag.appendChild(opt);
             });
             UI.sectorFilter.appendChild(frag);
@@ -1100,14 +1108,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Sector Censal
+        // Filtro por Punto de Muestreo / Sector
         if (AppState.sectorSeleccionado !== 'Todos') {
-            const targetSC = AppState.sectorSeleccionado;
+            const targetSC = String(AppState.sectorSeleccionado).trim();
+            const targetNum = targetSC.replace(/[^0-9]/g, '');
             filtradas = filtradas.filter(e => {
-                const sc = String(e.sc || campo(e, 'sc') || '');
-                const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
-                const etiq = `${sc}${tip}`;
-                return sc === targetSC || etiq === targetSC;
+                const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
+                const scNum = rawSc.replace(/[^0-9]/g, '');
+                const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase().trim();
+                const etiq = `${scNum}${tip}`;
+                return scNum === targetNum || rawSc === targetSC || etiq === targetSC;
             });
         }
 
@@ -1595,7 +1605,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 16, 7.5,
                                 19, 9.5
                             ],
-                            'circle-color': '#0d9488', // Teal/Esmeralda sobrio y distinguido
+                            'circle-color': [
+                                'case',
+                                ['>=', ['coalesce', ['get', 'conteo'], 0], 10],
+                                '#10b981', // Verde Esmeralda (Meta de 10 encuestas completada)
+                                '#0d9488'  // Teal habitual en progreso
+                            ],
                             'circle-stroke-color': '#ffffff',
                             'circle-stroke-width': 2.0,
                             'circle-opacity': 0.95
@@ -1623,10 +1638,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 13.0,
                         layout: {
                             'text-field': [
-                                'coalesce',
-                                ['get', 'etiqueta_completa'],
-                                ['get', 'nombre_referencia'],
-                                ''
+                                'case',
+                                ['>', ['coalesce', ['get', 'conteo'], 0], 0],
+                                ['concat', ['coalesce', ['get', 'etiqueta_completa'], ['get', 'nombre_referencia'], ''], ' [', ['to-string', ['coalesce', ['get', 'conteo'], 0]], '/10]'],
+                                ['coalesce', ['get', 'etiqueta_completa'], ['get', 'nombre_referencia'], '']
                             ],
                             'text-font': ['Open Sans Bold'],
                             'text-size': 10.5,
@@ -1635,7 +1650,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-allow-overlap': false
                         },
                         paint: {
-                            'text-color': '#0f766e',
+                            'text-color': [
+                                'case',
+                                ['>=', ['coalesce', ['get', 'conteo'], 0], 10],
+                                '#047857',
+                                '#0f766e'
+                            ],
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 2.5
                         }
@@ -1974,9 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `)
                 .addTo(map);
-        };
-
-        map.on('click', 'puntos-layer', abrirPopupEncuesta);
+        });
 
         // Popup interactivo para Puntos de Muestreo (70 Hitos oficiales)
         map.on('click', 'puntos-muestreo-halo', (e) => {
@@ -1993,12 +2011,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderizarVista(true, false);
             }
 
+            const conteo = p.conteo !== undefined ? parseInt(p.conteo, 10) : 0;
+            const completado = conteo >= 10;
+            const porcentaje = Math.min(100, Math.round((conteo / 10) * 100));
+
             new maplibregl.Popup({ offset: [0, -10], closeButton: true })
                 .setLngLat(coords)
                 .setHTML(`
                     <div class="cs-map-popup">
-                        <div class="cs-popup-badge cs-popup-badge--muestreo">🎯 Punto de Muestreo #${p.codigo_muestra || ''}</div>
+                        <div class="cs-popup-badge ${completado ? 'cs-popup-badge--completado' : 'cs-popup-badge--muestreo'}" style="${completado ? 'background:#059669;color:#fff;' : ''}">
+                            ${completado ? '✅ Hito Completo (10/10)' : `🎯 Punto de Muestreo #${p.codigo_muestra || ''}`}
+                        </div>
                         <h4 class="cs-popup-title">${p.etiqueta_completa || p.nombre_referencia || 'Punto de Muestreo'}</h4>
+                        
+                        <!-- Barra de Progreso Hacia la Meta de 10 Encuestas -->
+                        <div style="margin:8px 0 10px 0;padding:6px 8px;background:${completado ? '#ecfdf5' : '#f8fafc'};border:1px solid ${completado ? '#a7f3d0' : '#e2e8f0'};border-radius:6px;">
+                            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;color:${completado ? '#059669' : '#334155'};margin-bottom:4px;">
+                                <span>Progreso (Meta: 10):</span>
+                                <span>${conteo} / 10 ${completado ? '✓' : `(${porcentaje}%)`}</span>
+                            </div>
+                            <div style="background:#e2e8f0;height:6px;border-radius:3px;overflow:hidden;">
+                                <div style="background:${completado ? '#10b981' : '#0d9488'};width:${porcentaje}%;height:100%;"></div>
+                            </div>
+                        </div>
+
                         <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
                         <div class="cs-popup-row"><span>Circunscripción:</span> <strong>${p.circunscripcion || ''}</strong></div>
                         ${p.tipologia ? `<div class="cs-popup-row"><span>Tipología:</span> <strong>${p.tipologia}</strong></div>` : ''}
@@ -2233,6 +2269,25 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (barraSector) {
                 barraSector.style.display = 'none';
             }
+        }
+
+        // 2.5 Actualizar conteos por punto de muestreo en tiempo real en la capa del mapa
+        if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features && map.getSource('puntos-muestreo-source')) {
+            const conteosPorPto = new Map();
+            (AppState.encuestas || []).forEach(e => {
+                const rawSc = String(e.sc || campo(e, 'sc') || '');
+                const scNum = rawSc.replace(/[^0-9]/g, '');
+                if (scNum) {
+                    conteosPorPto.set(scNum, (conteosPorPto.get(scNum) || 0) + 1);
+                }
+            });
+
+            AppState.puntosMuestreoGeojson.features.forEach(f => {
+                const cod = String(f.properties.codigo_muestra || '').trim();
+                f.properties.conteo = conteosPorPto.get(cod) || 0;
+            });
+
+            map.getSource('puntos-muestreo-source').setData(AppState.puntosMuestreoGeojson);
         }
 
         // 3. Filtrar puntos de muestreo según parroquia y circunscripción seleccionadas
