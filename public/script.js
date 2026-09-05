@@ -245,7 +245,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function obtenerParroquiaEncuesta(encuesta) {
         const val = campo(encuesta, 'parroquia') || campo(encuesta, 'PARROQUIA') || campo(encuesta, 'nom_parroquia');
-        if (!val) return '';
+        if (!val) {
+            // Fallback: Si no tiene parroquia declarada, resolver por su punto de muestreo oficial
+            const rawSc = String(encuesta.sc || campo(encuesta, 'sc') || '').trim();
+            const scNum = rawSc.replace(/[^0-9]/g, '');
+            const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
+            const declTip = String(encuesta.tipologia || campo(encuesta, 'tipologia') || campo(encuesta, 'TIPOLOGIA') || '').trim().toUpperCase();
+            const tip = scTip || declTip;
+            const etiq = (scNum && tip) ? `${scNum}${tip}` : scNum;
+            if (etiq && AppState.sectoresMap) {
+                const secMeta = AppState.sectoresMap.get(etiq) || AppState.sectoresMap.get(scNum);
+                if (secMeta && secMeta.parroquia) return secMeta.parroquia;
+            }
+            return '';
+        }
         const strVal = String(val).trim();
         // 1. Diccionario dinámico generado a partir del GeoJSON cargado
         if (AppState.diccionarioParroquias && AppState.diccionarioParroquias[strVal]) {
@@ -949,8 +962,9 @@ document.addEventListener('DOMContentLoaded', () => {
             listaMuestra.forEach(item => {
                 const count = sectores.get(item.etiqueta) || 0;
                 
-                // Si hay filtro activo de encuestas, SOLO mostrar ítems con encuestas en ese contexto
-                if (hayFiltroActivo && count === 0 && AppState.encuestas.length > 0) {
+                // Para filtro de encuestador individual, solo mostrar puntos donde ha trabajado
+                // Para filtros territoriales (Parroquia, Circunscripción) o generales, SIEMPRE mostrar todos los puntos de muestreo asignados (incluso con 0/10)
+                if (selEnc && count === 0 && AppState.encuestas.length > 0) {
                     return;
                 }
 
