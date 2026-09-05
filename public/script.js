@@ -480,6 +480,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.warn('[Cache] Error al leer caché:', e);
         }
+
+        // Failsafe de seguridad: nunca dejar la pantalla bloqueada más de 6s
+        setTimeout(() => {
+            if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
+        }, 6000);
         
         try {
             await cargarConfiguracion();
@@ -2075,12 +2080,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             };
         });
-
-        actualizarPoligonosMapa(false);
     }
 
     function actualizarClaseZoom() {
-        if (!map || !AppState.mapLoaded) return;
+        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
         const show = AppState.mostrarEtiquetas ? 'visible' : 'none';
 
         if (map.getLayer('puntos-label-layer')) {
@@ -2179,7 +2182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarPoligonosMapa(ajustarCamara = false) {
-        if (!map) return;
+        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
 
         // 0. Polígonos de Circunscripciones (Destacar visualmente según filtro)
         if (map.getLayer('circunscripciones-fill') && map.getLayer('circunscripciones-line')) {
@@ -2381,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarMapa(encuestas, ajustarCamara = false) {
-        if (!map) return;
+        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
 
         let conGeo = 0;
         let sinGeo = 0;
