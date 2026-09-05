@@ -67,6 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alerta: true
         },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
+        filtroSoloAlertas: false,
+        totalAlertas: 0,
         filtroTabla: '',
         modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
         ordenTabla: { columna: 'encuestador', asc: true },
@@ -168,6 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
+        btnFiltroAlertas: document.getElementById('btnFiltroAlertas'),
+        txtFiltroAlertas: document.getElementById('txtFiltroAlertas'),
         
         // Mapa, Capas y Modos
         mapContainer: document.getElementById('map'),
@@ -282,6 +286,143 @@ document.addEventListener('DOMContentLoaded', () => {
                   Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+
+    function puntoEnPoligono(lng, lat, coords) {
+        if (!coords || coords.length === 0) return false;
+        let inside = false;
+        const ring = coords[0];
+        const n = ring.length;
+        let j = n - 1;
+        for (let i = 0; i < n; i++) {
+            const xi = ring[i][0], yi = ring[i][1];
+            const xj = ring[j][0], yj = ring[j][1];
+            const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+            j = i;
+        }
+        if (inside && coords.length > 1) {
+            for (let h = 1; h < coords.length; h++) {
+                const hole = coords[h];
+                let inHole = false;
+                const nh = hole.length;
+                let jh = nh - 1;
+                for (let ih = 0; ih < nh; ih++) {
+                    const xi = hole[ih][0], yi = hole[ih][1];
+                    const xj = hole[jh][0], yj = hole[jh][1];
+                    const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                    if (intersect) inHole = !inHole;
+                    jh = ih;
+                }
+                if (inHole) return false;
+            }
+        }
+        return inside;
+    }
+
+    function puntoEnGeometria(lng, lat, geometry) {
+        if (!geometry) return false;
+        if (geometry.type === 'Polygon') {
+            return puntoEnPoligono(lng, lat, geometry.coordinates);
+        } else if (geometry.type === 'MultiPolygon') {
+            for (let p = 0; p < geometry.coordinates.length; p++) {
+                if (puntoEnPoligono(lng, lat, geometry.coordinates[p])) return true;
+            }
+        }
+        return false;
+    }
+
+    function detectarParroquiaGPS(lng, lat) {
+        if (!AppState.parroquiasGeojson || !AppState.parroquiasGeojson.features) return null;
+        for (const f of AppState.parroquiasGeojson.features) {
+            if (puntoEnGeometria(lng, lat, f.geometry)) {
+                return f.properties.PARROQUIA || f.properties.nombre || null;
+            }
+        }
+        return null;
+    }
+
+    function encontrarHitoMasCercano(lng, lat) {
+        if (!AppState.puntosMuestreoGeojson || !AppState.puntosMuestreoGeojson.features) return null;
+        let minD = Infinity;
+        let masCercano = null;
+        AppState.puntosMuestreoGeojson.features.forEach(f => {
+            if (f.geometry && f.geometry.coordinates) {
+                const [hLng, hLat] = f.geometry.coordinates;
+                const d = calcularDistancia(lat, lng, hLat, hLng);
+                if (d < minD) {
+                    minD = d;
+                    masCercano = { feature: f, distanciaKm: d };
+                }
+            }
+        });
+        return masCercano;
+    }
+
+    function auditarEncuestas() {
+        if (!AppState.encuestas || !AppState.parroquiasGeojson || !AppState.parroquiasGeojson.features) return;
+
+        let totalAlertas = 0;
+        AppState.encuestas.forEach(enc => {
+            const coords = extraerCoordenadas(enc);
+            if (!coords) {
+                enc._tieneAlerta = false;
+                enc._alertas = [];
+                enc._alertaMensaje = '';
+                return;
+            }
+
+            const [lat, lng] = coords;
+            const alertas = [];
+
+            // 1. Verificación Parroquial (Point in Polygon)
+            const parroquiaDeclarada = obtenerParroquiaEncuesta(enc);
+            const parroquiaReal = detectarParroquiaGPS(lng, lat);
+
+            if (parroquiaReal && parroquiaDeclarada) {
+                const nReal = normStr(parroquiaReal);
+                const nDecl = normStr(parroquiaDeclarada);
+                if (nReal !== nDecl && !nReal.includes(nDecl) && !nDecl.includes(nReal)) {
+                    alertas.push({
+                        tipo: 'parroquia',
+                        mensaje: `Parroquia registrada: "${parroquiaDeclarada}", pero el GPS cayó en "${parroquiaReal}".`
+                    });
+                }
+            }
+
+            // 2. Verificación de Punto de Muestreo / Hito (Distancia > 600m del hito declarado)
+            const scDeclarado = String(enc.sc || campo(enc, 'sc') || '').trim();
+            if (scDeclarado && AppState.puntosMuestreoMap) {
+                const hitoDeclarado = AppState.puntosMuestreoMap.get(scDeclarado);
+                if (hitoDeclarado && hitoDeclarado.geometry && hitoDeclarado.geometry.coordinates) {
+                    const [hLng, hLat] = hitoDeclarado.geometry.coordinates;
+                    const distKm = calcularDistancia(lat, lng, hLat, hLng);
+                    if (distKm > 0.6) {
+                        const cercano = encontrarHitoMasCercano(lng, lat);
+                        const cercanoP = cercano && cercano.feature ? cercano.feature.properties : null;
+                        const distM = Math.round(distKm * 1000);
+                        let msgHito = `Marcó Punto #${scDeclarado} (a ${distKm >= 1 ? distKm.toFixed(1) + ' km' : distM + 'm'}).`;
+                        if (cercanoP && String(cercanoP.codigo_muestra) !== scDeclarado) {
+                            const dCercanoM = Math.round(cercano.distanciaKm * 1000);
+                            msgHito += ` GPS coincide con Hito #${cercanoP.codigo_muestra}${cercanoP.tipologia ? ` (${cercanoP.tipologia})` : ''} (a ${dCercanoM}m).`;
+                        }
+                        alertas.push({
+                            tipo: 'hito',
+                            mensaje: msgHito
+                        });
+                    }
+                }
+            }
+
+            enc._tieneAlerta = alertas.length > 0;
+            enc._alertas = alertas;
+            enc._alertaMensaje = alertas.map(a => a.mensaje).join(' ');
+            if (enc._tieneAlerta) totalAlertas++;
+        });
+
+        AppState.totalAlertas = totalAlertas;
     }
 
     // =========================================================================
@@ -402,6 +543,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const codSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
                 return codEnc !== '98' && codSup !== '98';
             });
+
+            auditarEncuestas();
 
             // Guardar en caché local para operatividad 100% offline
             try {
@@ -558,6 +701,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        if (AppState.filtroSoloAlertas) {
+            activeCount++;
+            chips.push({
+                tipo: 'alerta',
+                label: `⚠️ Inconsistencias (${AppState.totalAlertas})`,
+                onClear: () => {
+                    AppState.filtroSoloAlertas = false;
+                    renderizarVista();
+                }
+            });
+        }
         if (AppState.filtroTabla) {
             activeCount++;
             chips.push({
@@ -571,6 +725,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     actualizarFiltrosUI();
                 }
             });
+        }
+
+        if (UI.btnFiltroAlertas) {
+            if (AppState.totalAlertas > 0) {
+                UI.btnFiltroAlertas.style.display = 'inline-flex';
+                UI.btnFiltroAlertas.classList.toggle('active', AppState.filtroSoloAlertas);
+                if (UI.txtFiltroAlertas) {
+                    UI.txtFiltroAlertas.textContent = `${AppState.totalAlertas} ${AppState.totalAlertas === 1 ? 'Inconsistencia' : 'Inconsistencias'}`;
+                }
+            } else {
+                UI.btnFiltroAlertas.style.display = 'none';
+            }
         }
 
         if (UI.btnLimpiarFiltros) {
@@ -959,6 +1125,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Filtro por Inconsistencias / Alertas
+        if (AppState.filtroSoloAlertas) {
+            filtradas = filtradas.filter(e => e._tieneAlerta);
+        }
+
         return filtradas;
     }
 
@@ -1169,6 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             AppState.parroquiasGeojson = parroquiasData;
+            auditarEncuestas();
             poblarFiltros();
         }
 
@@ -1625,16 +1797,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 cluster: false
             });
 
-            // 1. Círculos de Puntos Individuales (Coloreados por Encuestador)
+            // 0. Halo de Inconsistencias / Alertas Espaciales (Rojo de alto contraste)
+            map.addLayer({
+                id: 'puntos-alerta-halo',
+                type: 'circle',
+                source: 'encuestas-puntos-source',
+                filter: ['==', ['get', 'tieneAlerta'], true],
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 7.5,
+                        13, 10.0,
+                        16, 13.0,
+                        19, 16.0
+                    ],
+                    'circle-color': 'rgba(220, 38, 38, 0.15)',
+                    'circle-stroke-width': 2.2,
+                    'circle-stroke-color': '#dc2626',
+                    'circle-stroke-opacity': 0.95
+                }
+            });
+
+            // 1. Círculos de Puntos Individuales (Coloreados por Encuestador / Rojo si tiene Alerta)
             map.addLayer({
                 id: 'puntos-layer',
                 type: 'circle',
                 source: 'encuestas-puntos-source',
                 paint: {
                     'circle-color': [
-                        'coalesce',
-                        ['get', 'color'],
-                        '#e11d48'
+                        'case',
+                        ['get', 'tieneAlerta'],
+                        '#dc2626',
+                        ['coalesce', ['get', 'color'], '#e11d48']
                     ],
                     'circle-radius': [
                         'interpolate',
@@ -1645,7 +1841,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         16, 7.0,
                         19, 9.0
                     ],
-                    'circle-stroke-width': 1.5,
+                    'circle-stroke-width': [
+                        'case',
+                        ['get', 'tieneAlerta'],
+                        2.5,
+                        1.5
+                    ],
                     'circle-stroke-color': '#ffffff',
                     'circle-opacity': 0.95
                 }
@@ -1657,7 +1858,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: 'symbol',
                 source: 'encuestas-puntos-source',
                 layout: {
-                    'text-field': ['to-string', ['get', 'encuestador']],
+                    'text-field': [
+                        'case',
+                        ['get', 'tieneAlerta'],
+                        '!',
+                        ['to-string', ['get', 'encuestador']]
+                    ],
                     'text-font': ['Open Sans Bold'],
                     'text-size': [
                         'interpolate',
@@ -1714,12 +1920,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // =====================================================================
         // EVENTOS E INTERACTIVIDAD WEBGL
         // =====================================================================
-        // Manejador común de popup para puntos de encuesta
         const abrirPopupEncuesta = (e) => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
-            const colorPunto = p.color || obtenerColorEncuestador(p.encuestador);
+            const tieneAlerta = p.tieneAlerta === true || p.tieneAlerta === 'true';
+            const colorPunto = tieneAlerta ? '#dc2626' : (p.color || obtenerColorEncuestador(p.encuestador));
 
             let distInfo = '';
             if (AppState.ubicacionSupervisor) {
@@ -1727,14 +1933,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 distInfo = `<p style="margin:4px 0;font-size:0.8rem;color:#028090;"><strong>A ${d.toFixed(2)} km de tu ubicación</strong></p>`;
             }
 
+            let bannerAlerta = '';
+            if (tieneAlerta) {
+                bannerAlerta = `
+                    <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:7px 9px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.35;">
+                        <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Inconsistencia Detectada:</strong>
+                        <span>${p.alertaMensaje || 'Discrepancia espacial de parroquia o punto de muestreo.'}</span>
+                    </div>
+                `;
+            }
+
             new maplibregl.Popup({ offset: [0, -10], closeButton: true })
                 .setLngLat(coords)
                 .setHTML(`
-                    <div style="font-family:'Inter',sans-serif;min-width:180px;padding:2px;">
-                        <div style="background:${colorPunto};color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;margin:-14px -14px 8px -14px;font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;">
-                            <span>Encuestador #${p.encuestador}</span>
+                    <div style="font-family:'Inter',sans-serif;min-width:190px;padding:2px;">
+                        <div style="background:${colorPunto};color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;margin:-14px -14px 8px -14px;font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;">
+                            <span>${tieneAlerta ? '⚠️ ' : ''}Encuestador #${p.encuestador}</span>
                             <span>Sup #${p.supervisor}</span>
                         </div>
+                        ${bannerAlerta}
                         <p style="margin:4px 0;font-size:0.8rem;"><strong>Parroquia:</strong> ${p.parroquia}</p>
                         ${p.sc ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Punto de Muestreo:</strong> #${p.sc}${p.tipologia ? ` (Tipología ${p.tipologia})` : ''}</p>` : ''}
                         ${p.barrio ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Barrio:</strong> ${p.barrio}</p>` : ''}
@@ -2153,7 +2370,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     microEtiqueta,
                     parroquia,
                     barrio,
-                    fecha
+                    fecha,
+                    tieneAlerta: Boolean(enc._tieneAlerta),
+                    alertaMensaje: enc._alertaMensaje || ''
                 }
             });
         }
@@ -2378,6 +2597,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 g.minStr = formatearMinutos(min);
                 g.maxStr = formatearMinutos(max);
             }
+            g.numAlertas = g.encuestas.filter(e => e._tieneAlerta).length;
             resultado.push(g);
         }
 
@@ -2514,7 +2734,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div class="cs-enc-meta">
-                                    <div class="cs-enc-name" title="Encuestador #${grupo.id} (Sup #${supId})">Encuestador #${grupo.id}</div>
+                                    <div class="cs-enc-name" title="Encuestador #${grupo.id} (Sup #${supId})">
+                                        Encuestador #${grupo.id}
+                                        ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
+                                    </div>
                                     <div class="cs-enc-sub">
                                         <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
                                         <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
@@ -2690,6 +2913,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.fechaSeleccionada = 'Todas';
                 AppState.encuestadorSeleccionado = null;
+                AppState.filtroSoloAlertas = false;
                 AppState.mostrarEtiquetas = false;
                 AppState.filtroTabla = '';
                 if (UI.btnEtiquetasOn) UI.btnEtiquetasOn.classList.remove('active');
@@ -2699,6 +2923,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 poblarFiltros();
                 renderizarVista(true, true);
                 mostrarToast('Filtros restablecidos', 'info');
+            });
+        }
+
+        // 5.1 Filtro Directo de Inconsistencias
+        if (UI.btnFiltroAlertas) {
+            UI.btnFiltroAlertas.addEventListener('click', () => {
+                AppState.filtroSoloAlertas = !AppState.filtroSoloAlertas;
+                renderizarVista();
+                if (AppState.filtroSoloAlertas) {
+                    mostrarToast(`Mostrando ${AppState.totalAlertas} encuestas con inconsistencias`, 'info');
+                }
             });
         }
 

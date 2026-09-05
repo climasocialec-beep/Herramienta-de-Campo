@@ -2580,3 +2580,68 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
   }
 }
 
+/* =========================================================================
+   SISTEMA DE ALERTAS Y AUDITORÍA ESPACIAL EN TIEMPO REAL
+   ========================================================================= */
+.cs-btn-alert-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  animation: cs-alert-pulse 2s infinite ease-in-out;
+}
+
+.cs-btn-alert-filter:hover,
+.cs-btn-alert-filter.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+@keyframes cs-alert-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.cs-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+body.modo-oscuro .cs-btn-alert-filter {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+body.modo-oscuro .cs-btn-alert-filter:hover,
+body.modo-oscuro .cs-btn-alert-filter.active {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+body.modo-oscuro .cs-alert-badge {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+
