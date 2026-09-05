@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alerta: true
         },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
+        mostrarInconsistencias: false, // Flag maestro de auditoría espacial (oculto por defecto, activable bajo demanda)
         filtroSoloAlertas: false,
         totalAlertas: 0,
         filtroTabla: '',
@@ -362,7 +363,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function auditarEncuestas() {
-        if (!AppState.encuestas || !AppState.parroquiasGeojson || !AppState.parroquiasGeojson.features) return;
+        if (!AppState.encuestas) return;
+
+        // Si la auditoría está oculta por configuración, limpiar alertas y salir
+        if (!AppState.mostrarInconsistencias) {
+            AppState.totalAlertas = 0;
+            AppState.encuestas.forEach(enc => {
+                enc._tieneAlerta = false;
+                enc._alertas = [];
+                enc._alertaMensaje = '';
+            });
+            return;
+        }
+
+        if (!AppState.parroquiasGeojson || !AppState.parroquiasGeojson.features) return;
 
         let totalAlertas = 0;
         AppState.encuestas.forEach(enc => {
@@ -3071,6 +3085,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.filtrarPorParroquia = seleccionarParroquia;
+    window.toggleAuditoria = function(activar) {
+        AppState.mostrarInconsistencias = (typeof activar === 'boolean') ? activar : !AppState.mostrarInconsistencias;
+        auditarEncuestas();
+        renderizarVista();
+        console.log(`[Auditoría Espacial] Estado: ${AppState.mostrarInconsistencias ? 'ACTIVADO' : 'OCULTO'}`);
+        return AppState.mostrarInconsistencias;
+    };
 
     // Iniciar aplicación
     inicializar();
