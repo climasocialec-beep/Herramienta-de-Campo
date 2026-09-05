@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     window.AppState = AppState;
 
-    // Paleta oficial Clima Social de Alto Contraste para Mapa
+    // Paleta oficial Clima Social de Alto Contraste para Mapa (Supervisores)
     const PALETA_SUPERVISORES = {
         '1': '#028090', // Teal Intenso Oficial
         '2': '#e11d48', // Coral / Carmesí Vivo
@@ -94,6 +94,49 @@ document.addEventListener('DOMContentLoaded', () => {
         '7': '#ea580c', // Naranja Intenso
         'default': '#f26419'
     };
+
+    // Paleta cromática distintiva de alto contraste para Encuestadores (excluye Teal #0d9488 de Muestreo)
+    const PALETA_ENCUESTADORES = [
+        '#e11d48', // 1: Carmesí / Rojo Vivo
+        '#2563eb', // 2: Azul Eléctrico
+        '#ea580c', // 3: Naranja Fuego
+        '#7c3aed', // 4: Violeta / Púrpura
+        '#f59e0b', // 5: Ámbar Dorado
+        '#16a34a', // 6: Verde Vivo
+        '#db2777', // 7: Rosa Intenso / Magenta
+        '#4f46e5', // 8: Índigo
+        '#84cc16', // 9: Lima Brillante
+        '#9333ea', // 10: Morado
+        '#d97706', // 11: Ocre Cálido
+        '#0284c7', // 12: Azul Cielo
+        '#b91c1c', // 13: Rojo Granate
+        '#475569', // 14: Grafito / Pizarra
+        '#c026d3', // 15: Fucsia Neón
+        '#65a30d', // 16: Verde Oliva
+        '#e11d8f', // 17: Baya / Frambuesa
+        '#3b82f6', // 18: Azul Brillante
+        '#ca8a04', // 19: Mostaza
+        '#6366f1', // 20: Azul Lavanda
+        '#a855f7', // 21: Púrpura Claro
+        '#dc2626', // 22: Escarlata
+        '#f97316', // 23: Naranja Brillante
+        '#15803d'  // 24: Verde Pino
+    ];
+
+    function obtenerColorEncuestador(enc) {
+        if (enc === undefined || enc === null || enc === '') return '#64748b';
+        const str = String(enc).trim();
+        const num = parseInt(str, 10);
+        if (!isNaN(num) && num > 0) {
+            return PALETA_ENCUESTADORES[(num - 1) % PALETA_ENCUESTADORES.length];
+        }
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return PALETA_ENCUESTADORES[Math.abs(hash) % PALETA_ENCUESTADORES.length];
+    }
 
     const UI = {
         cargaOverlay: document.getElementById('cargaOverlay'),
@@ -1582,23 +1625,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 cluster: false
             });
 
-            // 1. Círculos de Puntos Individuales (Coloreados por Supervisor)
+            // 1. Círculos de Puntos Individuales (Coloreados por Encuestador)
             map.addLayer({
                 id: 'puntos-layer',
                 type: 'circle',
                 source: 'encuestas-puntos-source',
                 paint: {
                     'circle-color': [
-                        'match',
-                        ['get', 'supervisor'],
-                        '1', '#028090',
-                        '2', '#e11d48',
-                        '3', '#d97706',
-                        '4', '#7c3aed',
-                        '5', '#059669',
-                        '6', '#2563eb',
-                        '7', '#ea580c',
-                        '#f26419'
+                        'coalesce',
+                        ['get', 'color'],
+                        '#e11d48'
                     ],
                     'circle-radius': [
                         'interpolate',
@@ -1683,7 +1719,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
-            const colorPunto = PALETA_SUPERVISORES[p.supervisor] || PALETA_SUPERVISORES.default;
+            const colorPunto = p.color || obtenerColorEncuestador(p.encuestador);
 
             let distInfo = '';
             if (AppState.ubicacionSupervisor) {
@@ -2111,6 +2147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 properties: {
                     encuestador,
                     supervisor,
+                    color: obtenerColorEncuestador(encuestador),
                     sc,
                     tipologia,
                     microEtiqueta,
@@ -2219,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // LEYENDA DINÁMICA DE SUPERVISORES EN EL MAPA
+    // LEYENDA DINÁMICA DE ENCUESTADORES EN EL MAPA
     // =========================================================================
     function actualizarLeyendaMapa(encuestas) {
         if (!UI.mapLegend || !UI.mapLegendItems) return;
@@ -2229,15 +2266,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const conteoSupervisores = new Map();
+        const conteoEncuestadores = new Map();
         encuestas.forEach(e => {
-            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
-            if (sup && sup !== '98') {
-                conteoSupervisores.set(sup, (conteoSupervisores.get(sup) || 0) + 1);
+            const enc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+            if (enc && enc !== '98') {
+                conteoEncuestadores.set(enc, (conteoEncuestadores.get(enc) || 0) + 1);
             }
         });
 
-        if (conteoSupervisores.size === 0) {
+        if (conteoEncuestadores.size === 0) {
             UI.mapLegend.style.display = 'none';
             return;
         }
@@ -2245,7 +2282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.mapLegend.style.display = 'block';
         UI.mapLegendItems.innerHTML = '';
 
-        const supIds = Array.from(conteoSupervisores.keys()).sort((a, b) => {
+        const encIds = Array.from(conteoEncuestadores.keys()).sort((a, b) => {
             const numA = parseInt(a, 10);
             const numB = parseInt(b, 10);
             if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -2253,15 +2290,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const frag = document.createDocumentFragment();
-        supIds.forEach(supId => {
-            const color = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
-            const total = conteoSupervisores.get(supId);
+        encIds.forEach(encId => {
+            const color = obtenerColorEncuestador(encId);
+            const total = conteoEncuestadores.get(encId);
             const item = document.createElement('div');
             item.className = 'cs-map-legend__item';
-            item.title = `Supervisor #${supId}: ${total} encuestas`;
+            item.title = `Encuestador #${encId}: ${total} encuestas`;
             item.innerHTML = `
                 <span class="cs-legend-color-dot" style="background-color:${color};"></span>
-                <span>Sup #${supId}</span>
+                <span>Enc #${encId}</span>
                 <span class="cs-legend-count">${total}</span>
             `;
             frag.appendChild(item);
@@ -2473,7 +2510,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.innerHTML = `
                         <td>
                             <div class="cs-enc-card">
-                                <div class="cs-enc-avatar" style="--enc-color:${colorSupervisor};">
+                                <div class="cs-enc-avatar" style="--enc-color:${obtenerColorEncuestador(grupo.id)};">
                                     <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div class="cs-enc-meta">
