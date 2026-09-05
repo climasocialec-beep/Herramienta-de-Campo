@@ -1632,12 +1632,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 16, 7.5,
                                 19, 9.5
                             ],
-                            'circle-color': [
-                                'case',
-                                ['>=', ['coalesce', ['get', 'conteo'], 0], 10],
-                                '#10b981', // Verde Esmeralda (Meta de 10 encuestas completada)
-                                '#0d9488'  // Teal habitual en progreso
-                            ],
+                            'circle-color': '#0d9488', // Teal/Esmeralda sobrio y distinguido
                             'circle-stroke-color': '#ffffff',
                             'circle-stroke-width': 2.0,
                             'circle-opacity': 0.95
@@ -1665,10 +1660,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 13.0,
                         layout: {
                             'text-field': [
-                                'case',
-                                ['>', ['coalesce', ['get', 'conteo'], 0], 0],
-                                ['concat', ['coalesce', ['get', 'etiqueta_completa'], ['get', 'nombre_referencia'], ''], ' [', ['to-string', ['coalesce', ['get', 'conteo'], 0]], '/10]'],
-                                ['coalesce', ['get', 'etiqueta_completa'], ['get', 'nombre_referencia'], '']
+                                'coalesce',
+                                ['get', 'etiqueta_completa'],
+                                ['get', 'nombre_referencia'],
+                                ''
                             ],
                             'text-font': ['Open Sans Bold'],
                             'text-size': 10.5,
@@ -1677,12 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-allow-overlap': false
                         },
                         paint: {
-                            'text-color': [
-                                'case',
-                                ['>=', ['coalesce', ['get', 'conteo'], 0], 10],
-                                '#047857',
-                                '#0f766e'
-                            ],
+                            'text-color': '#0f766e',
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 2.5
                         }
@@ -1858,41 +1848,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 cluster: false
             });
 
-            // 0. Halo de Inconsistencias / Alertas Espaciales (Rojo de alto contraste)
-            map.addLayer({
-                id: 'puntos-alerta-halo',
-                type: 'circle',
-                source: 'encuestas-puntos-source',
-                filter: ['==', ['get', 'tieneAlerta'], true],
-                paint: {
-                    'circle-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 7.5,
-                        13, 10.0,
-                        16, 13.0,
-                        19, 16.0
-                    ],
-                    'circle-color': 'rgba(220, 38, 38, 0.15)',
-                    'circle-stroke-width': 2.2,
-                    'circle-stroke-color': '#dc2626',
-                    'circle-stroke-opacity': 0.95
-                }
-            });
-
-            // 1. Círculos de Puntos Individuales (Coloreados por Encuestador / Rojo si tiene Alerta)
+            // 1. Círculos de Puntos Individuales (Coloreados por Encuestador)
             map.addLayer({
                 id: 'puntos-layer',
                 type: 'circle',
                 source: 'encuestas-puntos-source',
                 paint: {
-                    'circle-color': [
-                        'case',
-                        ['==', ['get', 'tieneAlerta'], true],
-                        '#dc2626',
-                        ['coalesce', ['get', 'color'], '#e11d48']
-                    ],
+                    'circle-color': ['coalesce', ['get', 'color'], '#e11d48'],
                     'circle-radius': [
                         'interpolate',
                         ['linear'],
@@ -1902,12 +1864,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         16, 7.0,
                         19, 9.0
                     ],
-                    'circle-stroke-width': [
-                        'case',
-                        ['==', ['get', 'tieneAlerta'], true],
-                        2.5,
-                        1.5
-                    ],
+                    'circle-stroke-width': 1.5,
                     'circle-stroke-color': '#ffffff',
                     'circle-opacity': 0.95
                 }
@@ -1919,12 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: 'symbol',
                 source: 'encuestas-puntos-source',
                 layout: {
-                    'text-field': [
-                        'case',
-                        ['==', ['get', 'tieneAlerta'], true],
-                        '!',
-                        ['to-string', ['coalesce', ['get', 'encuestador'], '']]
-                    ],
+                    'text-field': ['to-string', ['get', 'encuestador']],
                     'text-font': ['Open Sans Bold'],
                     'text-size': [
                         'interpolate',
@@ -2107,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarClaseZoom() {
-        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
+        if (!map) return;
         const show = AppState.mostrarEtiquetas ? 'visible' : 'none';
 
         if (map.getLayer('puntos-label-layer')) {
@@ -2206,7 +2158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarPoligonosMapa(ajustarCamara = false) {
-        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
+        if (!map) return;
 
         // 0. Polígonos de Circunscripciones (Destacar visualmente según filtro)
         if (map.getLayer('circunscripciones-fill') && map.getLayer('circunscripciones-line')) {
@@ -2408,7 +2360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarMapa(encuestas, ajustarCamara = false) {
-        if (!map || !AppState.mapLoaded || !map.isStyleLoaded()) return;
+        if (!map) return;
 
         let conGeo = 0;
         let sinGeo = 0;
