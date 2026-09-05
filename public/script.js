@@ -1258,6 +1258,28 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.puntosMuestreoGeojson = puntosMuestreoData;
         AppState.zonasAlertaGeojson = zonasAlertaData;
 
+        // Indexar Parroquias
+        AppState.diccionarioParroquias = AppState.diccionarioParroquias || {};
+        AppState.parroquiasMap = new Map();
+        if (parroquiasData.features) {
+            parroquiasData.features.forEach(f => {
+                const p = f.properties || {};
+                const nombre = p.nombre || p.PARROQUIA || p.name || 'Parroquia';
+                const canton = p.CANTON || p.canton || '';
+                const tipo = p.ESTADO || 'Rural';
+                const cod = p.CODPAR || p.cod || p.codigo || '';
+
+                if (cod && nombre) {
+                    AppState.diccionarioParroquias[String(cod).trim()] = nombre.toUpperCase();
+                    const n = parseInt(cod, 10);
+                    if (!isNaN(n)) AppState.diccionarioParroquias[String(n)] = nombre.toUpperCase();
+                }
+
+                const bbox = f.geometry ? calcularBBOX(f.geometry) : null;
+                AppState.parroquiasMap.set(nombre.toUpperCase(), { feature: f, bbox });
+            });
+        }
+
         // Puntos únicos representativos para etiquetas de Circunscripción (evita duplicación en MultiPolygons)
         const circunscripcionesLabelsData = {
             type: 'FeatureCollection',
@@ -2456,6 +2478,7 @@ document.addEventListener('DOMContentLoaded', () => {
             features: features
         };
 
+        configurarCapasWebGL();
         const srcPuntos = map.getSource('encuestas-puntos-source');
         if (srcPuntos) srcPuntos.setData(geojsonFC);
 
