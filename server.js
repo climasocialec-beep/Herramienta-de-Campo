@@ -124,8 +124,27 @@ function normalizarEncuesta(raw) {
     const campoEnc = process.env.CAMPO_ENCUESTADOR || "codencu";
     const campoSup = process.env.CAMPO_SUPERVISOR || "codsup";
 
-    const encuestador = extraerValor(raw, [campoEnc, "codencu", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
-    const supervisor = extraerValor(raw, [campoSup, "codsup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
+    let encuestador = extraerValor(raw, [campoEnc, "codencu", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
+    let supervisor = extraerValor(raw, [campoSup, "codsup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
+
+    // Bloqueo estricto: Solo existen Supervisores 1 y 2 (corrección de códigos ingresados al revés)
+    let sSup = String(supervisor || "").trim();
+    let sEnc = String(encuestador || "").trim();
+    if (sSup !== "1" && sSup !== "2") {
+        if (sEnc === "1" || sEnc === "2") {
+            supervisor = sEnc;
+            encuestador = sSup;
+        } else {
+            const equipo1 = ["3", "4", "5", "6"];
+            const equipo2 = ["7", "8", "9", "10"];
+            if (equipo1.includes(sEnc)) {
+                supervisor = "1";
+            } else if (equipo2.includes(sEnc)) {
+                supervisor = "2";
+            }
+        }
+    }
+
     const sc = extraerValor(raw, ["p_ref", "sc", "codigo_sc", "sector_censal"]);
     const tipologia = (extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipo_sc"]) || "").toUpperCase();
     const barrio = extraerValor(raw, ["barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);

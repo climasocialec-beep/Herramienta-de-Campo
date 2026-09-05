@@ -271,6 +271,38 @@ document.addEventListener('DOMContentLoaded', () => {
         return strVal;
     }
 
+    function normalizarSupervisorEncuesta(e) {
+        if (!e) return e;
+        let sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+        let enc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+
+        // Bloqueo estricto: en Machala 2026 SOLO existen Supervisores 1 y 2
+        // Si el encuestador puso los códigos al revés (ej. sup=4, enc=1 -> sup=1, enc=4)
+        if (sup !== '1' && sup !== '2') {
+            if (enc === '1' || enc === '2') {
+                const tmp = sup;
+                sup = enc;
+                enc = tmp;
+            } else {
+                // Asignación por cuadrilla oficial de encuestadores
+                const equipo1 = ['3', '4', '5', '6'];
+                const equipo2 = ['7', '8', '9', '10'];
+                if (equipo1.includes(enc)) {
+                    sup = '1';
+                } else if (equipo2.includes(enc)) {
+                    sup = '2';
+                }
+            }
+            e.supervisor = sup;
+            e.encuestador = enc;
+            if (e.codsup !== undefined) e.codsup = sup;
+            if (e.codencu !== undefined) e.codencu = enc;
+            if (e.C_digo_Supervisor !== undefined) e.C_digo_Supervisor = sup;
+            if (e.C_digo_encuestador !== undefined) e.C_digo_encuestador = enc;
+        }
+        return e;
+    }
+
     function extraerCoordenadas(encuesta) {
         // 1. _geolocation [lat, lng]
         if (encuesta._geolocation && Array.isArray(encuesta._geolocation) && encuesta._geolocation.length >= 2 && encuesta._geolocation[0] !== null) {
@@ -485,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    AppState.encuestas = parsed;
+                    AppState.encuestas = parsed.map(normalizarSupervisorEncuesta);
                     if (UI.badgeTexto) UI.badgeTexto.textContent = 'En vivo';
                     if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
                 }
@@ -570,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await res.json();
             const rawEncuestas = data.resultados || [];
-            AppState.encuestas = rawEncuestas.filter(e => {
+            AppState.encuestas = rawEncuestas.map(normalizarSupervisorEncuesta).filter(e => {
                 const codEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
                 const codSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
                 return codEnc !== '98' && codSup !== '98';
@@ -862,8 +894,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 matchPar = (uParr.includes(targetPar) || targetPar.includes(uParr));
             }
 
-            // 1. Supervisores disponibles (filtrado por Sector, Parroquia, Fecha, Encuestador)
-            if (sup && matchSec && matchPar && matchFec && matchEnc) {
+            // 1. Supervisores disponibles (estrictamente Supervisores 1 y 2)
+            if ((sup === '1' || sup === '2') && matchSec && matchPar && matchFec && matchEnc) {
                 supervisores.set(sup, (supervisores.get(sup) || 0) + 1);
             }
 
@@ -885,21 +917,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const hayFiltroActivo = (selSup !== 'Todos' || !!selEnc || !!targetPar || selFec !== 'Todas');
 
-        // 1. Selector Supervisores
+        // 1. Selector Supervisores: Bloqueo estricto a Supervisores 1 y 2
         if (UI.supervisorFilter) {
             const actualSup = AppState.supervisorSeleccionado || 'Todos';
-            UI.supervisorFilter.innerHTML = '<option value="Todos">Todos los supervisores</option>';
-            const supList = Array.from(supervisores.keys()).sort((a, b) => (parseInt(a, 10) || a) - (parseInt(b, 10) || b));
-            const frag = document.createDocumentFragment();
-            supList.forEach(sup => {
-                const opt = document.createElement('option');
-                opt.value = sup;
-                opt.textContent = `Supervisor #${sup} (${supervisores.get(sup)} enc.)`;
-                frag.appendChild(opt);
-            });
-            UI.supervisorFilter.appendChild(frag);
-            UI.supervisorFilter.value = supervisores.has(actualSup) ? actualSup : 'Todos';
-            if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
+            const c1 = supervisores.get('1') || 0;
+            const c2 = supervisores.get('2') || 0;
+            UI.supervisorFilter.innerHTML = `
+                <option value="Todos">Todos los supervisores</option>
+                <option value="1">Supervisor #1 (${c1} enc.)</option>
+                <option value="2">Supervisor #2 (${c2} enc.)</option>
+            `;
+            UI.supervisorFilter.value = (actualSup === '1' || actualSup === '2') ? actualSup : 'Todos';
+            if (actualSup !== '1' && actualSup !== '2') AppState.supervisorSeleccionado = 'Todos';
         }
 
         const PARROQUIAS_POR_CIRCUNSCRIPCION = {
