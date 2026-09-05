@@ -822,16 +822,18 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < total; i++) {
             const e = encuestas[i];
             const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
-            const rawSc = String(e.sc || campo(e, 'sc') || '');
-            const sc = rawSc.replace(/[^0-9]/g, '') || rawSc;
-            const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase();
-            const etiq = `${sc}${tip}`;
+            const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
+            const scNum = rawSc.replace(/[^0-9]/g, '');
+            const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
+            const declTip = String(e.tipologia || campo(e, 'tipologia') || campo(e, 'TIPOLOGIA') || '').trim().toUpperCase();
+            const tip = scTip || declTip;
+            const etiq = (scNum && tip) ? `${scNum}${tip}` : (rawSc || '');
             const parr = obtenerParroquiaEncuesta(e);
             const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
             const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
-            const matchSec = (selSec === 'Todos' || sc === selSec || rawSc === selSec || etiq === selSec);
+            const matchSec = (selSec === 'Todos' || etiq === selSec || scNum === selSec || rawSc === selSec);
             let matchFec = true;
             if (selFec !== 'Todas') {
                 const hoyStr = new Date().toISOString().split('T')[0];
@@ -852,9 +854,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 supervisores.set(sup, (supervisores.get(sup) || 0) + 1);
             }
 
-            // 2. Sectores disponibles (filtrado por Supervisor, Parroquia, Fecha, Encuestador)
-            if (sc && matchSup && matchPar && matchFec && matchEnc) {
-                sectores.set(sc, (sectores.get(sc) || 0) + 1);
+            // 2. Puntos de Muestreo disponibles (Número + Tipología)
+            if (matchSup && matchPar && matchFec && matchEnc) {
+                if (etiq) sectores.set(etiq, (sectores.get(etiq) || 0) + 1);
             }
 
             // 3. Parroquias disponibles (filtrado por Supervisor, Sector, Fecha, Encuestador)
@@ -945,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sectoresValidos = new Set();
 
             listaMuestra.forEach(item => {
-                const count = sectores.get(item.sc) || 0;
+                const count = sectores.get(item.etiqueta) || 0;
                 
                 // Si hay filtro activo de encuestas, SOLO mostrar ítems con encuestas en ese contexto
                 if (hayFiltroActivo && count === 0 && AppState.encuestas.length > 0) {
@@ -972,10 +974,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                sectoresValidos.add(item.etiqueta);
                 sectoresValidos.add(item.sc);
 
                 const opt = document.createElement('option');
-                opt.value = item.sc;
+                opt.value = item.etiqueta;
                 if (count >= 10) {
                     opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
                     opt.style.color = '#059669';
@@ -1113,16 +1116,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Punto de Muestreo / Sector
+        // Filtro por Punto de Muestreo / Sector (Número + Tipología)
         if (AppState.sectorSeleccionado !== 'Todos') {
-            const targetSC = String(AppState.sectorSeleccionado).trim();
+            const targetSC = String(AppState.sectorSeleccionado).trim().toUpperCase();
             const targetNum = targetSC.replace(/[^0-9]/g, '');
+            const targetTip = targetSC.replace(/[^A-Za-z]/g, '').toUpperCase();
             filtradas = filtradas.filter(e => {
                 const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
                 const scNum = rawSc.replace(/[^0-9]/g, '');
-                const tip = String(e.tipologia || campo(e, 'tipologia') || '').toUpperCase().trim();
-                const etiq = `${scNum}${tip}`;
-                return scNum === targetNum || rawSc === targetSC || etiq === targetSC;
+                const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
+                const declTip = String(e.tipologia || campo(e, 'tipologia') || campo(e, 'TIPOLOGIA') || '').trim().toUpperCase();
+                const tip = scTip || declTip;
+                const etiq = (scNum && tip) ? `${scNum}${tip}` : (rawSc || '');
+
+                if (targetTip) {
+                    return etiq === targetSC || (scNum === targetNum && tip === targetTip);
+                } else {
+                    return scNum === targetNum || rawSc === targetSC;
+                }
             });
         }
 
@@ -1983,16 +1994,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
             const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
-            const cod = String(p.codigo_muestra || p.sc || '').trim();
+            const codNum = String(p.codigo_muestra || p.sc || '').trim();
+            const tip = String(p.tipologia || '').trim().toUpperCase();
+            const codEtiq = (codNum && tip) ? `${codNum}${tip}` : codNum;
 
             // Sincronizar con el filtro de puntos de muestreo si se hace clic
-            if (cod && UI.sectorFilter) {
-                AppState.sectorSeleccionado = cod;
-                UI.sectorFilter.value = cod;
+            if (codEtiq && UI.sectorFilter) {
+                AppState.sectorSeleccionado = codEtiq;
+                UI.sectorFilter.value = codEtiq;
                 renderizarVista(true, false);
             }
 
-            const conteo = p.conteo !== undefined ? parseInt(p.conteo, 10) : 0;
+            // Calcular conteo exacto (Número + Tipología)
+            let conteo = p.conteo !== undefined ? parseInt(p.conteo, 10) : 0;
+            if (isNaN(conteo) || conteo === 0) {
+                conteo = (AppState.encuestas || []).filter(enc => {
+                    const rawSc = String(enc.sc || campo(enc, 'sc') || '').trim();
+                    const eNum = rawSc.replace(/[^0-9]/g, '');
+                    const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
+                    const declTip = String(enc.tipologia || campo(enc, 'tipologia') || campo(enc, 'TIPOLOGIA') || '').trim().toUpperCase();
+                    const eTip = scTip || declTip;
+                    const eKey = (eNum && eTip) ? `${eNum}${eTip}` : rawSc;
+                    return eKey === codEtiq || (eNum === codNum && (!tip || eTip === tip));
+                }).length;
+            }
             const completado = conteo >= 10;
             const porcentaje = Math.min(100, Math.round((conteo / 10) * 100));
 
@@ -2001,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .setHTML(`
                     <div class="cs-map-popup">
                         <div class="cs-popup-badge ${completado ? 'cs-popup-badge--completado' : 'cs-popup-badge--muestreo'}" style="${completado ? 'background:#059669;color:#fff;' : ''}">
-                            ${completado ? '✅ Hito Completo (10/10)' : `🎯 Punto de Muestreo #${p.codigo_muestra || ''}`}
+                            ${completado ? `✅ Hito Completo (${conteo}/10)` : `🎯 Punto de Muestreo #${p.codigo_muestra || ''}${tip ? ` (${tip})` : ''}`}
                         </div>
                         <h4 class="cs-popup-title">${p.etiqueta_completa || p.nombre_referencia || 'Punto de Muestreo'}</h4>
                         
@@ -2250,20 +2275,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2.5 Actualizar conteos por punto de muestreo en tiempo real en la capa del mapa
+        // 2.5 Actualizar conteos por punto de muestreo (Número + Tipología)
         if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features && map.getSource('puntos-muestreo-source')) {
             const conteosPorPto = new Map();
             (AppState.encuestas || []).forEach(e => {
-                const rawSc = String(e.sc || campo(e, 'sc') || '');
+                const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
                 const scNum = rawSc.replace(/[^0-9]/g, '');
-                if (scNum) {
-                    conteosPorPto.set(scNum, (conteosPorPto.get(scNum) || 0) + 1);
+                const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
+                const declTip = String(e.tipologia || campo(e, 'tipologia') || campo(e, 'TIPOLOGIA') || '').trim().toUpperCase();
+                const tip = scTip || declTip;
+                const etiq = (scNum && tip) ? `${scNum}${tip}` : (rawSc || '');
+                if (etiq) {
+                    conteosPorPto.set(etiq, (conteosPorPto.get(etiq) || 0) + 1);
                 }
             });
 
             AppState.puntosMuestreoGeojson.features.forEach(f => {
                 const cod = String(f.properties.codigo_muestra || '').trim();
-                f.properties.conteo = conteosPorPto.get(cod) || 0;
+                const tip = String(f.properties.tipologia || '').trim().toUpperCase();
+                const key = `${cod}${tip}`;
+                f.properties.conteo = conteosPorPto.get(key) || 0;
             });
 
             map.getSource('puntos-muestreo-source').setData(AppState.puntosMuestreoGeojson);
@@ -2274,9 +2305,18 @@ document.addEventListener('DOMContentLoaded', () => {
         let muestreoFilter = null; // null = sin filtro = mostrar todos
 
         if (AppState.sectorSeleccionado !== 'Todos') {
-            // Si hay sector específico, mostrar solo ese punto
-            const scNum = parseInt(AppState.sectorSeleccionado, 10);
-            muestreoFilter = ['==', ['get', 'codigo_muestra'], scNum];
+            // Si hay sector específico, mostrar solo ese punto (coincidiendo Número + Tipología)
+            const targetSC = String(AppState.sectorSeleccionado).trim().toUpperCase();
+            const targetNum = parseInt(targetSC.replace(/[^0-9]/g, ''), 10);
+            const targetTip = targetSC.replace(/[^A-Za-z]/g, '').toUpperCase();
+            if (targetTip && !isNaN(targetNum)) {
+                muestreoFilter = ['all',
+                    ['==', ['get', 'codigo_muestra'], targetNum],
+                    ['==', ['upcase', ['coalesce', ['get', 'tipologia'], '']], targetTip]
+                ];
+            } else if (!isNaN(targetNum)) {
+                muestreoFilter = ['==', ['get', 'codigo_muestra'], targetNum];
+            }
         } else if (AppState.parroquiaSeleccionada !== 'Todas') {
             // Filtrar por parroquia (case-insensitive via upcase)
             const targetPar = AppState.parroquiaSeleccionada.toUpperCase();
