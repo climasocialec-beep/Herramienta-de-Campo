@@ -2908,12 +2908,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // PIRÁMIDE POBLACIONAL (SEXO Y GRUPOS DE EDAD) - ULTRA LIGERA
     // =========================================================================
     const COHORTES_PIRAMIDE = [
-        { id: '65+', label: '65+', min: 65, max: 125 },
-        { id: '55-64', label: '55-64', min: 55, max: 64 },
-        { id: '45-54', label: '45-54', min: 45, max: 54 },
-        { id: '35-44', label: '35-44', min: 35, max: 44 },
-        { id: '25-34', label: '25-34', min: 25, max: 34 },
-        { id: '16-24', label: '16-24', min: 16, max: 24 }
+        { id: '61+', label: '61+', min: 61, max: 125 },
+        { id: '45-60', label: '45-60', min: 45, max: 60 },
+        { id: '30-44', label: '30-44', min: 30, max: 44 },
+        { id: '20-29', label: '20-29', min: 20, max: 29 },
+        { id: '16-19', label: '16-19', min: 15, max: 19 }
     ];
 
     function extraerSexoYEdad(e) {
