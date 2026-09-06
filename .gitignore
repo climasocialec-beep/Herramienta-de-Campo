@@ -1,5 +1,6 @@
 node_modules/
 .env
+*.png
 *.log
 test_*.png
 .DS_Store

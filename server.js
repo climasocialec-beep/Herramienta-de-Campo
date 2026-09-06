@@ -172,6 +172,22 @@ function normalizarEncuesta(raw) {
     };
     const circunscripcion = MAPA_CIRCUNSCRIPCIONES[String(rawCircuns).trim()] || rawCircuns;
 
+    // Extracción tolerante de Género y Edad
+    const generoRaw = extraerValor(raw, [
+        "genero", "p_genero", "sexo", "gender",
+        "1. ¿CUÁL ES SU GÉNERO?", "1._CU_L_ES_SU_G_NERO",
+        "genero_resp", "p1_genero"
+    ]) || "";
+
+    const edadRaw = extraerValor(raw, [
+        "edad", "p_edad", "age",
+        "2. ¿CUÁL ES SU EDAD? (edad cumplida en años)",
+        "2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os",
+        "p2_edad"
+    ]) || "";
+    const edadNum = Number(edadRaw);
+    const edad = (!isNaN(edadNum) && edadNum > 0 && edadNum < 120) ? edadNum : null;
+
     return {
         _id: id,
         _submission_time: submissionTime,
@@ -186,7 +202,9 @@ function normalizarEncuesta(raw) {
         tipologia,
         barrio,
         parroquia,
-        circunscripcion
+        circunscripcion,
+        genero: generoRaw,
+        edad
     };
 }
 

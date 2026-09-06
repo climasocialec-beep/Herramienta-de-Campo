@@ -192,6 +192,13 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyState: document.getElementById('emptyState'),
         headersTabla: document.querySelectorAll('#tablaEncuestadores th'),
         
+        // Pirámide Poblacional (Sexo y Edad)
+        panelPiramide: document.getElementById('panelPiramide'),
+        togglePiramide: document.getElementById('togglePiramide'),
+        tagHombres: document.getElementById('tagHombres'),
+        tagMujeres: document.getElementById('tagMujeres'),
+        filasPiramide: document.getElementById('filasPiramide'),
+
         // Footer & Toast
         ultimaActualizacion: document.getElementById('ultimaActualizacion'),
         toast: document.getElementById('toast')
@@ -1228,6 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarMapa(encuestas, ajustarCamara && AppState.sectorSeleccionado === 'Todos' && AppState.parroquiaSeleccionada === 'Todas');
         actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
+        actualizarPiramidePoblacional(encuestas);
         actualizarClaseZoom();
     }
 
@@ -2896,6 +2904,150 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.tablaEncuestadoresBody.appendChild(fragment);
     }
 
+    // =========================================================================
+    // PIRÁMIDE POBLACIONAL (SEXO Y GRUPOS DE EDAD) - ULTRA LIGERA
+    // =========================================================================
+    const COHORTES_PIRAMIDE = [
+        { id: '65+', label: '65+', min: 65, max: 125 },
+        { id: '55-64', label: '55-64', min: 55, max: 64 },
+        { id: '45-54', label: '45-54', min: 45, max: 54 },
+        { id: '35-44', label: '35-44', min: 35, max: 44 },
+        { id: '25-34', label: '25-34', min: 25, max: 34 },
+        { id: '16-24', label: '16-24', min: 16, max: 24 }
+    ];
+
+    function extraerSexoYEdad(e) {
+        // 1. Sexo
+        let sexo = null;
+        const rawGen = String(
+            e.genero ||
+            e.p_genero ||
+            e.sexo ||
+            e['1. ¿CUÁL ES SU GÉNERO?'] ||
+            e['1._CU_L_ES_SU_G_NERO'] ||
+            campo(e, 'genero') ||
+            campo(e, 'p_genero') ||
+            campo(e, 'sexo') ||
+            ''
+        ).toLowerCase().trim();
+
+        if (rawGen.includes('masc') || rawGen.includes('hombre') || rawGen === '1' || rawGen === 'h') {
+            sexo = 'Hombre';
+        } else if (rawGen.includes('fem') || rawGen.includes('mujer') || rawGen === '2' || rawGen === 'm') {
+            sexo = 'Mujer';
+        }
+
+        // 2. Edad
+        let edad = null;
+        const rawEdad = (e.edad !== undefined && e.edad !== null && e.edad !== '')
+            ? e.edad
+            : (e.p_edad || e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] || e['2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os'] || campo(e, 'edad') || campo(e, 'p_edad'));
+
+        if (rawEdad !== undefined && rawEdad !== null && rawEdad !== '') {
+            const n = parseInt(rawEdad, 10);
+            if (!isNaN(n) && n >= 15 && n <= 115) {
+                edad = n;
+            }
+        }
+
+        return { sexo, edad };
+    }
+
+    function actualizarPiramidePoblacional(encuestas) {
+        if (!UI.filasPiramide) return;
+
+        let totalHombres = 0;
+        let totalMujeres = 0;
+        let conRegistroValido = 0;
+
+        const conteo = {};
+        COHORTES_PIRAMIDE.forEach(c => {
+            conteo[c.id] = { hombres: 0, mujeres: 0 };
+        });
+
+        const total = encuestas.length;
+        for (let i = 0; i < total; i++) {
+            const { sexo, edad } = extraerSexoYEdad(encuestas[i]);
+            if (sexo && edad !== null) {
+                conRegistroValido++;
+                if (sexo === 'Hombre') totalHombres++;
+                else if (sexo === 'Mujer') totalMujeres++;
+
+                for (let j = 0; j < COHORTES_PIRAMIDE.length; j++) {
+                    const c = COHORTES_PIRAMIDE[j];
+                    if (edad >= c.min && edad <= c.max) {
+                        if (sexo === 'Hombre') conteo[c.id].hombres++;
+                        else if (sexo === 'Mujer') conteo[c.id].mujeres++;
+                        break;
+                    }
+                }
+            } else if (sexo === 'Hombre') {
+                totalHombres++;
+            } else if (sexo === 'Mujer') {
+                totalMujeres++;
+            }
+        }
+
+        const totalSexo = totalHombres + totalMujeres;
+        const pctHombres = totalSexo > 0 ? ((totalHombres / totalSexo) * 100).toFixed(1) : '0.0';
+        const pctMujeres = totalSexo > 0 ? ((totalMujeres / totalSexo) * 100).toFixed(1) : '0.0';
+
+        if (UI.tagHombres) UI.tagHombres.textContent = `♂ ${pctHombres}% (${totalHombres})`;
+        if (UI.tagMujeres) UI.tagMujeres.textContent = `♀ ${pctMujeres}% (${totalMujeres})`;
+
+        if (total === 0 || conRegistroValido === 0) {
+            UI.filasPiramide.innerHTML = `
+                <div style="text-align:center; padding:0.6rem; color:var(--text-secondary); font-size:0.68rem;">
+                    Sin registros de edad y sexo en la selección activa
+                </div>
+            `;
+            return;
+        }
+
+        // Calcular porcentaje máximo relativo para escalar barras
+        let maxPct = 0;
+        COHORTES_PIRAMIDE.forEach(c => {
+            const hPct = (conteo[c.id].hombres / conRegistroValido) * 100;
+            const mPct = (conteo[c.id].mujeres / conRegistroValido) * 100;
+            if (hPct > maxPct) maxPct = hPct;
+            if (mPct > maxPct) maxPct = mPct;
+        });
+        if (maxPct <= 0) maxPct = 20;
+
+        let html = '';
+        COHORTES_PIRAMIDE.forEach(c => {
+            const nH = conteo[c.id].hombres;
+            const nM = conteo[c.id].mujeres;
+            const pctH = ((nH / conRegistroValido) * 100).toFixed(1);
+            const pctM = ((nM / conRegistroValido) * 100).toFixed(1);
+
+            const barWidthH = Math.min(100, Math.max(nH > 0 ? 5 : 0, (nH / conRegistroValido / (maxPct / 100)) * 100));
+            const barWidthM = Math.min(100, Math.max(nM > 0 ? 5 : 0, (nM / conRegistroValido / (maxPct / 100)) * 100));
+
+            html += `
+                <div class="cs-piramide-row" title="Edad ${c.label}: ${nH} hombres (${pctH}%), ${nM} mujeres (${pctM}%)">
+                    <div class="cs-piramide-side cs-piramide-side--left">
+                        <span class="cs-piramide-val">${nH > 0 ? `${nH} (${pctH}%)` : ''}</span>
+                        <div class="cs-piramide-bar cs-piramide-bar--hombres" style="width: ${barWidthH}%;"></div>
+                    </div>
+                    <div class="cs-piramide-center-label">${c.label}</div>
+                    <div class="cs-piramide-side cs-piramide-side--right">
+                        <div class="cs-piramide-bar cs-piramide-bar--mujeres" style="width: ${barWidthM}%;"></div>
+                        <span class="cs-piramide-val">${nM > 0 ? `(${pctM}%) ${nM}` : ''}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="cs-piramide-footer-note">
+                Base analizada: ${conRegistroValido} encuestas con sexo y edad clasificados
+            </div>
+        `;
+
+        UI.filasPiramide.innerHTML = html;
+    }
+
     function seleccionarEncuestador(id) {
         if (AppState.encuestadorSeleccionado === id) {
             AppState.encuestadorSeleccionado = null;
@@ -3154,6 +3306,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // 13. Reintentar
         if (UI.botonReintentar) {
             UI.botonReintentar.addEventListener('click', () => cargarDatos(true));
+        }
+
+        // 14. Toggle Pirámide Poblacional
+        if (UI.togglePiramide && UI.panelPiramide) {
+            UI.togglePiramide.addEventListener('click', () => {
+                const isCollapsed = UI.panelPiramide.classList.toggle('collapsed');
+                UI.togglePiramide.setAttribute('aria-expanded', String(!isCollapsed));
+            });
+            UI.togglePiramide.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    UI.togglePiramide.click();
+                }
+            });
         }
     }
 

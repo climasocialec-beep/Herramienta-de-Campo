@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=3.8.8">
+  <link rel="stylesheet" href="style.css?v=3.9.11">
 </head>
 <body>
 
@@ -327,6 +327,33 @@
             <span class="cs-live-mini-dot"></span> Sincronización activa
           </span>
         </div>
+
+        <!-- PANEL DISCRETO: PIRÁMIDE POBLACIONAL (SEXO Y GRUPOS DE EDAD) -->
+        <div class="cs-piramide-box" id="panelPiramide">
+          <div class="cs-piramide-header" id="togglePiramide" role="button" tabindex="0" aria-expanded="true" title="Clic para mostrar u ocultar la pirámide poblacional">
+            <div class="cs-piramide-title">
+              <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 22h20L12 2z"/>
+              </svg>
+              <span>Pirámide Poblacional (Sexo y Edad)</span>
+            </div>
+            <div class="cs-piramide-summary" id="piramideResumen">
+              <span class="cs-piramide-tag cs-piramide-tag--hombres" id="tagHombres">♂ 0% (0)</span>
+              <span class="cs-piramide-tag cs-piramide-tag--mujeres" id="tagMujeres">♀ 0% (0)</span>
+              <span class="cs-piramide-arrow" id="flechaPiramide">▼</span>
+            </div>
+          </div>
+          <div class="cs-piramide-body" id="cuerpoPiramide">
+            <div class="cs-piramide-legend">
+              <span class="cs-legend-side cs-legend-side--hombres">◀ Hombres</span>
+              <span class="cs-legend-center">Grupo de Edad</span>
+              <span class="cs-legend-side cs-legend-side--mujeres">Mujeres ▶</span>
+            </div>
+            <div class="cs-piramide-rows" id="filasPiramide">
+              <!-- Renderizado automático reactivo -->
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- COLUMNA DERECHA: TABLA DE ENCUESTADORES -->
@@ -395,7 +422,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.9.10"></script>
+  <script src="script.js?v=3.9.11"></script>
 
 </body>
 </html>

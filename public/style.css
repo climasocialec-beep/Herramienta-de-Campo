@@ -2317,6 +2317,239 @@ button, select, input, a, .cs-toggle-btn, .cs-date-pill {
   }
 }
 
+/* ==========================================================================
+   Panel Discreto: Pirámide Poblacional (Sexo y Grupo de Edad)
+   ========================================================================== */
+.cs-piramide-box {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+  user-select: none;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.cs-piramide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-subtle, rgba(0, 0, 0, 0.02));
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.2s ease;
+}
+
+.cs-piramide-header:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .cs-piramide-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cs-piramide-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.cs-piramide-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cs-piramide-tag {
+  padding: 0.12rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.cs-piramide-tag--hombres {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+body.dark-mode .cs-piramide-tag--hombres {
+  background: rgba(2, 132, 199, 0.25);
+  color: #38bdf8;
+}
+
+.cs-piramide-tag--mujeres {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+body.dark-mode .cs-piramide-tag--mujeres {
+  background: rgba(225, 29, 72, 0.25);
+  color: #fb7185;
+}
+
+.cs-piramide-arrow {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.cs-piramide-box.collapsed .cs-piramide-arrow {
+  transform: rotate(-90deg);
+}
+
+.cs-piramide-body {
+  padding: 0.45rem 0.75rem 0.55rem;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  max-height: 240px;
+  opacity: 1;
+}
+
+.cs-piramide-box.collapsed .cs-piramide-body {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cs-piramide-legend {
+  display: grid;
+  grid-template-columns: 1fr 64px 1fr;
+  align-items: center;
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.cs-legend-side--hombres {
+  text-align: right;
+  padding-right: 0.5rem;
+  color: #0284c7;
+}
+
+body.dark-mode .cs-legend-side--hombres {
+  color: #38bdf8;
+}
+
+.cs-legend-side--mujeres {
+  text-align: left;
+  padding-left: 0.5rem;
+  color: #e11d48;
+}
+
+body.dark-mode .cs-legend-side--mujeres {
+  color: #fb7185;
+}
+
+.cs-legend-center {
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+
+.cs-piramide-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.cs-piramide-row {
+  display: grid;
+  grid-template-columns: 1fr 64px 1fr;
+  align-items: center;
+  height: 18px;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-piramide-side {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.cs-piramide-side--left {
+  justify-content: flex-end;
+  padding-right: 0.35rem;
+}
+
+.cs-piramide-side--right {
+  justify-content: flex-start;
+  padding-left: 0.35rem;
+}
+
+.cs-piramide-bar {
+  height: 14px;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.cs-piramide-bar--hombres {
+  background: linear-gradient(90deg, #38bdf8, #0284c7);
+  margin-left: auto;
+}
+
+body.dark-mode .cs-piramide-bar--hombres {
+  background: linear-gradient(90deg, #0369a1, #38bdf8);
+}
+
+.cs-piramide-bar--mujeres {
+  background: linear-gradient(90deg, #e11d48, #f43f5e);
+  margin-right: auto;
+}
+
+body.dark-mode .cs-piramide-bar--mujeres {
+  background: linear-gradient(90deg, #fb7185, #be123c);
+}
+
+.cs-piramide-val {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cs-piramide-side--left .cs-piramide-val {
+  right: calc(100% + 0.3rem);
+}
+
+.cs-piramide-side--right .cs-piramide-val {
+  left: calc(100% + 0.3rem);
+}
+
+.cs-piramide-center-label {
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-subtle, rgba(0, 0, 0, 0.04));
+  border-radius: 3px;
+  padding: 0.08rem 0;
+  border: 1px solid var(--border-subtle);
+  line-height: 1.2;
+}
+
+.cs-piramide-footer-note {
+  text-align: center;
+  margin-top: 0.35rem;
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
