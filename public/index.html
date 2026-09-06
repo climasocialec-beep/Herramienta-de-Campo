@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=3.9.12">
+  <link rel="stylesheet" href="style.css?v=3.9.13">
 </head>
 <body>
 
@@ -344,13 +344,17 @@
             </div>
           </div>
           <div class="cs-piramide-body" id="cuerpoPiramide">
-            <div class="cs-piramide-legend">
-              <span class="cs-legend-side cs-legend-side--hombres">◀ Hombres</span>
-              <span class="cs-legend-center">Grupo de Edad</span>
-              <span class="cs-legend-side cs-legend-side--mujeres">Mujeres ▶</span>
-            </div>
-            <div class="cs-piramide-rows" id="filasPiramide">
-              <!-- Renderizado automático reactivo -->
+            <div class="cs-piramide-container">
+              <div class="cs-piramide-legend">
+                <span class="cs-legend-space"></span>
+                <span class="cs-legend-side cs-legend-side--hombres">◀ Hombres</span>
+                <span class="cs-legend-center">Edad</span>
+                <span class="cs-legend-side cs-legend-side--mujeres">Mujeres ▶</span>
+                <span class="cs-legend-space"></span>
+              </div>
+              <div class="cs-piramide-rows" id="filasPiramide">
+                <!-- Renderizado automático reactivo -->
+              </div>
             </div>
           </div>
         </div>
@@ -422,7 +426,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.9.12"></script>
+  <script src="script.js?v=3.9.13"></script>
 
 </body>
 </html>

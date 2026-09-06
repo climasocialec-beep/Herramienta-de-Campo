@@ -3028,15 +3028,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             html += `
                 <div class="cs-piramide-row" title="Edad ${c.label}: ${nH} hombres (${pctH}%), ${nM} mujeres (${pctM}%)">
+                    <div class="cs-piramide-val cs-piramide-val--hombres">${nH > 0 ? `${nH} <span class="cs-piramide-pct">(${pctH}%)</span>` : ''}</div>
                     <div class="cs-piramide-side cs-piramide-side--left">
-                        <span class="cs-piramide-val">${nH > 0 ? `${nH} (${pctH}%)` : ''}</span>
                         <div class="cs-piramide-bar cs-piramide-bar--hombres" style="width: ${barWidthH}%;"></div>
                     </div>
                     <div class="cs-piramide-center-label">${c.label}</div>
                     <div class="cs-piramide-side cs-piramide-side--right">
                         <div class="cs-piramide-bar cs-piramide-bar--mujeres" style="width: ${barWidthM}%;"></div>
-                        <span class="cs-piramide-val">${nM > 0 ? `(${pctM}%) ${nM}` : ''}</span>
                     </div>
+                    <div class="cs-piramide-val cs-piramide-val--mujeres">${nM > 0 ? `<span class="cs-piramide-pct">(${pctM}%)</span> ${nM}` : ''}</div>
                 </div>
             `;
         });
