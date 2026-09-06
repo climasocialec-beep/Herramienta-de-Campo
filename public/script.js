@@ -2921,11 +2921,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let sexo = null;
         const rawGen = String(
             e.genero ||
+            e.p1 ||
             e.p_genero ||
             e.sexo ||
             e['1. ¿CUÁL ES SU GÉNERO?'] ||
             e['1._CU_L_ES_SU_G_NERO'] ||
             campo(e, 'genero') ||
+            campo(e, 'p1') ||
             campo(e, 'p_genero') ||
             campo(e, 'sexo') ||
             ''
@@ -2941,7 +2943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let edad = null;
         const rawEdad = (e.edad !== undefined && e.edad !== null && e.edad !== '')
             ? e.edad
-            : (e.p_edad || e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] || e['2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os'] || campo(e, 'edad') || campo(e, 'p_edad'));
+            : (e.p2 || e.p_edad || e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] || e['2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os'] || campo(e, 'p2') || campo(e, 'edad') || campo(e, 'p_edad'));
 
         if (rawEdad !== undefined && rawEdad !== null && rawEdad !== '') {
             const n = parseInt(rawEdad, 10);

@@ -172,15 +172,22 @@ function normalizarEncuesta(raw) {
     };
     const circunscripcion = MAPA_CIRCUNSCRIPCIONES[String(rawCircuns).trim()] || rawCircuns;
 
-    // Extracción tolerante de Género y Edad
-    const generoRaw = extraerValor(raw, [
-        "genero", "p_genero", "sexo", "gender",
+    // Extracción tolerante de Género y Edad (Kobo Machala: p1=género [1=Masc, 2=Fem], p2=edad)
+    const rawGen = extraerValor(raw, [
+        "p1", "genero", "p_genero", "sexo", "gender",
         "1. ¿CUÁL ES SU GÉNERO?", "1._CU_L_ES_SU_G_NERO",
         "genero_resp", "p1_genero"
     ]) || "";
 
+    let genero = rawGen;
+    if (rawGen === "1" || rawGen.toLowerCase().includes("masc") || rawGen.toLowerCase().includes("hombre")) {
+        genero = "Hombre";
+    } else if (rawGen === "2" || rawGen.toLowerCase().includes("fem") || rawGen.toLowerCase().includes("mujer")) {
+        genero = "Mujer";
+    }
+
     const edadRaw = extraerValor(raw, [
-        "edad", "p_edad", "age",
+        "p2", "edad", "p_edad", "age",
         "2. ¿CUÁL ES SU EDAD? (edad cumplida en años)",
         "2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os",
         "p2_edad"
@@ -203,7 +210,7 @@ function normalizarEncuesta(raw) {
         barrio,
         parroquia,
         circunscripcion,
-        genero: generoRaw,
+        genero,
         edad
     };
 }
