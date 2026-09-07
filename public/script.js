@@ -310,6 +310,79 @@ document.addEventListener('DOMContentLoaded', () => {
         return e;
     }
 
+    // =========================================================================
+    // UTILIDADES DE FECHA LOCAL (ZONA HORARIA ECUADOR UTC-5)
+    // =========================================================================
+    function obtenerFechaLocalEcuador(d = new Date()) {
+        if (!d) return '';
+        const dateObj = (d instanceof Date) ? d : new Date(d);
+        if (isNaN(dateObj.getTime())) return '';
+        try {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(dateObj);
+        } catch (_) {
+            const ecuadorOffset = -5 * 60; // minutos
+            const localMs = dateObj.getTime() + (ecuadorOffset + dateObj.getTimezoneOffset()) * 60000;
+            return new Date(localMs).toISOString().split('T')[0];
+        }
+    }
+
+    function obtenerFechaEncuesta(e) {
+        if (!e) return '';
+        // 1. Prioridad: 'start' registra la fecha local en el dispositivo del encuestador
+        if (e.start && typeof e.start === 'string' && e.start.length >= 10) {
+            const fStart = e.start.substring(0, 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(fStart)) {
+                return fStart;
+            }
+        }
+        // 2. KoboToolbox almacena _submission_time en UTC; convertir a huso horario de Ecuador
+        if (e._submission_time && typeof e._submission_time === 'string') {
+            try {
+                let st = e._submission_time.trim();
+                if (!st.includes('Z') && !st.includes('+') && !st.match(/-\d{2}:?\d{2}$/)) {
+                    st += 'Z';
+                }
+                const d = new Date(st);
+                if (!isNaN(d.getTime())) {
+                    return obtenerFechaLocalEcuador(d);
+                }
+            } catch (_) {}
+            return e._submission_time.substring(0, 10);
+        }
+        return '';
+    }
+
+    function formatearFechaHoraEcuador(enc) {
+        if (!enc) return 'Sin fecha';
+        const rawDate = enc.start || enc._submission_time;
+        if (!rawDate) return 'Sin fecha';
+        try {
+            let str = String(rawDate).trim();
+            if (!enc.start && !str.includes('Z') && !str.includes('+') && !str.match(/-\d{2}:?\d{2}$/)) {
+                str += 'Z';
+            }
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return new Intl.DateTimeFormat('es-EC', {
+                    timeZone: 'America/Guayaquil',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).format(d).replace(',', '');
+            }
+        } catch (_) {}
+        return String(rawDate).replace('T', ' ').substring(0, 19);
+    }
+
     function extraerCoordenadas(encuesta) {
         // 1. _geolocation [lat, lng]
         if (encuesta._geolocation && Array.isArray(encuesta._geolocation) && encuesta._geolocation.length >= 2 && encuesta._geolocation[0] !== null) {
@@ -634,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (UI.badgeTexto) UI.badgeTexto.textContent = 'En vivo';
                 if (UI.ultimaActualizacion) {
                     const ahora = new Date();
-                    UI.ultimaActualizacion.textContent = `Última sincronización: ${ahora.toLocaleTimeString('es-EC')}`;
+                    UI.ultimaActualizacion.textContent = `Última sincronización: ${ahora.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil' })}`;
                 }
             }
         } catch (error) {
@@ -870,6 +943,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const encuestas = AppState.encuestas || [];
         const total = encuestas.length;
+        const ahoraHoy = new Date();
+        const hoyFiltroStr = obtenerFechaLocalEcuador(ahoraHoy);
+        const ayerFiltroStr = obtenerFechaLocalEcuador(new Date(ahoraHoy.getTime() - 86400000));
 
         for (let i = 0; i < total; i++) {
             const e = encuestas[i];
@@ -881,17 +957,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const tip = scTip || declTip;
             const etiq = (scNum && tip) ? `${scNum}${tip}` : (rawSc || '');
             const parr = obtenerParroquiaEncuesta(e);
-            const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
+            const fec = obtenerFechaEncuesta(e);
             const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
             const matchSec = (selSec === 'Todos' || etiq === selSec || scNum === selSec || rawSc === selSec);
             let matchFec = true;
             if (selFec !== 'Todas') {
-                const hoyStr = new Date().toISOString().split('T')[0];
-                const ayerStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                if (selFec === 'Hoy') matchFec = (fec === hoyStr);
-                else if (selFec === 'Ayer') matchFec = (fec === ayerStr);
+                if (selFec === 'Hoy') matchFec = (fec === hoyFiltroStr);
+                else if (selFec === 'Ayer') matchFec = (fec === ayerFiltroStr);
                 else matchFec = (fec === selFec);
             }
             const matchEnc = (!selEnc || encCod === String(selEnc));
@@ -1187,14 +1261,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Fecha (Compatible con 'Hoy', 'Ayer', 'Semana' y fecha específica YYYY-MM-DD)
+        // Filtro por Fecha (Compatible con 'Hoy', 'Ayer' y fecha específica YYYY-MM-DD)
         if (AppState.fechaSeleccionada !== 'Todas') {
             const hoyObj = new Date();
-            const hoyStr = hoyObj.toISOString().split('T')[0];
-            const ayerStr = new Date(hoyObj.getTime() - 86400000).toISOString().split('T')[0];
+            const hoyStr = obtenerFechaLocalEcuador(hoyObj);
+            const ayerStr = obtenerFechaLocalEcuador(new Date(hoyObj.getTime() - 86400000));
 
             filtradas = filtradas.filter(e => {
-                const fec = e._submission_time ? e._submission_time.substring(0, 10) : '';
+                const fec = obtenerFechaEncuesta(e);
                 if (!fec) return false;
 
                 if (AppState.fechaSeleccionada === 'Hoy') {
@@ -1246,9 +1320,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = encuestas.length;
         const meta = AppState.config.metaEncuestas || 2500;
         
-        const hoyStr = new Date().toISOString().split('T')[0];
+        const hoyStr = obtenerFechaLocalEcuador();
         const hoy = encuestas.filter(e => {
-            const fecha = e._submission_time ? e._submission_time.substring(0, 10) : '';
+            const fecha = obtenerFechaEncuesta(e);
             return fecha === hoyStr;
         }).length;
         
@@ -2492,7 +2566,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const parroquia = obtenerParroquiaEncuesta(enc) || '';
             const barrio = enc.barrio || campo(enc, 'BARRIO_O_SECTOR') || campo(enc, 'barrio');
-            const fecha = enc._submission_time ? enc._submission_time.replace('T', ' ').substring(0, 19) : 'Sin fecha';
+            const fecha = formatearFechaHoraEcuador(enc);
 
             features.push({
                 type: 'Feature',
@@ -3328,10 +3402,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const actualizar = () => {
             const ahora = new Date();
             if (UI.hora) {
-                UI.hora.textContent = ahora.toLocaleTimeString('es-EC');
+                UI.hora.textContent = ahora.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil' });
             }
             if (UI.fecha) {
                 UI.fecha.textContent = ahora.toLocaleDateString('es-EC', { 
+                    timeZone: 'America/Guayaquil',
                     weekday: 'short', 
                     day: 'numeric', 
                     month: 'short' 
