@@ -185,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
         toggleCantones: document.getElementById('toggleCantones'),
-        toggleMuestreo: document.getElementById('toggleMuestreo'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         toggleAlerta: document.getElementById('toggleAlerta'),
         
@@ -558,13 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Limpieza de caché previa y Boot Instantáneo Pichincha 2026
         try {
-            if (localStorage.getItem('cs_encuestas_cache')) {
-                localStorage.removeItem('cs_encuestas_cache');
-            }
-            if (localStorage.getItem('cs_encuestas_machala_v1')) {
-                localStorage.removeItem('cs_encuestas_machala_v1');
-            }
-            const cached = localStorage.getItem('cs_encuestas_pichincha_v1');
+            ['cs_encuestas_cache', 'cs_encuestas_machala_v1', 'cs_encuestas_pichincha_v1'].forEach(k => {
+                if (localStorage.getItem(k)) localStorage.removeItem(k);
+            });
+            const cached = localStorage.getItem('cs_encuestas_pichincha_v2');
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -659,7 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar en caché local para operatividad 100% offline
             try {
-                localStorage.setItem('cs_encuestas_pichincha_v1', JSON.stringify(AppState.encuestas));
+                localStorage.setItem('cs_encuestas_pichincha_v2', JSON.stringify(AppState.encuestas));
             } catch (e) {
                 console.warn('[Cache] Error al guardar caché:', e);
             }
@@ -1021,36 +1017,20 @@ document.addEventListener('DOMContentLoaded', () => {
             'Mejía': [
                 'ALOAG', 'ALOASI', 'CHAUPI', 'CORNEJO ASTORGA /TANDAPI', 'CUTUGLAGUA',
                 'MACHACHI', 'TAMBILLO', 'UYUMBICHO'
-            ],
-            'Pedro Moncayo': [
-                'LA ESPERANZA', 'MALCHINGUI', 'TABACUNDO', 'TOCACHI', 'TUPIGACHI'
-            ],
-            'San Miguel de los Bancos': [
-                'MINDO', 'S. MIGUEL DE LOS BANCOS'
-            ],
-            'Pedro Vicente Maldonado': [
-                'PEDRO VICENTE MALDONADO'
-            ],
-            'Puerto Quito': [
-                'PUERTO QUITO'
             ]
         };
 
-        // 1.1 Selector Cantón
+        // 1.1 Selector Cantón (4 Cantones de la Encuesta Pichincha 2026)
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Todos';
             const cantonesList = [
                 { id: 'Quito', label: 'Quito (D.M.)' },
                 { id: 'Rumiñahui', label: 'Rumiñahui' },
                 { id: 'Cayambe', label: 'Cayambe' },
-                { id: 'Mejía', label: 'Mejía' },
-                { id: 'Pedro Moncayo', label: 'Pedro Moncayo' },
-                { id: 'San Miguel de los Bancos', label: 'San Miguel de los Bancos' },
-                { id: 'Pedro Vicente Maldonado', label: 'Pedro Vicente Maldonado' },
-                { id: 'Puerto Quito', label: 'Puerto Quito' }
+                { id: 'Mejía', label: 'Mejía' }
             ];
 
-            let html = '<option value="Todos">Todos los cantones</option>';
+            let html = '<option value="Todos">Todos los cantones (4)</option>';
             cantonesList.forEach(c => {
                 let cnt = 0;
                 if (AppState.encuestas && AppState.encuestas.length > 0) {
@@ -1069,103 +1049,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             UI.cantonFilter.innerHTML = html;
             UI.cantonFilter.value = actualCan;
-        }
-
-        // 2. Selector de Puntos de Muestreo (1 al 70)
-        if (UI.sectorFilter) {
-            const actualSec = AppState.sectorSeleccionado || 'Todos';
-            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los puntos (1 al 70)</option>';
-            
-            const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
-            const listaMuestra = [];
-
-            if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features) {
-                AppState.puntosMuestreoGeojson.features.forEach(f => {
-                    const p = f.properties || {};
-                    const codNum = String(p.codigo_muestra || '').trim();
-                    const tipologia = String(p.tipologia || '').trim().toUpperCase();
-                    const etiqueta = `${codNum}${tipologia}`;
-                    const parroquia = String(p.parroquia || '').trim();
-                    const nombrePto = p.nombre_acortado || p.nombre_referencia || '';
-
-                    if (parActivaNorm && parroquia) {
-                        const pNorm = normTexto(parroquia);
-                        if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
-                            return;
-                        }
-                    }
-
-                    listaMuestra.push({
-                        sc: codNum,
-                        etiqueta: `${codNum}${tipologia}`,
-                        detalle: p.etiqueta_completa || `Pto. ${codNum} (${tipologia}) — ${nombrePto}`,
-                        parroquia: parroquia
-                    });
-                });
-            }
-
-            // Ordenamiento natural numérico exacto del 1 al 70
-            listaMuestra.sort((a, b) => (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0));
-            
-            const frag = document.createDocumentFragment();
-            const sectoresValidos = new Set();
-
-            listaMuestra.forEach(item => {
-                const count = sectores.get(item.etiqueta) || 0;
-                
-                // Para filtro de encuestador individual, solo mostrar puntos donde ha trabajado
-                // Para filtros territoriales (Parroquia, Circunscripción) o generales, SIEMPRE mostrar todos los puntos de muestreo asignados (incluso con 0/10)
-                if (selEnc && count === 0 && AppState.encuestas.length > 0) {
-                    return;
-                }
-
-                // Filtrar por Circunscripción si está activa
-                if (AppState.circunscripcionSeleccionada !== 'Todas' && item.parroquia) {
-                    const permitidas = PARROQUIAS_POR_CIRCUNSCRIPCION[AppState.circunscripcionSeleccionada] || [];
-                    const nItem = normStr(item.parroquia);
-                    const match = permitidas.some(p => {
-                        const nP = normStr(p);
-                        return nItem.includes(nP) || nP.includes(nItem);
-                    });
-                    if (!match) return;
-                }
-
-                // Si hay filtro de parroquia y no coincide
-                if (targetPar && item.parroquia) {
-                    const nItem = normStr(item.parroquia);
-                    const nTarget = normStr(targetPar);
-                    if (!nItem.includes(nTarget) && !nTarget.includes(nItem)) {
-                        return;
-                    }
-                }
-
-                sectoresValidos.add(item.etiqueta);
-                sectoresValidos.add(item.sc);
-
-                const opt = document.createElement('option');
-                opt.value = item.etiqueta;
-                if (count >= 10) {
-                    opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
-                    opt.style.color = '#059669';
-                    opt.style.fontWeight = '700';
-                } else if (count > 0) {
-                    opt.textContent = `🟡 ${item.detalle} (${count}/10)`;
-                    opt.style.color = '#d97706';
-                } else {
-                    opt.textContent = `⚪ ${item.detalle} (0/10)`;
-                    opt.style.color = '#64748b';
-                }
-                opt.title = `${item.detalle}${item.parroquia ? ` [${item.parroquia}]` : ''} · ${count}/10 encuestas recolectadas`;
-                frag.appendChild(opt);
-            });
-            UI.sectorFilter.appendChild(frag);
-
-            if (actualSec !== 'Todos' && !sectoresValidos.has(actualSec)) {
-                AppState.sectorSeleccionado = 'Todos';
-                UI.sectorFilter.value = 'Todos';
-            } else {
-                UI.sectorFilter.value = actualSec;
-            }
         }
 
         // 3. Selector Parroquias (Filtrado en cascada por Circunscripción)
@@ -1425,24 +1308,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function inicializarMapa() {
         if (!UI.mapContainer || !window.maplibregl) return;
 
-        // Pre-cargar únicamente Límites Cantonales (Ultra-optimizado para móviles) y Muestreo
+        // Pre-cargar únicamente Límites Cantonales (Ultra-optimizado para móviles)
         let cantonesData = { type: 'FeatureCollection', features: [] };
-        let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
             const cacheBuster = '?v=4.0.0';
-            const [resCan, resMuest] = await Promise.all([
-                fetch('assets/cantones.geojson' + cacheBuster),
-                fetch('assets/puntos_muestreo.geojson' + cacheBuster)
-            ]);
+            const resCan = await fetch('assets/cantones.geojson' + cacheBuster);
             if (resCan.ok) cantonesData = await resCan.json();
-            if (resMuest.ok) puntosMuestreoData = await resMuest.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
 
         AppState.cantonesGeojson = cantonesData;
-        AppState.puntosMuestreoGeojson = puntosMuestreoData;
+        AppState.puntosMuestreoGeojson = { type: 'FeatureCollection', features: [] };
+        AppState.puntosMuestreoMap = new Map();
+        AppState.sectoresMap = new Map();
 
         // Indexar Cantones con Bbox
         AppState.cantonesMap = new Map();
@@ -1458,51 +1338,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (p.canton_full) AppState.cantonesMap.set(p.canton_full, { feature: f, bbox: b, props: p });
                 }
             });
-        }
-
-        // Indexar Puntos de Muestreo
-        AppState.puntosMuestreoMap = new Map();
-        AppState.sectoresMap = new Map();
-        if (puntosMuestreoData.features) {
-            puntosMuestreoData.features.forEach(f => {
-                const p = f.properties || {};
-                const cod = String(p.codigo_muestra || '').trim();
-                const tip = String(p.tipologia || '').trim().toUpperCase();
-                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.nombre_acortado || p.nombre_referencia || ''}`;
-                p.sc = cod;
-                p.tipologia = tip;
-                p.etiquetaSC = `${cod}${tip}`;
-                p.etiqueta_muestra = etiq;
-                p.esPuntoMuestreo = true;
-
-                let bbox = null;
-                let centroid = null;
-                if (f.geometry && f.geometry.coordinates) {
-                    const coords = f.geometry.coordinates;
-                    centroid = [coords[0], coords[1]];
-                    const delta = 0.0012;
-                    bbox = [
-                        [coords[0] - delta, coords[1] - delta],
-                        [coords[0] + delta, coords[1] + delta]
-                    ];
-                    p.bbox = bbox;
-                    p.centroid = centroid;
-                }
-
-                if (cod) {
-                    AppState.puntosMuestreoMap.set(cod, p);
-                    AppState.sectoresMap.set(cod, p);
-                    AppState.sectoresMap.set(`${cod}${tip}`, p);
-                }
-            });
-        }
-
-        // Actualizar visualización del botón de capa de Muestreo
-        const numMuestreo = (puntosMuestreoData.features || []).length;
-        if (UI.toggleMuestreo) {
-            UI.toggleMuestreo.style.display = numMuestreo > 0 ? 'inline-flex' : 'none';
-            const lbl = document.getElementById('lblToggleMuestreo');
-            if (lbl) lbl.textContent = `Muestreo (${numMuestreo})`;
         }
 
         // Auto-calcular Bounding Box global de Pichincha desde los cantones
@@ -1561,10 +1396,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'cantones-source': {
                         type: 'geojson',
                         data: cantonesData
-                    },
-                    'puntos-muestreo-source': {
-                        type: 'geojson',
-                        data: puntosMuestreoData
                     }
                 },
                 layers: [
@@ -1575,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Límites Cantonales de Pichincha
+                    // 1. Límites Cantonales de Pichincha (4 cantones del estudio)
                     {
                         id: 'cantones-fill',
                         type: 'fill',
@@ -1588,10 +1419,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 'Rumiñahui', '#059669',
                                 'Cayambe', '#d97706',
                                 'Mejía', '#9333ea',
-                                'Pedro Moncayo', '#0891b2',
-                                'San Miguel de los Bancos', '#ea580c',
-                                'Pedro Vicente Maldonado', '#4f46e5',
-                                'Puerto Quito', '#0d9488',
                                 '#3b82f6'
                             ],
                             'fill-opacity': 0.08
@@ -1609,10 +1436,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 'Rumiñahui', '#047857',
                                 'Cayambe', '#b45309',
                                 'Mejía', '#7e22ce',
-                                'Pedro Moncayo', '#0e7490',
-                                'San Miguel de los Bancos', '#c2410c',
-                                'Pedro Vicente Maldonado', '#4338ca',
-                                'Puerto Quito', '#0f766e',
                                 '#1d4ed8'
                             ],
                             'line-width': 2.5,
@@ -1636,64 +1459,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-color': '#1e293b',
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 3.5
-                        }
-                    },
-                    // 2. Puntos de Muestreo Oficiales
-                    {
-                        id: 'puntos-muestreo-halo',
-                        type: 'circle',
-                        source: 'puntos-muestreo-source',
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 4.0,
-                                13, 5.5,
-                                16, 7.5,
-                                19, 9.5
-                            ],
-                            'circle-color': '#0d9488',
-                            'circle-stroke-color': '#ffffff',
-                            'circle-stroke-width': 2.0,
-                            'circle-opacity': 0.95
-                        }
-                    },
-                    {
-                        id: 'puntos-muestreo-dot',
-                        type: 'circle',
-                        source: 'puntos-muestreo-source',
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 1.5,
-                                13, 2.0,
-                                16, 2.8,
-                                19, 3.5
-                            ],
-                            'circle-color': '#ffffff'
-                        }
-                    },
-                    {
-                        id: 'puntos-muestreo-labels',
-                        type: 'symbol',
-                        source: 'puntos-muestreo-source',
-                        minzoom: 13.0,
-                        layout: {
-                            'text-field': [
-                                'coalesce',
-                                ['get', 'etiqueta_completa'],
-                                ['get', 'nombre_referencia'],
-                                ''
-                            ],
-                            'text-font': ['Open Sans Bold'],
-                            'text-size': 10.5,
-                            'text-variable-anchor': ['bottom', 'top', 'right', 'left'],
-                            'text-radial-offset': 0.75,
-                            'text-allow-overlap': false
-                        },
-                        paint: {
-                            'text-color': '#0f766e',
-                            'text-halo-color': '#ffffff',
-                            'text-halo-width': 2.5
                         }
                     }
                 ]
@@ -1996,76 +1761,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         map.on('click', 'puntos-layer', abrirPopupEncuesta);
 
-        // Popup interactivo para Puntos de Muestreo (70 Hitos oficiales)
-        map.on('click', 'puntos-muestreo-halo', (e) => {
-            if (!e.features || !e.features.length) return;
-            const p = e.features[0].properties;
-            const coords = e.features[0].geometry.coordinates;
-            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
-            const codNum = String(p.codigo_muestra || p.sc || '').trim();
-            const tip = String(p.tipologia || '').trim().toUpperCase();
-            const codEtiq = (codNum && tip) ? `${codNum}${tip}` : codNum;
-
-            // Sincronizar con el filtro de puntos de muestreo si se hace clic
-            if (codEtiq && UI.sectorFilter) {
-                AppState.sectorSeleccionado = codEtiq;
-                UI.sectorFilter.value = codEtiq;
-                renderizarVista(true, false);
-            }
-
-            // Calcular conteo exacto (Número + Tipología)
-            let conteo = p.conteo !== undefined ? parseInt(p.conteo, 10) : 0;
-            if (isNaN(conteo) || conteo === 0) {
-                conteo = (AppState.encuestas || []).filter(enc => {
-                    const rawSc = String(enc.sc || campo(enc, 'sc') || '').trim();
-                    const eNum = rawSc.replace(/[^0-9]/g, '');
-                    const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
-                    const declTip = String(enc.tipologia || campo(enc, 'tipologia') || campo(enc, 'TIPOLOGIA') || '').trim().toUpperCase();
-                    const eTip = scTip || declTip;
-                    const eKey = (eNum && eTip) ? `${eNum}${eTip}` : rawSc;
-                    return eKey === codEtiq || (eNum === codNum && (!tip || eTip === tip));
-                }).length;
-            }
-            const completado = conteo >= 10;
-            const porcentaje = Math.min(100, Math.round((conteo / 10) * 100));
-
-            new maplibregl.Popup({ offset: [0, -10], closeButton: true })
-                .setLngLat(coords)
-                .setHTML(`
-                    <div class="cs-map-popup">
-                        <div class="cs-popup-badge ${completado ? 'cs-popup-badge--completado' : 'cs-popup-badge--muestreo'}" style="${completado ? 'background:#059669;color:#fff;' : ''}">
-                            ${completado ? `✅ Hito Completo (${conteo}/10)` : `🎯 Punto de Muestreo #${p.codigo_muestra || ''}${tip ? ` (${tip})` : ''}`}
-                        </div>
-                        <h4 class="cs-popup-title">${p.etiqueta_completa || p.nombre_referencia || 'Punto de Muestreo'}</h4>
-                        
-                        <!-- Barra de Progreso Hacia la Meta de 10 Encuestas -->
-                        <div style="margin:8px 0 10px 0;padding:6px 8px;background:${completado ? '#ecfdf5' : '#f8fafc'};border:1px solid ${completado ? '#a7f3d0' : '#e2e8f0'};border-radius:6px;">
-                            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;color:${completado ? '#059669' : '#334155'};margin-bottom:4px;">
-                                <span>Progreso (Meta: 10):</span>
-                                <span>${conteo} / 10 ${completado ? '✓' : `(${porcentaje}%)`}</span>
-                            </div>
-                            <div style="background:#e2e8f0;height:6px;border-radius:3px;overflow:hidden;">
-                                <div style="background:${completado ? '#10b981' : '#0d9488'};width:${porcentaje}%;height:100%;"></div>
-                            </div>
-                        </div>
-
-                        <div class="cs-popup-row"><span>Parroquia:</span> <strong>${p.parroquia || ''}</strong></div>
-                        <div class="cs-popup-row"><span>Circunscripción:</span> <strong>${p.circunscripcion || ''}</strong></div>
-                        ${p.tipologia ? `<div class="cs-popup-row"><span>Tipología:</span> <strong>${p.tipologia}</strong></div>` : ''}
-                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-popup-btn-gmaps">
-                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                            Cómo llegar (Google Maps)
-                        </a>
-                    </div>
-                `)
-                .addTo(map);
-        });
-
         // Cursores interactivos
         map.on('mouseenter', 'puntos-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
-        map.on('mouseenter', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'puntos-muestreo-halo', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'cantones-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'cantones-fill', () => { map.getCanvas().style.cursor = ''; });
 
@@ -2085,8 +1783,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
-            { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] },
-            { btn: UI.toggleMuestreo, key: 'muestreo', layers: ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'] }
+            { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] }
         ];
 
         togglesMap.forEach(({ btn, key, layers }) => {
@@ -2237,76 +1934,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 1. Barra Flotante de Punto de Muestreo Activo
-        const barraSector = document.getElementById('barraSectorActivo');
-        const sectorTitulo = document.getElementById('sectorActivoTitulo');
-        const btnGmaps = document.getElementById('btnRutaGoogleMaps');
-
-        const targetSC = String(AppState.sectorSeleccionado).trim();
-        if (targetSC === 'Todos') {
-            if (barraSector) barraSector.style.display = 'none';
-        } else {
-            const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
-            if (sectorMeta && barraSector && sectorTitulo && btnGmaps && sectorMeta.centroid) {
-                sectorTitulo.textContent = `Punto #${targetSC} — ${sectorMeta.nombre_acortado || sectorMeta.nombre_referencia || ''}`;
-                btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${sectorMeta.centroid[1].toFixed(6)},${sectorMeta.centroid[0].toFixed(6)}`;
-                barraSector.style.display = 'flex';
-            } else if (barraSector) {
-                barraSector.style.display = 'none';
-            }
-        }
-
-        // 2. Actualizar conteos por punto de muestreo (si existen hitos)
-        if (AppState.puntosMuestreoGeojson && AppState.puntosMuestreoGeojson.features && map.getSource('puntos-muestreo-source')) {
-            const conteosPorPto = new Map();
-            (AppState.encuestas || []).forEach(e => {
-                const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
-                const scNum = rawSc.replace(/[^0-9]/g, '');
-                const scTip = rawSc.replace(/[^A-Za-z]/g, '').toUpperCase();
-                const declTip = String(e.tipologia || campo(e, 'tipologia') || campo(e, 'TIPOLOGIA') || '').trim().toUpperCase();
-                const tip = scTip || declTip;
-                const etiq = (scNum && tip) ? `${scNum}${tip}` : (rawSc || '');
-                if (etiq) {
-                    conteosPorPto.set(etiq, (conteosPorPto.get(etiq) || 0) + 1);
-                }
-            });
-
-            AppState.puntosMuestreoGeojson.features.forEach(f => {
-                const cod = String(f.properties.codigo_muestra || '').trim();
-                const tip = String(f.properties.tipologia || '').trim().toUpperCase();
-                const key = `${cod}${tip}`;
-                f.properties.conteo = conteosPorPto.get(key) || 0;
-            });
-
-            map.getSource('puntos-muestreo-source').setData(AppState.puntosMuestreoGeojson);
-        }
-
-        // 3. Filtrar puntos de muestreo según selección
-        const muestreoLayers = ['puntos-muestreo-halo', 'puntos-muestreo-dot', 'puntos-muestreo-labels'];
-        let muestreoFilter = null;
-
-        if (AppState.sectorSeleccionado !== 'Todos') {
-            const targetSC = String(AppState.sectorSeleccionado).trim().toUpperCase();
-            const targetNum = parseInt(targetSC.replace(/[^0-9]/g, ''), 10);
-            const targetTip = targetSC.replace(/[^A-Za-z]/g, '').toUpperCase();
-            if (targetTip && !isNaN(targetNum)) {
-                muestreoFilter = ['all',
-                    ['==', ['get', 'codigo_muestra'], targetNum],
-                    ['==', ['upcase', ['coalesce', ['get', 'tipologia'], '']], targetTip]
-                ];
-            } else if (!isNaN(targetNum)) {
-                muestreoFilter = ['==', ['get', 'codigo_muestra'], targetNum];
-            }
-        } else if (AppState.parroquiaSeleccionada !== 'Todas') {
-            const targetPar = AppState.parroquiaSeleccionada.toUpperCase();
-            muestreoFilter = ['==', ['upcase', ['get', 'parroquia']], targetPar];
-        }
-
-        muestreoLayers.forEach(layerId => {
-            if (map.getLayer(layerId)) {
-                map.setFilter(layerId, muestreoFilter);
-            }
-        });
 
         // =====================================================================
         // 4. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS

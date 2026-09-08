@@ -29,14 +29,18 @@ function limpiarVar(val) {
 }
 
 const PORT = Number(process.env.PORT) || 3001;
-const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_PICHINCHA || "");
+
+// Desconexión estricta de formulario de Machala:
+// Solo se conectará a Kobo cuando se defina explícitamente ASSET_ID_PICHINCHA.
+// Cualquier variable heredada de proyectos anteriores queda desactivada.
+const ASSET_ID = limpiarVar(process.env.ASSET_ID_PICHINCHA || "");
 const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
 
 if (!ASSET_ID) {
-    console.log("[SUPERVISOR] ℹ  Esperando configuración de formulario para Encuesta Pichincha 2026.");
+    console.log("[SUPERVISOR] ℹ  API de Machala desconectada. Esperando configuración de ASSET_ID_PICHINCHA.");
 }
 
 // =======================================
@@ -325,6 +329,9 @@ app.get("/api/encuestas", async (req, res) => {
 // Forzar refresco de caché
 app.post("/api/sync", async (req, res) => {
     try {
+        if (!ASSET_ID || !API_TOKEN) {
+            return res.json({ estado: "ok", total: 0, obtenidoEn: Date.now(), mensaje: "Esperando ASSET_ID_PICHINCHA" });
+        }
         cache.datos = null;
         cache.timestamp = 0;
         const datos = await obtenerDatosKobo();

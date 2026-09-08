@@ -180,7 +180,7 @@
             </div>
           </div>
 
-          <!-- Cantón -->
+          <!-- Cantón (4 Cantones del Proyecto) -->
           <div class="cs-ribbon-field">
             <label for="cantonFilter" class="cs-field-label">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -188,15 +188,11 @@
             </label>
             <div class="cs-select-wrap">
               <select id="cantonFilter" class="cs-select">
-                <option value="Todos">Todos los cantones</option>
+                <option value="Todos">Todos los cantones (4)</option>
                 <option value="Quito">Quito (D.M.)</option>
                 <option value="Rumiñahui">Rumiñahui</option>
                 <option value="Cayambe">Cayambe</option>
                 <option value="Mejía">Mejía</option>
-                <option value="Pedro Moncayo">Pedro Moncayo</option>
-                <option value="San Miguel de los Bancos">San Miguel de los Bancos</option>
-                <option value="Pedro Vicente Maldonado">Pedro Vicente Maldonado</option>
-                <option value="Puerto Quito">Puerto Quito</option>
               </select>
             </div>
           </div>
@@ -210,19 +206,6 @@
             <div class="cs-select-wrap">
               <select id="parroquiaFilter" class="cs-select">
                 <option value="Todas">Todas las parroquias</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Puntos de Muestreo (1 al 70) -->
-          <div class="cs-ribbon-field">
-            <label for="sectorFilter" class="cs-field-label">
-              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Punto Muestreo</span>
-            </label>
-            <div class="cs-select-wrap">
-              <select id="sectorFilter" class="cs-select">
-                <option value="Todos">Todos los puntos (1 al 70)</option>
               </select>
             </div>
           </div>
@@ -282,13 +265,9 @@
         <div class="cs-map-wrapper">
           <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
           <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-            <button type="button" class="cs-layer-pill active" id="toggleCantones" data-layer-group="cantones" title="Límites Cantonales de Pichincha">
+            <button type="button" class="cs-layer-pill active" id="toggleCantones" data-layer-group="cantones" title="Límites Cantonales del Proyecto Pichincha 2026">
               <span class="cs-layer-pill__dot cs-layer-pill__dot--canton"></span>
-              <span id="lblToggleCantones">Cantones (8)</span>
-            </button>
-            <button type="button" class="cs-layer-pill" id="toggleMuestreo" data-layer-group="muestreo" title="Puntos de Muestreo" style="display:none;">
-              <span class="cs-layer-pill__dot cs-layer-pill__dot--muestreo"></span>
-              <span id="lblToggleMuestreo">Muestreo</span>
+              <span id="lblToggleCantones">Cantones (4)</span>
             </button>
           </div>
           <div id="map"></div>
@@ -299,18 +278,6 @@
               <span class="cs-legend-title">Encuestadores</span>
             </div>
             <div class="cs-map-legend__items" id="mapLegendItems"></div>
-          </div>
-          
-          <!-- Barra flotante de navegación para Punto de Muestreo activo -->
-          <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
-            <div class="cs-sector-active-info">
-              <span class="cs-sector-active-icon">🎯</span>
-              <span class="cs-sector-active-title" id="sectorActivoTitulo">Punto de Muestreo</span>
-            </div>
-            <a id="btnRutaGoogleMaps" class="cs-btn-gmaps" href="#" target="_blank" rel="noopener noreferrer">
-              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-              Cómo llegar (Google Maps)
-            </a>
           </div>
 
           <button type="button" class="cs-locate-btn" id="locateBtn" title="Centrar en mi ubicación GPS" aria-label="Centrar ubicación GPS">
