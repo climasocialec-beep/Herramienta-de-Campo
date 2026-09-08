@@ -29,14 +29,14 @@ function limpiarVar(val) {
 }
 
 const PORT = Number(process.env.PORT) || 3001;
-const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_MACHALA || "");
+const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_PICHINCHA || "");
 const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
 
 if (!ASSET_ID) {
-    console.log("[SUPERVISOR] ℹ  Esperando configuración de nuevo formulario para Encuesta Cantonal Machala 2026.");
+    console.log("[SUPERVISOR] ℹ  Esperando configuración de formulario para Encuesta Pichincha 2026.");
 }
 
 // =======================================
@@ -149,28 +149,17 @@ function normalizarEncuesta(raw) {
     const tipologia = (extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipo_sc"]) || "").toUpperCase();
     const barrio = extraerValor(raw, ["barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
     
-    // Parroquia: puede venir como código (1..8) o como texto
-    const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]);
-    const MAPA_PARROQUIAS_MACHALA = {
-        "1": "9 DE MAYO",
-        "2": "EL CAMBIO",
-        "3": "JAMBELI",
-        "4": "JUBONES",
-        "5": "LA PROVIDENCIA",
-        "6": "MACHALA",
-        "7": "PUERTO BOLIVAR",
-        "8": "EL RETIRO"
-    };
-    const parroquia = MAPA_PARROQUIAS_MACHALA[String(rawParroquia).trim()] || rawParroquia;
+    // Parroquia: extracción tolerante (nombre o código)
+    const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
+    const parroquia = String(rawParroquia).trim().toUpperCase();
 
-    // Circunscripción
-    const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]);
-    const MAPA_CIRCUNSCRIPCIONES = {
-        "1": "Circunscripción 1",
-        "2": "Circunscripción 2",
-        "3": "Zona Rural"
-    };
-    const circunscripcion = MAPA_CIRCUNSCRIPCIONES[String(rawCircuns).trim()] || rawCircuns;
+    // Cantón: extracción tolerante
+    const rawCanton = extraerValor(raw, ["canton", "CANTON", "nom_canton", "cod_canton", "can"]) || "";
+    const canton = String(rawCanton).trim();
+
+    // Circunscripción (compatibilidad)
+    const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]) || "";
+    const circunscripcion = String(rawCircuns).trim();
 
     // Extracción tolerante de Género y Edad (Kobo Machala: p1=género [1=Masc, 2=Fem], p2=edad)
     const rawGen = extraerValor(raw, [
@@ -209,6 +198,7 @@ function normalizarEncuesta(raw) {
         tipologia,
         barrio,
         parroquia,
+        canton,
         circunscripcion,
         genero,
         edad
@@ -296,18 +286,15 @@ app.get("/api/health", (req, res) => {
 
 app.get("/api/config", (req, res) => {
     res.set("Cache-Control", "no-cache, no-store, must-revalidate");
-    let nombre = process.env.NOMBRE_PROYECTO || "Encuesta Cantonal Machala 2026";
-    if (nombre.toLowerCase().includes("cuenca") || !process.env.NOMBRE_PROYECTO) {
-        nombre = "Encuesta Cantonal Machala 2026";
-    }
+    let nombre = process.env.NOMBRE_PROYECTO || "Encuesta Pichincha 2026";
     res.json({
         nombreProyecto: nombre,
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 700,
-        campoEncuestador: process.env.CAMPO_ENCUESTADOR || "codencu",
-        campoSupervisor: process.env.CAMPO_SUPERVISOR || "codsup",
-        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -79.9554,
-        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -3.2581,
-        zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 12.5
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 1000,
+        campoEncuestador: process.env.CAMPO_ENCUESTADOR || "cod_encu",
+        campoSupervisor: process.env.CAMPO_SUPERVISOR || "cod_sup",
+        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.4678,
+        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -0.1807,
+        zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 11
     });
 });
 
@@ -318,7 +305,7 @@ app.get("/api/encuestas", async (req, res) => {
                 total: 0,
                 resultados: [],
                 obtenidoEn: Date.now(),
-                mensaje: "Esperando configuración de nuevo formulario para Encuesta Cantonal Machala 2026"
+                mensaje: "Esperando configuración de formulario para Encuesta Pichincha 2026"
             });
         }
         const datos = await obtenerDatosKobo();
