@@ -39,6 +39,11 @@ map.panBy([-dx, -dy], { duration: 0 });
 ```
 Esto asegura 100% de confiabilidad en cualquier dispositivo sin depender de peculiaridades del navegador.
 
+### E. Desduplicación Estricta de Etiquetas sobre Polígonos (Centroides Puntuales)
+**PROHIBICIÓN:** NUNCA asociar una capa `symbol` (etiquetas de nombres) a una fuente vectorial que contenga polígonos (`Polygon` / `MultiPolygon`).
+- **Problema:** El teselado `geojson-vt` divide polígonos al hacer zoom y MapLibre repite el texto en cada segmento tileado.
+- **Solución Obligatoria:** Toda entidad poligonal (parroquias, cantones, zonas) DEBE contar con una fuente secundaria de puntos geométricos individuales (`Point`), exactamente uno por entidad en su centro geográfico (`parroquias-centroides-source`). La capa de texto consume únicamente esta fuente puntual.
+
 ---
 
 ## 2. Ergonomía Responsiva de Filtros
