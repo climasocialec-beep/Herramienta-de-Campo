@@ -442,12 +442,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function encontrarHitoMasCercano(lng, lat) {
-        if (!AppState.puntosMuestreoGeojson || !AppState.puntosMuestreoGeojson.features) return null;
+        if (!AppState.sectoresGeojson || !AppState.sectoresGeojson.features) return null;
         let minD = Infinity;
         let masCercano = null;
-        AppState.puntosMuestreoGeojson.features.forEach(f => {
-            if (f.geometry && f.geometry.coordinates) {
-                const [hLng, hLat] = f.geometry.coordinates;
+        AppState.sectoresGeojson.features.forEach(f => {
+            const p = f.properties || {};
+            if (p.centroid) {
+                const [hLng, hLat] = p.centroid;
                 const d = calcularDistancia(lat, lng, hLat, hLng);
                 if (d < minD) {
                     minD = d;
@@ -502,24 +503,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 2. Verificación de Punto de Muestreo / Hito (Distancia > 600m del hito declarado)
+            // 2. Verificación de Sector Censal (Distancia > 600m del centroide del sector)
             const scDeclarado = String(enc.sc || campo(enc, 'sc') || '').trim();
-            if (scDeclarado && AppState.puntosMuestreoMap) {
-                const hitoDeclarado = AppState.puntosMuestreoMap.get(scDeclarado);
-                if (hitoDeclarado && hitoDeclarado.geometry && hitoDeclarado.geometry.coordinates) {
-                    const [hLng, hLat] = hitoDeclarado.geometry.coordinates;
+            if (scDeclarado && AppState.sectoresMap) {
+                const sectorMeta = AppState.sectoresMap.get(scDeclarado);
+                if (sectorMeta && sectorMeta.centroid) {
+                    const [hLng, hLat] = sectorMeta.centroid;
                     const distKm = calcularDistancia(lat, lng, hLat, hLng);
                     if (distKm > 0.6) {
                         const cercano = encontrarHitoMasCercano(lng, lat);
                         const cercanoP = cercano && cercano.feature ? cercano.feature.properties : null;
                         const distM = Math.round(distKm * 1000);
-                        let msgHito = `Marcó Punto #${scDeclarado} (a ${distKm >= 1 ? distKm.toFixed(1) + ' km' : distM + 'm'}).`;
-                        if (cercanoP && String(cercanoP.codigo_muestra) !== scDeclarado) {
+                        let msgHito = `Marcó Sector #${scDeclarado} (a ${distKm >= 1 ? distKm.toFixed(1) + ' km' : distM + 'm'} del centro).`;
+                        if (cercanoP && String(cercanoP.sc || cercanoP.codigo_muestra) !== scDeclarado) {
                             const dCercanoM = Math.round(cercano.distanciaKm * 1000);
-                            msgHito += ` GPS coincide con Hito #${cercanoP.codigo_muestra}${cercanoP.tipologia ? ` (${cercanoP.tipologia})` : ''} (a ${dCercanoM}m).`;
+                            msgHito += ` GPS más cercano a Sector #${cercanoP.sc || cercanoP.codigo_muestra} (a ${dCercanoM}m).`;
                         }
                         alertas.push({
-                            tipo: 'hito',
+                            tipo: 'sector',
                             mensaje: msgHito
                         });
                     }
@@ -1384,20 +1385,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let cantonesData = { type: 'FeatureCollection', features: [] };
         let parroquiasData = { type: 'FeatureCollection', features: [] };
         let sectoresData = { type: 'FeatureCollection', features: [] };
-        let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=4.2.0';
-            const [resCan, resPar, resSec, resMuest] = await Promise.all([
+            const cacheBuster = '?v=4.2.1';
+            const [resCan, resPar, resSec] = await Promise.all([
                 fetch('assets/cantones.geojson' + cacheBuster),
                 fetch('assets/parroquias.geojson' + cacheBuster),
-                fetch('assets/sectores_censales.geojson' + cacheBuster),
-                fetch('assets/puntos_muestreo.geojson' + cacheBuster)
+                fetch('assets/sectores_censales.geojson' + cacheBuster)
             ]);
             if (resCan.ok) cantonesData = await resCan.json();
             if (resPar.ok) parroquiasData = await resPar.json();
             if (resSec.ok) sectoresData = await resSec.json();
-            if (resMuest.ok) puntosMuestreoData = await resMuest.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
@@ -1405,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.cantonesGeojson = cantonesData;
         AppState.parroquiasGeojson = parroquiasData;
         AppState.sectoresGeojson = sectoresData;
-        AppState.puntosMuestreoGeojson = puntosMuestreoData;
+        AppState.puntosMuestreoGeojson = { type: 'FeatureCollection', features: [] };
         AppState.cantonesMap = new Map();
         AppState.parroquiasMap = new Map();
         AppState.puntosMuestreoMap = new Map();
@@ -1473,33 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nombre) AppState.parroquiasMap.set(nombre, { feature: f, bbox: b, props: p });
             });
         }
-
-        // Indexar Puntos de Muestreo (Centroides de cada sector)
-        if (puntosMuestreoData.features) {
-            puntosMuestreoData.features.forEach(f => {
-                const p = f.properties || {};
-                const cod = String(p.codigo_muestra || p.sc || '').trim();
-                const tip = String(p.tipologia || '').trim().toUpperCase();
-                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.parroquia || ''}`;
-                p.sc = cod;
-                p.tipologia = tip;
-                p.etiquetaSC = `${cod}${tip}`;
-                p.etiqueta_muestra = etiq;
-                p.esPuntoMuestreo = true;
-
-                let centroid = null;
-                if (f.geometry && f.geometry.coordinates) {
-                    centroid = [f.geometry.coordinates[0], f.geometry.coordinates[1]];
-                }
-                p.centroid = centroid;
-                if (cod) {
-                    AppState.puntosMuestreoMap.set(cod, p);
-                    if (!AppState.sectoresMap.has(cod)) {
-                        AppState.sectoresMap.set(cod, { feature: f, centroid, etiquetaSC: p.etiquetaSC, parroquia: p.parroquia, props: p });
-                    }
-                }
-            });
-        }
+        AppState.puntosMuestreoMap = AppState.sectoresMap;
 
         // Auto-calcular Bounding Box global de Pichincha desde los cantones
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
@@ -1565,10 +1537,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'sectores-source': {
                         type: 'geojson',
                         data: sectoresData
-                    },
-                    'puntos-muestreo-source': {
-                        type: 'geojson',
-                        data: puntosMuestreoData
                     }
                 },
                 layers: [
@@ -1693,40 +1661,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-color': '#7c2d12',
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 3.5
-                        }
-                    },
-                    // 4. Centroides de Muestreo / Hitos de Llegada
-                    {
-                        id: 'puntos-muestreo-halo',
-                        type: 'circle',
-                        source: 'puntos-muestreo-source',
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 4.0,
-                                13, 5.5,
-                                16, 7.5,
-                                19, 9.5
-                            ],
-                            'circle-color': '#0d9488',
-                            'circle-stroke-color': '#ffffff',
-                            'circle-stroke-width': 2.0,
-                            'circle-opacity': 0.95
-                        }
-                    },
-                    {
-                        id: 'puntos-muestreo-dot',
-                        type: 'circle',
-                        source: 'puntos-muestreo-source',
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 1.5,
-                                13, 2.0,
-                                16, 2.8,
-                                19, 3.5
-                            ],
-                            'circle-color': '#ffffff'
                         }
                     }
                 ]
@@ -2034,6 +1968,8 @@ document.addEventListener('DOMContentLoaded', () => {
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'cantones-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'cantones-fill', () => { map.getCanvas().style.cursor = ''; });
+        map.on('mouseenter', 'sectores-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'sectores-fill', () => { map.getCanvas().style.cursor = ''; });
 
         // Clic en polígono de Cantón: filtra directamente por ese cantón
         map.on('click', 'cantones-fill', (e) => {
@@ -2049,7 +1985,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Clic en Sector Censal (Polígono o Halo de Muestreo)
+        // Clic en Sector Censal (Polígono)
         const abrirPopupSector = (e) => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
@@ -2086,12 +2022,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         map.on('click', 'sectores-fill', abrirPopupSector);
-        map.on('click', 'puntos-muestreo-halo', abrirPopupSector);
 
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
             { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] },
-            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label', 'puntos-muestreo-halo', 'puntos-muestreo-dot'] },
+            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label'] },
             { btn: UI.toggleParroquias, key: 'parroquias', layers: ['parroquias-line'] }
         ];
 
