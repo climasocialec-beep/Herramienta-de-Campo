@@ -2084,33 +2084,100 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarVista(true, true);
     }
 
+    function obtenerBboxParroquia(nombreParroquia) {
+        if (!nombreParroquia || nombreParroquia === 'Todas') return null;
+        const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        const target = norm(nombreParroquia);
+
+        // 1. Buscar en AppState.parroquiasMap
+        if (AppState.parroquiasMap) {
+            const direct = AppState.parroquiasMap.get(nombreParroquia.toUpperCase().trim());
+            if (direct && direct.bbox) return direct.bbox;
+
+            for (const [k, v] of AppState.parroquiasMap.entries()) {
+                const nk = norm(k);
+                if (nk === target || nk.includes(target) || target.includes(nk)) {
+                    if (v && v.bbox) return v.bbox;
+                    if (v && v.feature && v.feature.geometry) return calcularBBOX(v.feature.geometry);
+                }
+            }
+        }
+
+        // 2. Buscar en AppState.parroquiasGeojson
+        if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features) {
+            const feat = AppState.parroquiasGeojson.features.find(f => {
+                const p = f.properties || {};
+                const n = norm(p.nombre || p.PARROQUIA || p.name || '');
+                return n === target || n.includes(target) || target.includes(n);
+            });
+            if (feat) {
+                if (feat.properties && feat.properties.bbox) return feat.properties.bbox;
+                if (feat.geometry) return calcularBBOX(feat.geometry);
+            }
+        }
+
+        // 3. Fallback: calcular envolvente de los sectores censales que pertenezcan a esa parroquia
+        if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let encontrados = 0;
+            AppState.sectoresGeojson.features.forEach(f => {
+                const p = f.properties || {};
+                const par = norm(p.parroquia || p.PARROQUIA || '');
+                if (par && (par === target || par.includes(target) || target.includes(par))) {
+                    const b = p.bbox || (f.geometry ? calcularBBOX(f.geometry) : null);
+                    if (b) {
+                        encontrados++;
+                        const bMinX = Array.isArray(b[0]) ? b[0][0] : b[0];
+                        const bMinY = Array.isArray(b[0]) ? b[0][1] : b[1];
+                        const bMaxX = Array.isArray(b[1]) ? b[1][0] : b[2];
+                        const bMaxY = Array.isArray(b[1]) ? b[1][1] : b[3];
+                        if (bMinX < minX) minX = bMinX;
+                        if (bMinY < minY) minY = bMinY;
+                        if (bMaxX > maxX) maxX = bMaxX;
+                        if (bMaxY > maxY) maxY = bMaxY;
+                    }
+                }
+            });
+            if (encontrados > 0 && minX !== Infinity) {
+                return [[minX, minY], [maxX, maxY]];
+            }
+        }
+
+        return null;
+    }
+
     function actualizarPoligonosMapa(ajustarCamara = false) {
         if (!map) return;
 
-        // 0. Polígonos de Cantones (Destacar visualmente según filtro)
-        if (map.getLayer('cantones-fill') && map.getLayer('cantones-line')) {
-            if (AppState.cantonSeleccionado === 'Todos') {
-                map.setPaintProperty('cantones-fill', 'fill-opacity', 0.08);
-                map.setPaintProperty('cantones-line', 'line-width', 2.5);
-                map.setPaintProperty('cantones-line', 'line-opacity', 0.90);
-            } else {
-                const selCanton = AppState.cantonSeleccionado;
-                map.setPaintProperty('cantones-fill', 'fill-opacity', [
-                    'match',
-                    ['get', 'canton'],
-                    selCanton, 0.20,
-                    0.03
+        // 0. Límites Parroquiales (Destacar visualmente la parroquia seleccionada)
+        if (map.getLayer('parroquias-line')) {
+            if (!AppState.parroquiaSeleccionada || AppState.parroquiaSeleccionada === 'Todas') {
+                map.setPaintProperty('parroquias-line', 'line-width', [
+                    'interpolate', ['linear'], ['zoom'],
+                    9, 1.2,
+                    12, 1.8,
+                    15, 2.5
                 ]);
-                map.setPaintProperty('cantones-line', 'line-width', [
+                map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
+                map.setPaintProperty('parroquias-line', 'line-opacity', 0.85);
+            } else {
+                const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
+                map.setPaintProperty('parroquias-line', 'line-width', [
                     'match',
-                    ['get', 'canton'],
-                    selCanton, 3.8,
+                    ['upcase', ['get', 'nombre']],
+                    targetPar, 4.0,
                     1.2
                 ]);
-                map.setPaintProperty('cantones-line', 'line-opacity', [
+                map.setPaintProperty('parroquias-line', 'line-color', [
                     'match',
-                    ['get', 'canton'],
-                    selCanton, 1.0,
+                    ['upcase', ['get', 'nombre']],
+                    targetPar, '#4c1d95',
+                    '#a78bfa'
+                ]);
+                map.setPaintProperty('parroquias-line', 'line-opacity', [
+                    'match',
+                    ['upcase', ['get', 'nombre']],
+                    targetPar, 1.0,
                     0.35
                 ]);
             }
@@ -2173,11 +2240,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        // 4. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
+        // 2. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
         // =====================================================================
         if (ajustarCamara) {
             if (AppState.sectorSeleccionado !== 'Todos') {
-                // Nivel 1: Zoom al Punto de Muestreo seleccionado
+                // Nivel 1: Zoom al Sector Censal seleccionado
                 const targetSC = String(AppState.sectorSeleccionado).trim();
                 const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
                 const bbox = sectorMeta ? (sectorMeta.bbox || (sectorMeta.feature && sectorMeta.feature.properties && sectorMeta.feature.properties.bbox)) : null;
@@ -2188,22 +2255,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         duration: 850
                     });
                 }
-            } else if (AppState.cantonSeleccionado !== 'Todos') {
-                // Nivel 2: Zoom al Cantón seleccionado
-                const cMeta = AppState.cantonesMap ? AppState.cantonesMap.get(AppState.cantonSeleccionado) : null;
-                const cBbox = cMeta ? cMeta.bbox : null;
-                if (cBbox) {
-                    const bounds = [[cBbox[0], cBbox[1]], [cBbox[2], cBbox[3]]];
-                    map.fitBounds(bounds, {
-                        padding: { top: 55, bottom: 45, left: 45, right: 45 },
-                        maxZoom: 14.5,
+            } else if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+                // Nivel 2: Zoom a la Parroquia seleccionada
+                const bboxPar = obtenerBboxParroquia(AppState.parroquiaSeleccionada);
+                if (bboxPar) {
+                    map.fitBounds(bboxPar, {
+                        padding: { top: 60, bottom: 50, left: 50, right: 50 },
+                        maxZoom: 15.0,
                         duration: 850
                     });
                 }
             } else {
-                // Nivel 3: Vista global de Pichincha
-                const pichinchaBbox = AppState.cantonBbox || [[-79.3715, -0.6771], [-77.8395, 0.3270]];
-                map.fitBounds(pichinchaBbox, {
+                // Nivel 3: Vista global de las 42 parroquias de estudio en Quito
+                const quitoBbox = AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
+                map.fitBounds(quitoBbox, {
                     padding: { top: 40, bottom: 40, left: 40, right: 40 },
                     maxZoom: 11.5,
                     duration: 850
