@@ -2203,28 +2203,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function actualizarPoligonosMapa(ajustarCamara = false) {
         if (!map) return;
 
-        // 0. Límites y Etiquetas Parroquiales (Filtrar por cantón y destacar parroquia seleccionada)
+        // 0. Límites y Etiquetas Parroquiales
         if (map.getLayer('parroquias-line')) {
-            // A. Filtro territorial por Cantón en el mapa
-            if (AppState.cantonSeleccionado === 'Todos') {
-                map.setFilter('parroquias-line', null);
-                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', null);
-            } else {
+            // Si hay una parroquia específica seleccionada: AISLAR SOLO ESA PARROQUIA
+            if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+                const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
+                const filterSoloParroquia = [
+                    'any',
+                    ['==', ['upcase', ['get', 'nombre']], targetPar],
+                    ['==', ['upcase', ['get', 'PARROQUIA']], targetPar]
+                ];
+                map.setFilter('parroquias-line', filterSoloParroquia);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterSoloParroquia);
+
+                map.setPaintProperty('parroquias-line', 'line-width', 3.5);
+                map.setPaintProperty('parroquias-line', 'line-color', '#4c1d95');
+                map.setPaintProperty('parroquias-line', 'line-opacity', 1.0);
+            } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
+                // Si está en 'Todas' las parroquias pero hay cantón seleccionado: mostrar solo las de ese cantón
                 const targetCanton = AppState.cantonSeleccionado;
                 const parsPermitidas = (PARROQUIAS_POR_CANTON[targetCanton] || []).map(p => p.toUpperCase().trim());
-                const filterPar = [
+                const filterParCanton = [
                     'any',
                     ['==', ['get', 'canton'], targetCanton],
                     ['==', ['upcase', ['get', 'CANTON']], targetCanton.toUpperCase()],
                     ['in', ['upcase', ['get', 'nombre']], ['literal', parsPermitidas]],
                     ['in', ['upcase', ['get', 'PARROQUIA']], ['literal', parsPermitidas]]
                 ];
-                map.setFilter('parroquias-line', filterPar);
-                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterPar);
-            }
+                map.setFilter('parroquias-line', filterParCanton);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterParCanton);
 
-            // B. Resaltado de Parroquia Seleccionada
-            if (!AppState.parroquiaSeleccionada || AppState.parroquiaSeleccionada === 'Todas') {
                 map.setPaintProperty('parroquias-line', 'line-width', [
                     'interpolate', ['linear'], ['zoom'],
                     9, 1.2,
@@ -2234,25 +2242,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
                 map.setPaintProperty('parroquias-line', 'line-opacity', 0.85);
             } else {
-                const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
+                // Vista global: todas las parroquias
+                map.setFilter('parroquias-line', null);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', null);
+
                 map.setPaintProperty('parroquias-line', 'line-width', [
-                    'match',
-                    ['upcase', ['get', 'nombre']],
-                    targetPar, 4.0,
-                    1.2
+                    'interpolate', ['linear'], ['zoom'],
+                    9, 1.2,
+                    12, 1.8,
+                    15, 2.5
                 ]);
-                map.setPaintProperty('parroquias-line', 'line-color', [
-                    'match',
-                    ['upcase', ['get', 'nombre']],
-                    targetPar, '#4c1d95',
-                    '#a78bfa'
-                ]);
-                map.setPaintProperty('parroquias-line', 'line-opacity', [
-                    'match',
-                    ['upcase', ['get', 'nombre']],
-                    targetPar, 1.0,
-                    0.35
-                ]);
+                map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
+                map.setPaintProperty('parroquias-line', 'line-opacity', 0.85);
             }
         }
 
@@ -2262,37 +2263,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const titulo = document.getElementById('sectorActivoTitulo');
             const btnGmaps = document.getElementById('btnRutaGoogleMaps');
 
-            if (AppState.sectorSeleccionado === 'Todos') {
-                // Si hay cantón seleccionado, filtrar los sectores censales del cantón
-                if (AppState.cantonSeleccionado !== 'Todos') {
-                    const parsPermitidas = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => p.toUpperCase().trim());
-                    const filterSecCanton = [
-                        'any',
-                        ['==', ['get', 'canton'], AppState.cantonSeleccionado],
-                        ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
-                    ];
-                    map.setFilter('sectores-fill', filterSecCanton);
-                    map.setFilter('sectores-line', filterSecCanton);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCanton);
-                } else {
-                    map.setFilter('sectores-fill', null);
-                    map.setFilter('sectores-line', null);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
-                }
-
-                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
-                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
-                map.setPaintProperty('sectores-line', 'line-width', [
-                    'interpolate', ['linear'], ['zoom'],
-                    10, 2.0,
-                    13, 3.5,
-                    16, 5.0
-                ]);
-                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
-
-                if (barra) barra.style.display = 'none';
-            } else {
+            if (AppState.sectorSeleccionado !== 'Todos') {
+                // Nivel 1: Sector específico activo
                 const targetSC = String(AppState.sectorSeleccionado).trim();
                 const filterSC = [
                     'any',
@@ -2324,6 +2296,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     barra.style.display = 'flex';
                 }
+            } else {
+                // Nivel 'Todos los sectores'
+                if (barra) barra.style.display = 'none';
+
+                // A. Si hay Parroquia específica seleccionada: MOSTRAR EXCLUSIVAMENTE LOS SECTORES DE ESA PARROQUIA
+                if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+                    const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
+                    const filterSectoresParroquia = [
+                        'any',
+                        ['==', ['upcase', ['get', 'parroquia']], targetPar],
+                        ['==', ['upcase', ['get', 'PARROQUIA']], targetPar]
+                    ];
+                    map.setFilter('sectores-fill', filterSectoresParroquia);
+                    map.setFilter('sectores-line', filterSectoresParroquia);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSectoresParroquia);
+                } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
+                    // B. Si hay Cantón específico: filtrar por los sectores del cantón
+                    const parsPermitidas = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => p.toUpperCase().trim());
+                    const filterSecCanton = [
+                        'any',
+                        ['==', ['get', 'canton'], AppState.cantonSeleccionado],
+                        ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
+                    ];
+                    map.setFilter('sectores-fill', filterSecCanton);
+                    map.setFilter('sectores-line', filterSecCanton);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCanton);
+                } else {
+                    // C. Vista global: mostrar todos los sectores
+                    map.setFilter('sectores-fill', null);
+                    map.setFilter('sectores-line', null);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
+                }
+
+                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
+                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
+                map.setPaintProperty('sectores-line', 'line-width', [
+                    'interpolate', ['linear'], ['zoom'],
+                    10, 2.0,
+                    13, 3.5,
+                    16, 5.0
+                ]);
+                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
             }
         }
         // 2. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
