@@ -210,6 +210,19 @@
             </div>
           </div>
 
+          <!-- Sector Censal (1 al 70) -->
+          <div class="cs-ribbon-field">
+            <label for="sectorFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Sector Censal</span>
+            </label>
+            <div class="cs-select-wrap">
+              <select id="sectorFilter" class="cs-select">
+                <option value="Todos">Todos los sectores (1 al 70)</option>
+              </select>
+            </div>
+          </div>
+
           <!-- Fecha con Botones Rápidos -->
           <div class="cs-ribbon-field cs-ribbon-field--date">
             <label for="fechaFilter" class="cs-field-label">
@@ -269,8 +282,28 @@
               <span class="cs-layer-pill__dot cs-layer-pill__dot--canton"></span>
               <span id="lblToggleCantones">Cantones (4)</span>
             </button>
+            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (70)">
+              <span class="cs-layer-pill__dot" style="background:#ea580c;"></span>
+              <span id="lblToggleSectores">Sectores (70)</span>
+            </button>
+            <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Quito">
+              <span class="cs-layer-pill__dot" style="background:#7c3aed;"></span>
+              <span id="lblToggleParroquias">Parroquias (42)</span>
+            </button>
           </div>
           <div id="map"></div>
+
+          <!-- Barra flotante de navegación para Sector Censal activo -->
+          <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
+            <div class="cs-sector-active-info">
+              <span class="cs-sector-active-icon">🎯</span>
+              <span class="cs-sector-active-title" id="sectorActivoTitulo">Sector Censal</span>
+            </div>
+            <a id="btnRutaGoogleMaps" class="cs-btn-gmaps" href="#" target="_blank" rel="noopener noreferrer">
+              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              Cómo llegar (Google Maps)
+            </a>
+          </div>
 
           <!-- Leyenda Dinámica de Encuestadores -->
           <div class="cs-map-legend" id="mapLegend" style="display:none;">

@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarEtiquetas: false,
         capasVisibles: {
             cantones: true,
+            sectores: true,
+            parroquias: true,
             muestreo: true
         },
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
@@ -185,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEtiquetasOff: document.getElementById('btnEtiquetasOff'),
         mapStats: document.getElementById('mapStats'),
         toggleCantones: document.getElementById('toggleCantones'),
+        toggleSectores: document.getElementById('toggleSectores'),
+        toggleParroquias: document.getElementById('toggleParroquias'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         toggleAlerta: document.getElementById('toggleAlerta'),
         
@@ -1051,6 +1055,74 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.cantonFilter.value = actualCan;
         }
 
+        // 2b. Selector Sectores Censales (1 al 70)
+        if (UI.sectorFilter) {
+            const actualSec = AppState.sectorSeleccionado || 'Todos';
+            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores (1 al 70)</option>';
+            
+            const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
+            const listaSectores = [];
+
+            if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
+                AppState.sectoresGeojson.features.forEach(f => {
+                    const p = f.properties || {};
+                    const scNum = String(p.sc || p.codigo_muestra || p.num_muestra || '').trim();
+                    const tipologia = String(p.tipologia || '').trim().toUpperCase();
+                    const etiqueta = p.etiquetaSC || `${scNum} | ${tipologia}`;
+                    const parroquia = String(p.parroquia || p.PARROQUIA || '').trim();
+
+                    if (parActivaNorm && parroquia) {
+                        const pNorm = normTexto(parroquia);
+                        if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
+                            return;
+                        }
+                    }
+
+                    listaSectores.push({
+                        sc: scNum,
+                        etiqueta: etiqueta,
+                        etiquetaKey: `${scNum}${tipologia}`,
+                        detalle: `Sector ${etiqueta}${parroquia ? ` (${parroquia})` : ''}`,
+                        parroquia: parroquia
+                    });
+                });
+            }
+
+            listaSectores.sort((a, b) => (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0));
+            const frag = document.createDocumentFragment();
+            const sectoresValidos = new Set();
+
+            listaSectores.forEach(item => {
+                const count = sectores.get(item.etiquetaKey) || sectores.get(item.sc) || sectores.get(item.etiqueta) || 0;
+                sectoresValidos.add(item.etiqueta);
+                sectoresValidos.add(item.sc);
+                sectoresValidos.add(item.etiquetaKey);
+
+                const opt = document.createElement('option');
+                opt.value = item.sc;
+                if (count >= 10) {
+                    opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
+                    opt.style.color = '#059669';
+                    opt.style.fontWeight = '700';
+                } else if (count > 0) {
+                    opt.textContent = `🟡 ${item.detalle} (${count}/10)`;
+                    opt.style.color = '#d97706';
+                } else {
+                    opt.textContent = `⚪ ${item.detalle} (0/10)`;
+                    opt.style.color = '#64748b';
+                }
+                frag.appendChild(opt);
+            });
+            UI.sectorFilter.appendChild(frag);
+
+            if (actualSec !== 'Todos' && !sectoresValidos.has(actualSec)) {
+                AppState.sectorSeleccionado = 'Todos';
+                UI.sectorFilter.value = 'Todos';
+            } else {
+                UI.sectorFilter.value = actualSec;
+            }
+        }
+
         // 3. Selector Parroquias (Filtrado en cascada por Circunscripción)
         if (UI.parroquiaFilter) {
             const actualPar = AppState.parroquiaSeleccionada || 'Todas';
@@ -1308,24 +1380,38 @@ document.addEventListener('DOMContentLoaded', () => {
     async function inicializarMapa() {
         if (!UI.mapContainer || !window.maplibregl) return;
 
-        // Pre-cargar únicamente Límites Cantonales (Ultra-optimizado para móviles)
+        // Pre-cargar datos cartográficos (Ultra-optimizado para móviles Galaxy A01 Core)
         let cantonesData = { type: 'FeatureCollection', features: [] };
+        let parroquiasData = { type: 'FeatureCollection', features: [] };
+        let sectoresData = { type: 'FeatureCollection', features: [] };
+        let puntosMuestreoData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=4.0.0';
-            const resCan = await fetch('assets/cantones.geojson' + cacheBuster);
+            const cacheBuster = '?v=4.2.0';
+            const [resCan, resPar, resSec, resMuest] = await Promise.all([
+                fetch('assets/cantones.geojson' + cacheBuster),
+                fetch('assets/parroquias.geojson' + cacheBuster),
+                fetch('assets/sectores_censales.geojson' + cacheBuster),
+                fetch('assets/puntos_muestreo.geojson' + cacheBuster)
+            ]);
             if (resCan.ok) cantonesData = await resCan.json();
+            if (resPar.ok) parroquiasData = await resPar.json();
+            if (resSec.ok) sectoresData = await resSec.json();
+            if (resMuest.ok) puntosMuestreoData = await resMuest.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
 
         AppState.cantonesGeojson = cantonesData;
-        AppState.puntosMuestreoGeojson = { type: 'FeatureCollection', features: [] };
+        AppState.parroquiasGeojson = parroquiasData;
+        AppState.sectoresGeojson = sectoresData;
+        AppState.puntosMuestreoGeojson = puntosMuestreoData;
+        AppState.cantonesMap = new Map();
+        AppState.parroquiasMap = new Map();
         AppState.puntosMuestreoMap = new Map();
         AppState.sectoresMap = new Map();
 
         // Indexar Cantones con Bbox
-        AppState.cantonesMap = new Map();
         if (cantonesData.features) {
             cantonesData.features.forEach(f => {
                 const p = f.properties || {};
@@ -1336,6 +1422,81 @@ document.addEventListener('DOMContentLoaded', () => {
                     AppState.cantonesMap.set(cNom, { feature: f, bbox: b, props: p });
                     if (p.nombre) AppState.cantonesMap.set(p.nombre, { feature: f, bbox: b, props: p });
                     if (p.canton_full) AppState.cantonesMap.set(p.canton_full, { feature: f, bbox: b, props: p });
+                }
+            });
+        }
+
+        // Indexar Sectores Censales (70 polígonos de Quito)
+        if (sectoresData.features) {
+            sectoresData.features.forEach(f => {
+                const p = f.properties || {};
+                const cod = String(p.sc || p.codigo_muestra || p.num_muestra || '').trim();
+                const tip = String(p.tipologia || '').trim().toUpperCase();
+                const etiq = p.etiquetaSC || (cod && tip ? `${cod} | ${tip}` : (cod || tip));
+                p.sc = cod;
+                p.tipologia = tip;
+                p.etiquetaSC = etiq;
+
+                let bbox = null;
+                let centroid = null;
+                if (f.geometry) {
+                    bbox = calcularBBOX(f.geometry);
+                    centroid = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
+                }
+                p.bbox = bbox;
+                p.centroid = centroid;
+
+                const meta = { feature: f, bbox, centroid, etiquetaSC: etiq, parroquia: p.parroquia || p.PARROQUIA || '', props: p };
+                if (cod) {
+                    AppState.sectoresMap.set(cod, meta);
+                    AppState.sectoresMap.set(etiq, meta);
+                    if (tip) {
+                        AppState.sectoresMap.set(`${cod}${tip}`, meta);
+                        AppState.sectoresMap.set(`${cod} | ${tip}`, meta);
+                    }
+                    const numSc = parseInt(cod, 10);
+                    if (!isNaN(numSc)) {
+                        AppState.sectoresMap.set(String(numSc), meta);
+                        if (numSc < 10) AppState.sectoresMap.set(`0${numSc}`, meta);
+                    }
+                }
+            });
+        }
+
+        // Indexar Parroquias
+        if (parroquiasData.features) {
+            parroquiasData.features.forEach(f => {
+                const p = f.properties || {};
+                const nombre = (p.nombre || p.PARROQUIA || p.name || '').toUpperCase().trim();
+                const b = f.geometry ? calcularBBOX(f.geometry) : null;
+                f.properties.bbox = b;
+                if (nombre) AppState.parroquiasMap.set(nombre, { feature: f, bbox: b, props: p });
+            });
+        }
+
+        // Indexar Puntos de Muestreo (Centroides de cada sector)
+        if (puntosMuestreoData.features) {
+            puntosMuestreoData.features.forEach(f => {
+                const p = f.properties || {};
+                const cod = String(p.codigo_muestra || p.sc || '').trim();
+                const tip = String(p.tipologia || '').trim().toUpperCase();
+                const etiq = p.etiqueta_completa || `${cod} - ${tip} | ${p.parroquia || ''}`;
+                p.sc = cod;
+                p.tipologia = tip;
+                p.etiquetaSC = `${cod}${tip}`;
+                p.etiqueta_muestra = etiq;
+                p.esPuntoMuestreo = true;
+
+                let centroid = null;
+                if (f.geometry && f.geometry.coordinates) {
+                    centroid = [f.geometry.coordinates[0], f.geometry.coordinates[1]];
+                }
+                p.centroid = centroid;
+                if (cod) {
+                    AppState.puntosMuestreoMap.set(cod, p);
+                    if (!AppState.sectoresMap.has(cod)) {
+                        AppState.sectoresMap.set(cod, { feature: f, centroid, etiquetaSC: p.etiquetaSC, parroquia: p.parroquia, props: p });
+                    }
                 }
             });
         }
@@ -1396,6 +1557,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     'cantones-source': {
                         type: 'geojson',
                         data: cantonesData
+                    },
+                    'parroquias-source': {
+                        type: 'geojson',
+                        data: parroquiasData
+                    },
+                    'sectores-source': {
+                        type: 'geojson',
+                        data: sectoresData
+                    },
+                    'puntos-muestreo-source': {
+                        type: 'geojson',
+                        data: puntosMuestreoData
                     }
                 },
                 layers: [
@@ -1459,6 +1632,101 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-color': '#1e293b',
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 3.5
+                        }
+                    },
+                    // 2. Límites Parroquiales de Quito
+                    {
+                        id: 'parroquias-line',
+                        type: 'line',
+                        source: 'parroquias-source',
+                        paint: {
+                            'line-color': '#7c3aed',
+                            'line-width': 1.6,
+                            'line-dasharray': [4, 2],
+                            'line-opacity': 0.65
+                        }
+                    },
+                    // 3. Sectores Censales Sorteados (70 polígonos de Quito)
+                    {
+                        id: 'sectores-fill',
+                        type: 'fill',
+                        source: 'sectores-source',
+                        paint: {
+                            'fill-color': '#f59e0b',
+                            'fill-opacity': 0.16
+                        }
+                    },
+                    {
+                        id: 'sectores-line',
+                        type: 'line',
+                        source: 'sectores-source',
+                        paint: {
+                            'line-color': '#d97706',
+                            'line-width': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 2.0,
+                                13, 3.5,
+                                16, 5.0
+                            ],
+                            'line-opacity': 1.0
+                        }
+                    },
+                    {
+                        id: 'sectores-label',
+                        type: 'symbol',
+                        source: 'sectores-source',
+                        minzoom: 10.0,
+                        layout: {
+                            'text-field': ['get', 'etiquetaSC'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 11,
+                                13, 14,
+                                16, 20
+                            ],
+                            'text-allow-overlap': true,
+                            'text-ignore-placement': true,
+                            'visibility': 'visible'
+                        },
+                        paint: {
+                            'text-color': '#7c2d12',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 3.5
+                        }
+                    },
+                    // 4. Centroides de Muestreo / Hitos de Llegada
+                    {
+                        id: 'puntos-muestreo-halo',
+                        type: 'circle',
+                        source: 'puntos-muestreo-source',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 4.0,
+                                13, 5.5,
+                                16, 7.5,
+                                19, 9.5
+                            ],
+                            'circle-color': '#0d9488',
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-width': 2.0,
+                            'circle-opacity': 0.95
+                        }
+                    },
+                    {
+                        id: 'puntos-muestreo-dot',
+                        type: 'circle',
+                        source: 'puntos-muestreo-source',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 1.5,
+                                13, 2.0,
+                                16, 2.8,
+                                19, 3.5
+                            ],
+                            'circle-color': '#ffffff'
                         }
                     }
                 ]
@@ -1781,9 +2049,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Clic en Sector Censal (Polígono o Halo de Muestreo)
+        const abrirPopupSector = (e) => {
+            if (!e.features || !e.features.length) return;
+            const p = e.features[0].properties;
+            const coords = e.lngLat;
+            const sc = String(p.sc || p.codigo_muestra || p.num_muestra || '').trim();
+            const tip = String(p.tipologia || '').trim().toUpperCase();
+            const etiq = p.etiquetaSC || `${sc} | ${tip}`;
+            const parroquia = p.parroquia || p.PARROQUIA || '';
+            const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
+
+            if (sc && UI.sectorFilter) {
+                AppState.sectorSeleccionado = sc;
+                UI.sectorFilter.value = sc;
+                if (parroquia) AppState.parroquiaSeleccionada = parroquia.toUpperCase();
+                poblarFiltros();
+                renderizarVista(true, false);
+            }
+
+            new maplibregl.Popup({ offset: [0, -10], closeButton: true })
+                .setLngLat(coords)
+                .setHTML(`
+                    <div style="font-family:'Inter',sans-serif;padding:4px;min-width:180px;text-align:center;">
+                        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:0.95rem;color:#0f172a;margin-bottom:4px;">
+                            Sector Censal <strong>${etiq}</strong>
+                        </div>
+                        ${parroquia ? `<div style="font-size:0.8rem;color:#475569;margin-bottom:8px;">Parroquia <strong>${parroquia}</strong></div>` : ''}
+                        <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="cs-btn-gmaps" style="display:inline-flex;justify-content:center;width:100%;margin-top:2px;">
+                            <svg class="cs-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                            Cómo llegar (Google Maps)
+                        </a>
+                    </div>
+                `)
+                .addTo(map);
+        };
+
+        map.on('click', 'sectores-fill', abrirPopupSector);
+        map.on('click', 'puntos-muestreo-halo', abrirPopupSector);
+
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
-            { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] }
+            { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] },
+            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label', 'puntos-muestreo-halo', 'puntos-muestreo-dot'] },
+            { btn: UI.toggleParroquias, key: 'parroquias', layers: ['parroquias-line'] }
         ];
 
         togglesMap.forEach(({ btn, key, layers }) => {
@@ -1934,8 +2243,63 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 1. Polígonos de Sectores Censales y Puntos de Muestreo
+        if (map.getLayer('sectores-fill') && map.getLayer('sectores-line')) {
+            const barra = document.getElementById('barraSectorActivo');
+            const titulo = document.getElementById('sectorActivoTitulo');
+            const btnGmaps = document.getElementById('btnRutaGoogleMaps');
 
-        // =====================================================================
+            if (AppState.sectorSeleccionado === 'Todos') {
+                map.setFilter('sectores-fill', null);
+                map.setFilter('sectores-line', null);
+                if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
+
+                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
+                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
+                map.setPaintProperty('sectores-line', 'line-width', [
+                    'interpolate', ['linear'], ['zoom'],
+                    10, 2.0,
+                    13, 3.5,
+                    16, 5.0
+                ]);
+                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
+
+                if (barra) barra.style.display = 'none';
+            } else {
+                const targetSC = String(AppState.sectorSeleccionado).trim();
+                const filterSC = [
+                    'any',
+                    ['==', ['to-string', ['get', 'sc']], targetSC],
+                    ['==', ['to-string', ['get', 'codigo_muestra']], targetSC],
+                    ['==', ['to-string', ['get', 'etiquetaSC']], targetSC]
+                ];
+
+                map.setFilter('sectores-fill', filterSC);
+                map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.35);
+
+                map.setFilter('sectores-line', filterSC);
+                map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
+                map.setPaintProperty('sectores-line', 'line-width', 5.0);
+                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
+
+                if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSC);
+
+                // Configurar Barra Flotante de Navegación
+                const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                if (sectorMeta && barra && titulo && btnGmaps) {
+                    const etiq = sectorMeta.etiquetaSC || `Sector ${targetSC}`;
+                    const parr = sectorMeta.parroquia ? ` (${sectorMeta.parroquia})` : '';
+                    titulo.textContent = `Sector ${etiq}${parr}`;
+                    const centroid = sectorMeta.centroid || (sectorMeta.props && sectorMeta.props.centroid);
+                    if (centroid) {
+                        btnGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${centroid[1].toFixed(6)},${centroid[0].toFixed(6)}`;
+                    }
+                    barra.style.display = 'flex';
+                }
+            }
+        }
         // 4. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
         // =====================================================================
         if (ajustarCamara) {
