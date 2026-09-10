@@ -20,8 +20,9 @@
   <link rel="dns-prefetch" href="https://tile.openstreetmap.org">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
-  <!-- Preload de activos críticos del mapa -->
-  <link rel="preload" href="assets/cantones.geojson?v=4.0.0" as="fetch" crossorigin>
+  <!-- Preload Cartografía Clave (Caché optimizada para móviles) -->
+  <link rel="preload" href="assets/parroquias.geojson?v=4.2.2" as="fetch" crossorigin>
+  <link rel="preload" href="assets/sectores_censales.geojson?v=4.2.2" as="fetch" crossorigin>
 
   <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
@@ -278,17 +279,13 @@
         <div class="cs-map-wrapper">
           <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
           <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-            <button type="button" class="cs-layer-pill active" id="toggleCantones" data-layer-group="cantones" title="Límites Cantonales del Proyecto Pichincha 2026">
-              <span class="cs-layer-pill__dot cs-layer-pill__dot--canton"></span>
-              <span id="lblToggleCantones">Cantones (4)</span>
+            <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (42)">
+              <span class="cs-layer-pill__dot" style="background:#7c3aed;"></span>
+              <span id="lblToggleParroquias">Parroquias (42)</span>
             </button>
             <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (70)">
               <span class="cs-layer-pill__dot" style="background:#ea580c;"></span>
               <span id="lblToggleSectores">Sectores (70)</span>
-            </button>
-            <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Quito">
-              <span class="cs-layer-pill__dot" style="background:#7c3aed;"></span>
-              <span id="lblToggleParroquias">Parroquias (42)</span>
             </button>
           </div>
           <div id="map"></div>

@@ -1382,25 +1382,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!UI.mapContainer || !window.maplibregl) return;
 
         // Pre-cargar datos cartográficos (Ultra-optimizado para móviles Galaxy A01 Core)
-        let cantonesData = { type: 'FeatureCollection', features: [] };
         let parroquiasData = { type: 'FeatureCollection', features: [] };
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=4.2.1';
-            const [resCan, resPar, resSec] = await Promise.all([
-                fetch('assets/cantones.geojson' + cacheBuster),
+            const cacheBuster = '?v=4.2.2';
+            const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
             ]);
-            if (resCan.ok) cantonesData = await resCan.json();
             if (resPar.ok) parroquiasData = await resPar.json();
             if (resSec.ok) sectoresData = await resSec.json();
         } catch (e) {
             console.warn('[Mapa] Error pre-cargando GeoJSONs:', e);
         }
 
-        AppState.cantonesGeojson = cantonesData;
+        AppState.cantonesGeojson = { type: 'FeatureCollection', features: [] };
         AppState.parroquiasGeojson = parroquiasData;
         AppState.sectoresGeojson = sectoresData;
         AppState.puntosMuestreoGeojson = { type: 'FeatureCollection', features: [] };
@@ -1408,21 +1405,6 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.parroquiasMap = new Map();
         AppState.puntosMuestreoMap = new Map();
         AppState.sectoresMap = new Map();
-
-        // Indexar Cantones con Bbox
-        if (cantonesData.features) {
-            cantonesData.features.forEach(f => {
-                const p = f.properties || {};
-                const cNom = p.canton || p.nombre || '';
-                const b = p.bbox || (f.geometry ? calcularBBOX(f.geometry) : null);
-                f.properties.bbox = b;
-                if (cNom) {
-                    AppState.cantonesMap.set(cNom, { feature: f, bbox: b, props: p });
-                    if (p.nombre) AppState.cantonesMap.set(p.nombre, { feature: f, bbox: b, props: p });
-                    if (p.canton_full) AppState.cantonesMap.set(p.canton_full, { feature: f, bbox: b, props: p });
-                }
-            });
-        }
 
         // Indexar Sectores Censales (70 polígonos de Quito)
         if (sectoresData.features) {
@@ -1473,23 +1455,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         AppState.puntosMuestreoMap = AppState.sectoresMap;
 
-        // Auto-calcular Bounding Box global de Pichincha desde los cantones
+        // Auto-calcular Bounding Box global desde las 42 parroquias a encuestar
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
-        if (cantonesData.features && cantonesData.features.length > 0) {
-            cantonesData.features.forEach(f => {
+        if (parroquiasData.features && parroquiasData.features.length > 0) {
+            parroquiasData.features.forEach(f => {
                 const b = f.properties.bbox;
-                if (b) {
-                    if (b[0] < globalMinX) globalMinX = b[0];
-                    if (b[1] < globalMinY) globalMinY = b[1];
-                    if (b[2] > globalMaxX) globalMaxX = b[2];
-                    if (b[3] > globalMaxY) globalMaxY = b[3];
+                if (b && Array.isArray(b)) {
+                    const minX = Array.isArray(b[0]) ? b[0][0] : b[0];
+                    const minY = Array.isArray(b[0]) ? b[0][1] : b[1];
+                    const maxX = Array.isArray(b[1]) ? b[1][0] : b[2];
+                    const maxY = Array.isArray(b[1]) ? b[1][1] : b[3];
+                    if (minX < globalMinX) globalMinX = minX;
+                    if (minY < globalMinY) globalMinY = minY;
+                    if (maxX > globalMaxX) globalMaxX = maxX;
+                    if (maxY > globalMaxY) globalMaxY = maxY;
                 }
             });
         }
 
-        let mapCenter = [-78.4678, -0.1807]; // Coordenadas de Quito / Pichincha
-        let initialBounds = [[-79.3715, -0.6771], [-77.8395, 0.3270]];
-        AppState.cantonBbox = initialBounds;
+        let mapCenter = [-78.4850, -0.1900]; // Coordenadas centrales de Quito
+        let initialBounds = null;
 
         if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
             mapCenter = [(globalMinX + globalMaxX) / 2, (globalMinY + globalMaxY) / 2];
@@ -1526,10 +1511,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         maxzoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     },
-                    'cantones-source': {
-                        type: 'geojson',
-                        data: cantonesData
-                    },
                     'parroquias-source': {
                         type: 'geojson',
                         data: parroquiasData
@@ -1547,74 +1528,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Límites Cantonales de Pichincha (4 cantones del estudio)
-                    {
-                        id: 'cantones-fill',
-                        type: 'fill',
-                        source: 'cantones-source',
-                        paint: {
-                            'fill-color': [
-                                'match',
-                                ['get', 'canton'],
-                                'Quito', '#2563eb',
-                                'Rumiñahui', '#059669',
-                                'Cayambe', '#d97706',
-                                'Mejía', '#9333ea',
-                                '#3b82f6'
-                            ],
-                            'fill-opacity': 0.08
-                        }
-                    },
-                    {
-                        id: 'cantones-line',
-                        type: 'line',
-                        source: 'cantones-source',
-                        paint: {
-                            'line-color': [
-                                'match',
-                                ['get', 'canton'],
-                                'Quito', '#1d4ed8',
-                                'Rumiñahui', '#047857',
-                                'Cayambe', '#b45309',
-                                'Mejía', '#7e22ce',
-                                '#1d4ed8'
-                            ],
-                            'line-width': 2.5,
-                            'line-dasharray': [3, 2],
-                            'line-opacity': 0.90
-                        }
-                    },
-                    {
-                        id: 'cantones-label',
-                        type: 'symbol',
-                        source: 'cantones-source',
-                        minzoom: 8.5,
-                        maxzoom: 14.5,
-                        layout: {
-                            'text-field': ['get', 'nombre'],
-                            'text-font': ['Open Sans Bold'],
-                            'text-size': 12.5,
-                            'text-anchor': 'center'
-                        },
-                        paint: {
-                            'text-color': '#1e293b',
-                            'text-halo-color': '#ffffff',
-                            'text-halo-width': 3.5
-                        }
-                    },
-                    // 2. Límites Parroquiales de Quito
+                    // 1. Límites Parroquiales (42 Parroquias de Estudio en Quito)
                     {
                         id: 'parroquias-line',
                         type: 'line',
                         source: 'parroquias-source',
                         paint: {
                             'line-color': '#7c3aed',
-                            'line-width': 1.6,
+                            'line-width': [
+                                'interpolate', ['linear'], ['zoom'],
+                                9, 1.2,
+                                12, 1.8,
+                                15, 2.5
+                            ],
                             'line-dasharray': [4, 2],
-                            'line-opacity': 0.65
+                            'line-opacity': 0.85
                         }
                     },
-                    // 3. Sectores Censales Sorteados (70 polígonos de Quito)
+                    {
+                        id: 'parroquias-label',
+                        type: 'symbol',
+                        source: 'parroquias-source',
+                        minzoom: 10.0,
+                        maxzoom: 14.5,
+                        layout: {
+                            'text-field': ['get', 'nombre'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 10.5,
+                                12, 12,
+                                14, 14
+                            ],
+                            'text-anchor': 'center',
+                            'text-max-width': 8
+                        },
+                        paint: {
+                            'text-color': '#581c87',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 3.0
+                        }
+                    },
+                    // 2. Sectores Censales Sorteados (70 polígonos de Quito)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
@@ -1966,24 +1921,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cursores interactivos
         map.on('mouseenter', 'puntos-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'puntos-layer', () => { map.getCanvas().style.cursor = ''; });
-        map.on('mouseenter', 'cantones-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'cantones-fill', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'sectores-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'sectores-fill', () => { map.getCanvas().style.cursor = ''; });
-
-        // Clic en polígono de Cantón: filtra directamente por ese cantón
-        map.on('click', 'cantones-fill', (e) => {
-            if (!e.features || !e.features.length) return;
-            const cantonNom = e.features[0].properties.canton;
-            if (cantonNom) {
-                AppState.cantonSeleccionado = (AppState.cantonSeleccionado === cantonNom) ? 'Todos' : cantonNom;
-                if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
-                AppState.parroquiaSeleccionada = 'Todas';
-                AppState.sectorSeleccionado = 'Todos';
-                poblarFiltros();
-                renderizarVista(true, true);
-            }
-        });
 
         // Clic en Sector Censal (Polígono)
         const abrirPopupSector = (e) => {
@@ -2025,9 +1964,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Conectar botones para Prender / Apagar capas en el mapa
         const togglesMap = [
-            { btn: UI.toggleCantones, key: 'cantones', layers: ['cantones-fill', 'cantones-line', 'cantones-label'] },
-            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label'] },
-            { btn: UI.toggleParroquias, key: 'parroquias', layers: ['parroquias-line'] }
+            { btn: UI.toggleParroquias, key: 'parroquias', layers: ['parroquias-line', 'parroquias-label'] },
+            { btn: UI.toggleSectores, key: 'sectores', layers: ['sectores-fill', 'sectores-line', 'sectores-label'] }
         ];
 
         togglesMap.forEach(({ btn, key, layers }) => {
