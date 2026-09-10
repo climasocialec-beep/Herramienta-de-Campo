@@ -129,6 +129,32 @@ document.addEventListener('DOMContentLoaded', () => {
         '#15803d'  // 24: Verde Pino
     ];
 
+    // Parroquias oficiales en estudio por cantón (Encuesta Pichincha 2026 - 62 parroquias)
+    const PARROQUIAS_POR_CANTON = {
+        'Quito': [
+            'ALANGASI', 'AMAGUAÑA', 'BELISARIO QUEVEDO', 'CALDERON', 'CARCELEN',
+            'CENTRO HISTORICO', 'CHECA', 'CHILLOGALLO', 'CHIMBACALLE', 'COCHAPAMBA',
+            'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA', 'EL CONDADO', 'GUAMANI',
+            'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO', 'JIPIJAPA', 'KENNEDY',
+            'LA ARGELIA', 'LA ECUATORIANA', 'LA FERROVIARIA', 'LA MAGDALENA',
+            'LA MERCED', 'LLANO CHICO', 'NAYON', 'PIFO', 'PINTAG', 'POMASQUI',
+            'PUEMBO', 'QUINCHE', 'QUITUMBE', 'RUMIPAMBA', 'SAN ANTONIO',
+            'SAN BARTOLO', 'SAN ISIDRO DEL INCA', 'SAN JUAN', 'SOLANDA',
+            'TUMBACO', 'TURUBAMBA', 'YARUQUI'
+        ],
+        'Cayambe': [
+            'ASCAZUBI', 'CANGAHUA', 'CAYAMBE', 'JUAN MONTALVO', 'OLMEDO/PESILLO', 'OTON',
+            'SAN JOSE DE AYORA', 'STA.ROSA DE CUSUBAMBA'
+        ],
+        'Mejía': [
+            'ALOAG', 'ALOASI', 'CORNEJO ASTORGA /TANDAPI', 'CUTUGLAGUA',
+            'MACHACHI', 'TAMBILLO', 'UYUMBICHO'
+        ],
+        'Rumiñahui': [
+            'COTOGCHOA', 'FAJARDO', 'SAN PEDRO DE TABOADA', 'SAN RAFAEL', 'SANGOLQUI'
+        ]
+    };
+
     function obtenerColorEncuestador(enc) {
         if (enc === undefined || enc === null || enc === '') return '#64748b';
         const str = String(enc).trim();
@@ -997,34 +1023,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (actualSup !== '1' && actualSup !== '2') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        const PARROQUIAS_POR_CANTON = {
-            'Quito': [
-                'ALANGASI', 'AMAGUAÑA', 'ATAHUALPA /HABASPAMBA', 'BELISARIO QUEVEDO',
-                'CALACALI', 'CALDERON', 'CARCELEN', 'CENTRO HISTORICO', 'CHAVEZPAMBA',
-                'CHECA', 'CHILIBULO', 'CHILLOGALLO', 'CHIMBACALLE', 'COCHAPAMBA',
-                'COMITE DEL PUEBLO', 'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA', 'EL CONDADO',
-                'GUALEA', 'GUAMANI', 'GUANGOPOLO', 'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO',
-                'JIPIJAPA', 'KENNEDY', 'LA ARGELIA', 'LA CONCEPCION', 'LA ECUATORIANA',
-                'LA FERROVIARIA', 'LA LIBERTAD', 'LA MAGDALENA', 'LA MENA', 'LA MERCED',
-                'LLANO CHICO', 'LLOA', 'MARISCAL SUCRE', 'NANEGAL', 'NANEGALITO', 'NAYON',
-                'NONO', 'PACTO', 'PERUCHO', 'PIFO', 'PINTAG', 'POMASQUI', 'PONCEANO',
-                'PUELLARO', 'PUEMBO', 'PUENGASI', 'QUINCHE', 'QUITUMBE', 'RUMIPAMBA',
-                'SAN ANTONIO', 'SAN BARTOLO', 'SAN ISIDRO DEL INCA', 'SAN JOSE DE MINAS',
-                'SAN JUAN', 'SOLANDA', 'TABABELA', 'TUMBACO', 'TURUBAMBA', 'YARUQUI', 'ZAMBIZA'
-            ],
-            'Rumiñahui': [
-                'COTOGCHOA', 'FAJARDO', 'RUMIPAMBA', 'SAN PEDRO DE TABOADA', 'SAN RAFAEL', 'SANGOLQUI'
-            ],
-            'Cayambe': [
-                'ASCAZUBI', 'CANGAHUA', 'CAYAMBE', 'JUAN MONTALVO', 'OLMEDO/PESILLO', 'OTON',
-                'SAN JOSE DE AYORA', 'STA.ROSA DE CUSUBAMBA'
-            ],
-            'Mejía': [
-                'ALOAG', 'ALOASI', 'CHAUPI', 'CORNEJO ASTORGA /TANDAPI', 'CUTUGLAGUA',
-                'MACHACHI', 'TAMBILLO', 'UYUMBICHO'
-            ]
-        };
-
         // 1.1 Selector Cantón (4 Cantones de la Encuesta Pichincha 2026)
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Todos';
@@ -1056,11 +1054,9 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.cantonFilter.value = actualCan;
         }
 
-        // 2b. Selector Sectores Censales (1 al 70)
+        // 2b. Selector Sectores Censales (160 sectores en Pichincha)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
-            UI.sectorFilter.innerHTML = '<option value="Todos">Todos los sectores (1 al 70)</option>';
-            
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
             const listaSectores = [];
 
@@ -1071,13 +1067,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tipologia = String(p.tipologia || '').trim().toUpperCase();
                     const etiqueta = p.etiquetaSC || `${scNum} | ${tipologia}`;
                     const parroquia = String(p.parroquia || p.PARROQUIA || '').trim();
+                    const canton = String(p.canton || p.CANTON || '').trim();
+                    const secAnm = String(p.sec_anm || '').trim();
+                    const scKey = p.sc_key || `${canton}_${scNum}`;
 
                     // Filtrar por Cantón si está activo (Cascada Cantón ➔ Sectores)
                     if (AppState.cantonSeleccionado !== 'Todos') {
-                        const parsCanton = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => normTexto(p));
-                        const pNorm = normTexto(parroquia);
-                        const matchCanton = parsCanton.some(cp => pNorm.includes(cp) || cp.includes(pNorm));
-                        if (!matchCanton) return;
+                        if (canton && normTexto(canton) !== normTexto(AppState.cantonSeleccionado)) {
+                            return;
+                        }
                     }
 
                     if (parActivaNorm && parroquia) {
@@ -1089,15 +1087,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     listaSectores.push({
                         sc: scNum,
+                        scKey: scKey,
+                        canton: canton,
                         etiqueta: etiqueta,
                         etiquetaKey: `${scNum}${tipologia}`,
                         detalle: `Sector ${etiqueta}${parroquia ? ` (${parroquia})` : ''}`,
-                        parroquia: parroquia
+                        parroquia: parroquia,
+                        sec_anm: secAnm
                     });
                 });
             }
 
-            listaSectores.sort((a, b) => (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0));
+            listaSectores.sort((a, b) => {
+                if (a.canton !== b.canton) return a.canton.localeCompare(b.canton);
+                return (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0);
+            });
+
+            const totalSectores = listaSectores.length;
+            const labelTodos = (AppState.cantonSeleccionado !== 'Todos') 
+                ? `Todos los sectores de ${AppState.cantonSeleccionado} (${totalSectores})`
+                : `Todos los sectores (${totalSectores})`;
+            UI.sectorFilter.innerHTML = `<option value="Todos">${labelTodos}</option>`;
+
             const frag = document.createDocumentFragment();
             const sectoresValidos = new Set();
 
@@ -1106,9 +1117,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 sectoresValidos.add(item.etiqueta);
                 sectoresValidos.add(item.sc);
                 sectoresValidos.add(item.etiquetaKey);
+                sectoresValidos.add(item.scKey);
 
                 const opt = document.createElement('option');
                 opt.value = item.sc;
+                opt.dataset.canton = item.canton;
+                opt.dataset.parroquia = item.parroquia;
+                opt.dataset.scKey = item.scKey;
+                opt.dataset.secAnm = item.sec_anm;
+
                 if (count >= 10) {
                     opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
                     opt.style.color = '#059669';
@@ -1400,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=4.2.2';
+            const cacheBuster = '?v=4.2.3';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -1420,44 +1437,95 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.puntosMuestreoMap = new Map();
         AppState.sectoresMap = new Map();
 
-        // Indexar Sectores Censales (70 polígonos de Quito)
+        // Indexar Sectores Censales (160 polígonos de Pichincha: Quito, Cayambe, Mejía, Rumiñahui)
         if (sectoresData.features) {
             sectoresData.features.forEach(f => {
                 const p = f.properties || {};
                 const cod = String(p.sc || p.codigo_muestra || p.num_muestra || '').trim();
                 const tip = String(p.tipologia || '').trim().toUpperCase();
+                const can = String(p.canton || p.CANTON || '').trim();
+                const par = String(p.parroquia || p.PARROQUIA || '').trim().toUpperCase();
+                const secAnm = String(p.sec_anm || '').trim();
                 const etiq = p.etiquetaSC || (cod && tip ? `${cod} | ${tip}` : (cod || tip));
                 p.sc = cod;
                 p.tipologia = tip;
+                p.canton = can;
+                p.parroquia = par;
                 p.etiquetaSC = etiq;
 
                 let bbox = null;
                 let centroid = null;
-                if (f.geometry) {
+                if (p.bbox && Array.isArray(p.bbox)) {
+                    bbox = p.bbox;
+                } else if (f.geometry) {
                     bbox = calcularBBOX(f.geometry);
+                }
+                if (p.centroid && Array.isArray(p.centroid)) {
+                    centroid = p.centroid;
+                } else if (bbox) {
                     centroid = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
                 }
                 p.bbox = bbox;
                 p.centroid = centroid;
 
-                const meta = { feature: f, bbox, centroid, etiquetaSC: etiq, parroquia: p.parroquia || p.PARROQUIA || '', props: p };
+                const meta = { feature: f, bbox, centroid, etiquetaSC: etiq, parroquia: par, canton: can, sec_anm: secAnm, props: p };
+                if (secAnm) AppState.sectoresMap.set(secAnm, meta);
+                if (p.sc_key) AppState.sectoresMap.set(p.sc_key, meta);
+                if (can && cod) {
+                    AppState.sectoresMap.set(`${can}_${cod}`, meta);
+                    AppState.sectoresMap.set(`${can.toUpperCase()}_${cod}`, meta);
+                    AppState.sectoresMap.set(`${can}_${etiq}`, meta);
+                }
+                if (par && cod) {
+                    AppState.sectoresMap.set(`${par}_${cod}`, meta);
+                    AppState.sectoresMap.set(`${par}_${etiq}`, meta);
+                }
                 if (cod) {
-                    AppState.sectoresMap.set(cod, meta);
-                    AppState.sectoresMap.set(etiq, meta);
-                    if (tip) {
-                        AppState.sectoresMap.set(`${cod}${tip}`, meta);
-                        AppState.sectoresMap.set(`${cod} | ${tip}`, meta);
-                    }
+                    if (!AppState.sectoresMap.has(cod)) AppState.sectoresMap.set(cod, meta);
+                    if (!AppState.sectoresMap.has(etiq)) AppState.sectoresMap.set(etiq, meta);
+                    if (tip && !AppState.sectoresMap.has(`${cod}${tip}`)) AppState.sectoresMap.set(`${cod}${tip}`, meta);
+                    if (tip && !AppState.sectoresMap.has(`${cod} | ${tip}`)) AppState.sectoresMap.set(`${cod} | ${tip}`, meta);
                     const numSc = parseInt(cod, 10);
                     if (!isNaN(numSc)) {
-                        AppState.sectoresMap.set(String(numSc), meta);
-                        if (numSc < 10) AppState.sectoresMap.set(`0${numSc}`, meta);
+                        if (!AppState.sectoresMap.has(String(numSc))) AppState.sectoresMap.set(String(numSc), meta);
                     }
                 }
             });
         }
 
-        // Indexar Parroquias
+        // Crear colección de centroides puntuales para etiquetas únicas de sectores censales (evita duplicación por teselado en MapLibre)
+        const sectoresCentroidesData = {
+            type: 'FeatureCollection',
+            features: (sectoresData.features || []).map(f => {
+                const p = f.properties || {};
+                const scNum = String(p.sc || p.codigo_muestra || p.num_muestra || '').trim();
+                const tip = String(p.tipologia || '').trim().toUpperCase();
+                const etiq = p.etiquetaSC || (scNum && tip ? `${scNum} | ${tip}` : (scNum || tip));
+                let coords = p.centroid;
+                if (!coords || !Array.isArray(coords)) {
+                    if (p.bbox && Array.isArray(p.bbox)) {
+                        const minX = Array.isArray(p.bbox[0]) ? p.bbox[0][0] : p.bbox[0];
+                        const minY = Array.isArray(p.bbox[0]) ? p.bbox[0][1] : p.bbox[1];
+                        const maxX = Array.isArray(p.bbox[1]) ? p.bbox[1][0] : p.bbox[2];
+                        const maxY = Array.isArray(p.bbox[1]) ? p.bbox[1][1] : p.bbox[3];
+                        coords = [(minX + maxX) / 2, (minY + maxY) / 2];
+                    } else if (f.geometry) {
+                        const b = calcularBBOX(f.geometry);
+                        coords = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2];
+                    } else {
+                        coords = [-78.48, -0.19];
+                    }
+                }
+                return {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: coords },
+                    properties: { ...p, etiquetaSC: etiq, sc: scNum, tipologia: tip }
+                };
+            })
+        };
+        AppState.sectoresCentroidesGeojson = sectoresCentroidesData;
+
+        // Indexar Parroquias (62 parroquias en estudio)
         if (parroquiasData.features) {
             parroquiasData.features.forEach(f => {
                 const p = f.properties || {};
@@ -1495,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         AppState.parroquiasCentroidesGeojson = parroquiasCentroidesData;
 
-        // Auto-calcular Bounding Box global desde las 42 parroquias a encuestar
+        // Auto-calcular Bounding Box global desde las 62 parroquias a encuestar
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
         if (parroquiasData.features && parroquiasData.features.length > 0) {
             parroquiasData.features.forEach(f => {
@@ -1513,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        let mapCenter = [-78.4850, -0.1900]; // Coordenadas centrales de Quito
+        let mapCenter = [-78.4850, -0.1900]; // Coordenadas centrales de Pichincha
         let initialBounds = null;
 
         if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
@@ -1562,6 +1630,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     'sectores-source': {
                         type: 'geojson',
                         data: sectoresData
+                    },
+                    'sectores-centroides-source': {
+                        type: 'geojson',
+                        data: sectoresCentroidesData
                     }
                 },
                 layers: [
@@ -1572,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 0,
                         maxzoom: 22
                     },
-                    // 1. Límites Parroquiales (42 Parroquias de Estudio en Quito)
+                    // 1. Límites Parroquiales (62 Parroquias de Estudio en Pichincha)
                     {
                         id: 'parroquias-line',
                         type: 'line',
@@ -1613,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-halo-width': 3.0
                         }
                     },
-                    // 2. Sectores Censales Sorteados (70 polígonos de Quito)
+                    // 2. Sectores Censales Sorteados (160 polígonos de Pichincha)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
@@ -1641,7 +1713,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         id: 'sectores-label',
                         type: 'symbol',
-                        source: 'sectores-source',
+                        source: 'sectores-centroides-source',
                         minzoom: 10.0,
                         layout: {
                             'text-field': ['get', 'etiquetaSC'],
@@ -1980,11 +2052,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const tip = String(p.tipologia || '').trim().toUpperCase();
             const etiq = p.etiquetaSC || `${sc} | ${tip}`;
             const parroquia = p.parroquia || p.PARROQUIA || '';
+            const canton = p.canton || p.CANTON || '';
             const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`;
 
             if (sc && UI.sectorFilter) {
                 AppState.sectorSeleccionado = sc;
-                UI.sectorFilter.value = sc;
+                if (canton) AppState.cantonSeleccionado = canton;
                 if (parroquia) AppState.parroquiaSeleccionada = parroquia.toUpperCase();
                 poblarFiltros();
                 renderizarVista(true, false);
@@ -2136,9 +2209,23 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.parroquiaSeleccionada = nombre;
         if (UI.parroquiaFilter) UI.parroquiaFilter.value = nombre;
         
+        // Auto-sincronizar Cantón si está en 'Todos' y la parroquia pertenece a un cantón específico
+        if (nombre !== 'Todas') {
+            const normP = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+            const targetP = normP(nombre);
+            for (const [can, pars] of Object.entries(PARROQUIAS_POR_CANTON)) {
+                if (pars.some(p => normP(p) === targetP || normP(p).includes(targetP) || targetP.includes(normP(p)))) {
+                    AppState.cantonSeleccionado = can;
+                    if (UI.cantonFilter) UI.cantonFilter.value = can;
+                    break;
+                }
+            }
+        }
+
         // Si el punto de muestreo seleccionado no pertenece a esta nueva parroquia, resetear a 'Todos'
         if (AppState.sectorSeleccionado !== 'Todos') {
-            const secMeta = AppState.sectoresMap.get(AppState.sectorSeleccionado);
+            const secMeta = (AppState.cantonSeleccionado !== 'Todos' ? AppState.sectoresMap.get(`${AppState.cantonSeleccionado}_${AppState.sectorSeleccionado}`) : null)
+                || AppState.sectoresMap.get(AppState.sectorSeleccionado);
             const parSec = secMeta ? String(secMeta.parroquia || '').trim().toUpperCase() : '';
             if (nombre !== 'Todas' && parSec && !parSec.includes(nombre) && !nombre.includes(parSec)) {
                 AppState.sectorSeleccionado = 'Todos';
@@ -2316,12 +2403,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.sectorSeleccionado !== 'Todos') {
                 // Nivel 1: Sector específico activo
                 const targetSC = String(AppState.sectorSeleccionado).trim();
-                const filterSC = [
+                const targetCanton = AppState.cantonSeleccionado !== 'Todos' ? AppState.cantonSeleccionado : null;
+
+                const matchSC = [
                     'any',
                     ['==', ['to-string', ['get', 'sc']], targetSC],
                     ['==', ['to-string', ['get', 'codigo_muestra']], targetSC],
+                    ['==', ['to-string', ['get', 'num_muestra']], targetSC],
                     ['==', ['to-string', ['get', 'etiquetaSC']], targetSC]
                 ];
+
+                const filterSC = targetCanton ? [
+                    'all',
+                    matchSC,
+                    ['any',
+                        ['==', ['get', 'canton'], targetCanton],
+                        ['==', ['upcase', ['get', 'CANTON']], targetCanton.toUpperCase()]
+                    ]
+                ] : matchSC;
 
                 map.setFilter('sectores-fill', filterSC);
                 map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
@@ -2335,7 +2434,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSC);
 
                 // Configurar Barra Flotante de Navegación
-                const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                const sectorMeta = (targetCanton ? (AppState.sectoresMap.get(`${targetCanton}_${targetSC}`) || AppState.sectoresMap.get(`${targetCanton.toUpperCase()}_${targetSC}`)) : null)
+                    || AppState.sectoresMap.get(targetSC) 
+                    || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+
                 if (sectorMeta && barra && titulo && btnGmaps) {
                     const etiq = sectorMeta.etiquetaSC || `Sector ${targetSC}`;
                     const parr = sectorMeta.parroquia ? ` (${sectorMeta.parroquia})` : '';
@@ -2363,17 +2465,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSectoresParroquia);
                 } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                     // B. Si hay Cantón específico: filtrar por los sectores del cantón
-                    const parsPermitidas = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => p.toUpperCase().trim());
+                    const targetCan = AppState.cantonSeleccionado;
+                    const parsPermitidas = (PARROQUIAS_POR_CANTON[targetCan] || []).map(p => p.toUpperCase().trim());
                     const filterSecCanton = [
                         'any',
-                        ['==', ['get', 'canton'], AppState.cantonSeleccionado],
+                        ['==', ['get', 'canton'], targetCan],
+                        ['==', ['upcase', ['get', 'CANTON']], targetCan.toUpperCase()],
                         ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
                     ];
                     map.setFilter('sectores-fill', filterSecCanton);
                     map.setFilter('sectores-line', filterSecCanton);
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCanton);
                 } else {
-                    // C. Vista global: mostrar todos los sectores
+                    // C. Vista global: mostrar todos los sectores (160)
                     map.setFilter('sectores-fill', null);
                     map.setFilter('sectores-line', null);
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
@@ -2381,6 +2485,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
                 map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
+
                 map.setPaintProperty('sectores-line', 'line-color', '#d97706');
                 map.setPaintProperty('sectores-line', 'line-width', [
                     'interpolate', ['linear'], ['zoom'],
@@ -2397,7 +2502,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.sectorSeleccionado !== 'Todos') {
                 // Nivel 1: Zoom al Sector Censal seleccionado
                 const targetSC = String(AppState.sectorSeleccionado).trim();
-                const sectorMeta = AppState.sectoresMap.get(targetSC) || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
+                const targetCanton = AppState.cantonSeleccionado !== 'Todos' ? AppState.cantonSeleccionado : null;
+                const sectorMeta = (targetCanton ? (AppState.sectoresMap.get(`${targetCanton}_${targetSC}`) || AppState.sectoresMap.get(`${targetCanton.toUpperCase()}_${targetSC}`)) : null)
+                    || AppState.sectoresMap.get(targetSC) 
+                    || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
                 const bbox = sectorMeta ? (sectorMeta.bbox || (sectorMeta.feature && sectorMeta.feature.properties && sectorMeta.feature.properties.bbox)) : null;
                 if (bbox) {
                     map.fitBounds(bbox, {
@@ -2417,7 +2525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
-                // Nivel 3: Zoom al Cantón seleccionado (ej. Quito)
+                // Nivel 3: Zoom al Cantón seleccionado
                 const bboxCan = obtenerBboxCanton(AppState.cantonSeleccionado);
                 if (bboxCan) {
                     map.fitBounds(bboxCan, {
@@ -2427,9 +2535,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else {
-                // Nivel 4: Vista global de las 42 parroquias de estudio en Quito
-                const quitoBbox = AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
-                map.fitBounds(quitoBbox, {
+                // Nivel 4: Vista global de las 62 parroquias de estudio en Pichincha
+                const globalBbox = AppState.cantonBbox || [[-78.75, -0.65], [-78.10, 0.25]];
+                map.fitBounds(globalBbox, {
                     padding: { top: 40, bottom: 40, left: 40, right: 40 },
                     maxZoom: 11.5,
                     duration: 850
@@ -3145,18 +3253,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 3. Filtro Sector Censal (Con auto-sincronización a Parroquia)
+        // 3. Filtro Sector Censal (Con auto-sincronización a Cantón y Parroquia)
         if (UI.sectorFilter) {
             UI.sectorFilter.addEventListener('change', (e) => {
                 const secVal = e.target.value;
                 AppState.sectorSeleccionado = secVal;
                 
                 if (secVal !== 'Todos') {
-                    // Obtener parroquia asociada al sector
-                    const secMeta = AppState.sectoresMap.get(secVal) || (parseInt(secVal, 10) ? AppState.sectoresMap.get(String(parseInt(secVal, 10))) : null);
-                    const parSector = secMeta ? String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim() : '';
-                    if (parSector) {
-                        AppState.parroquiaSeleccionada = parSector.toUpperCase();
+                    const opt = e.target.selectedOptions && e.target.selectedOptions[0];
+                    const optCanton = opt ? opt.dataset.canton : null;
+                    const optParroquia = opt ? opt.dataset.parroquia : null;
+
+                    if (optCanton && AppState.cantonSeleccionado === 'Todos') {
+                        AppState.cantonSeleccionado = optCanton;
+                        if (UI.cantonFilter) UI.cantonFilter.value = optCanton;
+                    }
+                    if (optParroquia && AppState.parroquiaSeleccionada === 'Todas') {
+                        AppState.parroquiaSeleccionada = optParroquia.toUpperCase();
+                        if (UI.parroquiaFilter) UI.parroquiaFilter.value = optParroquia.toUpperCase();
+                    }
+
+                    if (!optCanton || !optParroquia) {
+                        const secMeta = (AppState.cantonSeleccionado !== 'Todos' ? AppState.sectoresMap.get(`${AppState.cantonSeleccionado}_${secVal}`) : null)
+                            || AppState.sectoresMap.get(secVal) 
+                            || (parseInt(secVal, 10) ? AppState.sectoresMap.get(String(parseInt(secVal, 10))) : null);
+                        if (secMeta) {
+                            if (secMeta.canton && AppState.cantonSeleccionado === 'Todos') {
+                                AppState.cantonSeleccionado = secMeta.canton;
+                                if (UI.cantonFilter) UI.cantonFilter.value = secMeta.canton;
+                            }
+                            const parSector = String(secMeta.parroquia || secMeta.parroquia_especifica || secMeta.nom_par || secMeta.PARROQUIA || '').trim();
+                            if (parSector && AppState.parroquiaSeleccionada === 'Todas') {
+                                AppState.parroquiaSeleccionada = parSector.toUpperCase();
+                                if (UI.parroquiaFilter) UI.parroquiaFilter.value = parSector.toUpperCase();
+                            }
+                        }
                     }
                 }
                 
