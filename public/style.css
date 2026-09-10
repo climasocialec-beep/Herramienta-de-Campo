@@ -2819,17 +2819,34 @@ body.dark-mode .cs-piramide-val--mujeres {
 /* =========================================================================
    BARRA FLOTANTE DE CONTROL DE CAPAS DEL MAPA (PRENDER / APAGAR)
    ========================================================================= */
-.cs-canton-legend-bar {
+/* Contenedor Superior Unificado de Controles del Mapa (Zero-Overlap) */
+.cs-map-top-overlay {
   position: absolute;
   top: 10px;
   left: 12px;
+  right: 12px;
   z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.cs-map-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.cs-canton-legend-bar {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  max-width: calc(100% - 210px);
   pointer-events: auto;
+  min-width: 0;
 }
 
 .cs-canton-pill {
@@ -2888,17 +2905,13 @@ body.modo-oscuro .cs-canton-pill.is-active {
 
 /* Barra secundaria de Circunscripciones en el Mapa (Quito y Rumiñahui) */
 .cs-circ-legend-bar {
-  position: absolute;
-  top: 44px;
-  left: 12px;
-  z-index: 6;
   display: flex;
   align-items: center;
   gap: 0.3rem;
   flex-wrap: wrap;
-  max-width: calc(100% - 210px);
   pointer-events: auto;
   transition: all 0.25s ease-out;
+  min-width: 0;
 }
 
 .cs-circ-pill {
@@ -2951,16 +2964,12 @@ body.modo-oscuro .cs-circ-pill.is-active {
 }
 
 .cs-map-layer-toggles {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 6;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
-  max-width: calc(100% - 60px);
   pointer-events: auto;
+  flex-shrink: 0;
 }
 
 .cs-layer-pill {
@@ -3163,41 +3172,104 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
 }
 
 @media (max-width: 640px) {
-  .cs-canton-legend-bar {
+  .cs-map-top-overlay {
     top: 6px;
-    left: 8px;
-    gap: 0.2rem;
-    max-width: calc(100% - 150px);
-  }
-  .cs-canton-pill {
-    padding: 0.18rem 0.42rem;
-    font-size: 0.64rem;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  .cs-circ-legend-bar {
-    top: 32px;
-    left: 8px;
-    gap: 0.18rem;
-    max-width: calc(100% - 140px);
-  }
-  .cs-circ-pill {
-    padding: 0.14rem 0.38rem;
-    font-size: 0.60rem;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  .cs-map-layer-toggles {
-    top: 6px;
-    right: 8px;
+    left: 6px;
+    right: 6px;
     gap: 0.25rem;
   }
-  .cs-layer-pill {
-    padding: 0.2rem 0.45rem;
+
+  .cs-map-top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  /* Fila 1: Cantones con scroll táctil horizontal de 1 sola línea */
+  .cs-canton-legend-bar {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.25rem;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cs-canton-legend-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cs-canton-pill {
+    padding: 0.2rem 0.48rem;
     font-size: 0.65rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Fila 2: Capas de mapa limpias, compactas y horizontales */
+  .cs-map-layer-toggles {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cs-map-layer-toggles::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cs-layer-pill {
+    padding: 0.18rem 0.45rem;
+    font-size: 0.64rem;
+    flex-shrink: 0;
+    white-space: nowrap;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: #ffffff !important;
+  }
+
+  /* Fila 3: Circunscripciones en scroll táctil horizontal */
+  .cs-circ-legend-bar {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.22rem;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cs-circ-legend-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cs-circ-pill {
+    padding: 0.16rem 0.42rem;
+    font-size: 0.61rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Barra de sector censal activo en móvil: ubicada abajo ergonómicamente */
+  .cs-sector-active-bar {
+    top: auto;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    max-width: 380px;
+    z-index: 50;
   }
 }
 

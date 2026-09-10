@@ -290,40 +290,46 @@
         </div>
 
         <div class="cs-map-wrapper">
-          <!-- Barra de Leyenda y Filtro Rápido de Cantones (Filtro 1-tap en Mapa) -->
-          <div class="cs-canton-legend-bar" id="cantonLegendBar" aria-label="Cantones del Proyecto">
-            <button type="button" class="cs-canton-pill" data-canton="Quito" title="Filtrar Quito (D.M.)">
-              <span class="cs-canton-pill__dot" style="background:#2563eb;"></span>
-              <span>Quito</span>
-            </button>
-            <button type="button" class="cs-canton-pill" data-canton="Cayambe" title="Filtrar Cayambe">
-              <span class="cs-canton-pill__dot" style="background:#059669;"></span>
-              <span>Cayambe</span>
-            </button>
-            <button type="button" class="cs-canton-pill" data-canton="Mejía" title="Filtrar Mejía">
-              <span class="cs-canton-pill__dot" style="background:#ea580c;"></span>
-              <span>Mejía</span>
-            </button>
-            <button type="button" class="cs-canton-pill" data-canton="Rumiñahui" title="Filtrar Rumiñahui">
-              <span class="cs-canton-pill__dot" style="background:#9333ea;"></span>
-              <span>Rumiñahui</span>
-            </button>
+          <!-- Contenedor Superior Unificado de Controles del Mapa (Zero-Overlap) -->
+          <div class="cs-map-top-overlay" id="mapTopOverlay">
+            <div class="cs-map-top-row">
+              <!-- Barra de Leyenda y Filtro Rápido de Cantones (Filtro 1-tap en Mapa) -->
+              <div class="cs-canton-legend-bar" id="cantonLegendBar" aria-label="Cantones del Proyecto">
+                <button type="button" class="cs-canton-pill" data-canton="Quito" title="Filtrar Quito (D.M.)">
+                  <span class="cs-canton-pill__dot" style="background:#2563eb;"></span>
+                  <span>Quito</span>
+                </button>
+                <button type="button" class="cs-canton-pill" data-canton="Cayambe" title="Filtrar Cayambe">
+                  <span class="cs-canton-pill__dot" style="background:#059669;"></span>
+                  <span>Cayambe</span>
+                </button>
+                <button type="button" class="cs-canton-pill" data-canton="Mejía" title="Filtrar Mejía">
+                  <span class="cs-canton-pill__dot" style="background:#ea580c;"></span>
+                  <span>Mejía</span>
+                </button>
+                <button type="button" class="cs-canton-pill" data-canton="Rumiñahui" title="Filtrar Rumiñahui">
+                  <span class="cs-canton-pill__dot" style="background:#9333ea;"></span>
+                  <span>Rumiñahui</span>
+                </button>
+              </div>
+
+              <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
+              <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
+                <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (62)">
+                  <span class="cs-layer-pill__dot" style="background: linear-gradient(135deg, #2563eb 25%, #059669 25% 50%, #ea580c 50% 75%, #9333ea 75%);"></span>
+                  <span id="lblToggleParroquias">Parroquias (62)</span>
+                </button>
+                <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (160)">
+                  <span class="cs-layer-pill__dot" style="background: linear-gradient(135deg, #2563eb 25%, #059669 25% 50%, #ea580c 50% 75%, #9333ea 75%);"></span>
+                  <span id="lblToggleSectores">Sectores (160)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Barra Rápida de Circunscripciones (Aparece al seleccionar Quito o Rumiñahui en flujo vertical) -->
+            <div class="cs-circ-legend-bar" id="circLegendBar" style="display:none;" aria-label="Circunscripciones del Cantón"></div>
           </div>
 
-          <!-- Barra Rápida de Circunscripciones (Aparece al seleccionar Quito o Rumiñahui) -->
-          <div class="cs-circ-legend-bar" id="circLegendBar" style="display:none;" aria-label="Circunscripciones del Cantón"></div>
-
-          <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
-          <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-            <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (62)">
-              <span class="cs-layer-pill__dot" style="background: linear-gradient(135deg, #2563eb 25%, #059669 25% 50%, #ea580c 50% 75%, #9333ea 75%);"></span>
-              <span id="lblToggleParroquias">Parroquias (62)</span>
-            </button>
-            <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (160)">
-              <span class="cs-layer-pill__dot" style="background: linear-gradient(135deg, #2563eb 25%, #059669 25% 50%, #ea580c 50% 75%, #9333ea 75%);"></span>
-              <span id="lblToggleSectores">Sectores (160)</span>
-            </button>
-          </div>
           <div id="map"></div>
 
           <!-- Barra flotante de navegación para Sector Censal activo -->
