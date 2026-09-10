@@ -1072,6 +1072,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const etiqueta = p.etiquetaSC || `${scNum} | ${tipologia}`;
                     const parroquia = String(p.parroquia || p.PARROQUIA || '').trim();
 
+                    // Filtrar por Cantón si está activo (Cascada Cantón ➔ Sectores)
+                    if (AppState.cantonSeleccionado !== 'Todos') {
+                        const parsCanton = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => normTexto(p));
+                        const pNorm = normTexto(parroquia);
+                        const matchCanton = parsCanton.some(cp => pNorm.includes(cp) || cp.includes(pNorm));
+                        if (!matchCanton) return;
+                    }
+
                     if (parActivaNorm && parroquia) {
                         const pNorm = normTexto(parroquia);
                         if (!pNorm.includes(parActivaNorm) && !parActivaNorm.includes(pNorm)) {
@@ -1124,26 +1132,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Selector Parroquias (Filtrado en cascada por Circunscripción)
+        // 3. Selector Parroquias (Filtrado en cascada por Cantón y Sector)
         if (UI.parroquiaFilter) {
             const actualPar = AppState.parroquiaSeleccionada || 'Todas';
             UI.parroquiaFilter.innerHTML = '<option value="Todas">Todas las parroquias</option>';
             const normStr = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
             
             let parList = [];
+            const cantActivo = AppState.cantonSeleccionado;
+            const permitidasCanton = (cantActivo !== 'Todos' && PARROQUIAS_POR_CANTON[cantActivo]) ? PARROQUIAS_POR_CANTON[cantActivo].map(normStr) : null;
+
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 AppState.parroquiasGeojson.features.forEach(f => {
-                    const p = (f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '').toUpperCase();
+                    const p = (f.properties.nombre || f.properties.PARROQUIA || f.properties.name || '').toUpperCase().trim();
+                    const c = (f.properties.canton || f.properties.CANTON || '').trim();
+                    
+                    // Si hay cantón seleccionado, filtrar para que solo queden las correspondientes a ese cantón
+                    if (permitidasCanton) {
+                        const targetCan = normStr(cantActivo);
+                        const normC = normStr(c);
+                        const coincideCanton = normC && (normC === targetCan || normC.includes(targetCan) || targetCan.includes(normC));
+                        const coincideParroquia = permitidasCanton.some(pp => pp === normStr(p) || normStr(p).includes(pp) || pp.includes(normStr(p)));
+                        if (!coincideCanton && !coincideParroquia) return;
+                    }
+
                     if (p && !parList.includes(p)) parList.push(p);
                 });
             }
+
             if (parList.length === 0) {
-                Object.values(PARROQUIAS_POR_CANTON).forEach(pars => {
-                    pars.forEach(p => { if (!parList.includes(p)) parList.push(p); });
-                });
-                Array.from(parroquias.keys()).forEach(p => {
-                    if (p && !parList.includes(p)) parList.push(p);
-                });
+                if (permitidasCanton) {
+                    permitidasCanton.forEach(p => { if (!parList.includes(p)) parList.push(p); });
+                } else {
+                    Object.values(PARROQUIAS_POR_CANTON).forEach(pars => {
+                        pars.forEach(p => { const up = p.toUpperCase().trim(); if (!parList.includes(up)) parList.push(up); });
+                    });
+                }
             }
 
             // Filtrar por sector seleccionado si está activo (Cascada Sector ➔ Parroquia)
@@ -1158,16 +1182,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         parList = [parEncontrada];
                     }
                 }
-            } else if (AppState.cantonSeleccionado !== 'Todos') {
-                // Filtrar por cantón si está activo (Cascada Cantón ➔ Parroquia)
-                const permitidas = PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || [];
-                parList = parList.filter(p => {
-                    const nP = normStr(p);
-                    return permitidas.some(pp => {
-                        const nPP = normStr(pp);
-                        return nP.includes(nPP) || nPP.includes(nP);
-                    });
-                });
             }
 
             parList.sort((a, b) => a.localeCompare(b, 'es'));
@@ -2146,11 +2160,70 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    function obtenerBboxCanton(nombreCanton) {
+        if (!nombreCanton || nombreCanton === 'Todos') return AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
+        const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        const target = norm(nombreCanton);
+        const parsPermitidas = (PARROQUIAS_POR_CANTON[nombreCanton] || []).map(norm);
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let encontrados = 0;
+
+        if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features) {
+            AppState.parroquiasGeojson.features.forEach(f => {
+                const p = f.properties || {};
+                const c = norm(p.canton || p.CANTON || '');
+                const nom = norm(p.nombre || p.PARROQUIA || p.name || '');
+                const matchCanton = c && (c === target || c.includes(target) || target.includes(c));
+                const matchPar = parsPermitidas.some(pp => pp === nom || nom.includes(pp) || pp.includes(nom));
+
+                if (matchCanton || matchPar) {
+                    const b = p.bbox || (f.geometry ? calcularBBOX(f.geometry) : null);
+                    if (b) {
+                        encontrados++;
+                        const bMinX = Array.isArray(b[0]) ? b[0][0] : b[0];
+                        const bMinY = Array.isArray(b[0]) ? b[0][1] : b[1];
+                        const bMaxX = Array.isArray(b[1]) ? b[1][0] : b[2];
+                        const bMaxY = Array.isArray(b[1]) ? b[1][1] : b[3];
+                        if (bMinX < minX) minX = bMinX;
+                        if (bMinY < minY) minY = bMinY;
+                        if (bMaxX > maxX) maxX = bMaxX;
+                        if (bMaxY > maxY) maxY = bMaxY;
+                    }
+                }
+            });
+        }
+
+        if (encontrados > 0 && minX !== Infinity) {
+            return [[minX, minY], [maxX, maxY]];
+        }
+        return AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
+    }
+
     function actualizarPoligonosMapa(ajustarCamara = false) {
         if (!map) return;
 
-        // 0. Límites Parroquiales (Destacar visualmente la parroquia seleccionada)
+        // 0. Límites y Etiquetas Parroquiales (Filtrar por cantón y destacar parroquia seleccionada)
         if (map.getLayer('parroquias-line')) {
+            // A. Filtro territorial por Cantón en el mapa
+            if (AppState.cantonSeleccionado === 'Todos') {
+                map.setFilter('parroquias-line', null);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', null);
+            } else {
+                const targetCanton = AppState.cantonSeleccionado;
+                const parsPermitidas = (PARROQUIAS_POR_CANTON[targetCanton] || []).map(p => p.toUpperCase().trim());
+                const filterPar = [
+                    'any',
+                    ['==', ['get', 'canton'], targetCanton],
+                    ['==', ['upcase', ['get', 'CANTON']], targetCanton.toUpperCase()],
+                    ['in', ['upcase', ['get', 'nombre']], ['literal', parsPermitidas]],
+                    ['in', ['upcase', ['get', 'PARROQUIA']], ['literal', parsPermitidas]]
+                ];
+                map.setFilter('parroquias-line', filterPar);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterPar);
+            }
+
+            // B. Resaltado de Parroquia Seleccionada
             if (!AppState.parroquiaSeleccionada || AppState.parroquiaSeleccionada === 'Todas') {
                 map.setPaintProperty('parroquias-line', 'line-width', [
                     'interpolate', ['linear'], ['zoom'],
@@ -2183,16 +2256,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 1. Polígonos de Sectores Censales y Puntos de Muestreo
+        // 1. Polígonos de Sectores Censales
         if (map.getLayer('sectores-fill') && map.getLayer('sectores-line')) {
             const barra = document.getElementById('barraSectorActivo');
             const titulo = document.getElementById('sectorActivoTitulo');
             const btnGmaps = document.getElementById('btnRutaGoogleMaps');
 
             if (AppState.sectorSeleccionado === 'Todos') {
-                map.setFilter('sectores-fill', null);
-                map.setFilter('sectores-line', null);
-                if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
+                // Si hay cantón seleccionado, filtrar los sectores censales del cantón
+                if (AppState.cantonSeleccionado !== 'Todos') {
+                    const parsPermitidas = (PARROQUIAS_POR_CANTON[AppState.cantonSeleccionado] || []).map(p => p.toUpperCase().trim());
+                    const filterSecCanton = [
+                        'any',
+                        ['==', ['get', 'canton'], AppState.cantonSeleccionado],
+                        ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
+                    ];
+                    map.setFilter('sectores-fill', filterSecCanton);
+                    map.setFilter('sectores-line', filterSecCanton);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCanton);
+                } else {
+                    map.setFilter('sectores-fill', null);
+                    map.setFilter('sectores-line', null);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
+                }
 
                 map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
                 map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
@@ -2265,8 +2351,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         duration: 850
                     });
                 }
+            } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
+                // Nivel 3: Zoom al Cantón seleccionado (ej. Quito)
+                const bboxCan = obtenerBboxCanton(AppState.cantonSeleccionado);
+                if (bboxCan) {
+                    map.fitBounds(bboxCan, {
+                        padding: { top: 45, bottom: 45, left: 45, right: 45 },
+                        maxZoom: 13.0,
+                        duration: 850
+                    });
+                }
             } else {
-                // Nivel 3: Vista global de las 42 parroquias de estudio en Quito
+                // Nivel 4: Vista global de las 42 parroquias de estudio en Quito
                 const quitoBbox = AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
                 map.fitBounds(quitoBbox, {
                     padding: { top: 40, bottom: 40, left: 40, right: 40 },
