@@ -398,13 +398,24 @@
       <section class="cs-right-panel" data-mobile-panel="equipo" aria-label="Panel de Encuestadores">
         <div class="cs-table-card">
           <div class="cs-panel-header cs-panel-header--navy">
-            <h3>
-              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Equipo de Encuestadores
-            </h3>
+            <div class="cs-panel-header__main">
+              <h3>
+                <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Equipo de Encuestadores
+              </h3>
+              <!-- Selector de Agrupación de la Tabla: Cantón / Supervisor -->
+              <div class="cs-table-group-switch" id="tableGroupSwitch" role="group" aria-label="Agrupar encuestadores por">
+                <button type="button" class="cs-group-tab-btn is-active" id="btnAgruparCanton" data-modo="canton" title="Agrupar por Cantón">
+                  <span>Por Cantón</span>
+                </button>
+                <button type="button" class="cs-group-tab-btn" id="btnAgruparSupervisor" data-modo="supervisor" title="Agrupar por Supervisor">
+                  <span>Por Supervisor</span>
+                </button>
+              </div>
+            </div>
             <div class="cs-search-bar">
               <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" id="searchInput" placeholder="Buscar encuestador o supervisor…" autocomplete="off">
+              <input type="search" id="searchInput" placeholder="Buscar encuestador, cantón o supervisor…" autocomplete="off">
             </div>
           </div>
 

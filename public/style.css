@@ -670,6 +670,57 @@ body.modo-oscuro .cs-panel-header--map {
   gap: 0.4rem;
 }
 
+.cs-panel-header__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.cs-table-group-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 2px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cs-group-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.67rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-group-tab-btn:hover {
+  color: #ffffff;
+}
+
+.cs-group-tab-btn.is-active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+body.modo-oscuro .cs-group-tab-btn.is-active {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
 .cs-panel-header--map h2 {
   color: #ffffff;
   font-size: 0.84rem;
@@ -1718,6 +1769,73 @@ body.modo-oscuro .cs-time-tag--max {
 body.modo-oscuro .cs-enc-total-pill {
   color: #c084fc;
   background-color: rgba(168, 85, 247, 0.2);
+}
+
+/* Badges Cantonales de Encuestador */
+.cs-canton-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 4px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  vertical-align: middle;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cs-canton-badge-tag--Quito {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+}
+
+.cs-canton-badge-tag--Cayambe {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+  border: 1px solid rgba(5, 150, 105, 0.28);
+}
+
+.cs-canton-badge-tag--Mejía,
+.cs-canton-badge-tag--Mejia {
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.28);
+}
+
+.cs-canton-badge-tag--Rumiñahui,
+.cs-canton-badge-tag--Ruminahui {
+  background: rgba(147, 51, 234, 0.12);
+  color: #7e22ce;
+  border: 1px solid rgba(147, 51, 234, 0.28);
+}
+
+body.modo-oscuro .cs-canton-badge-tag--Quito {
+  background: rgba(37, 99, 235, 0.25);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+body.modo-oscuro .cs-canton-badge-tag--Cayambe {
+  background: rgba(5, 150, 105, 0.25);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+body.modo-oscuro .cs-canton-badge-tag--Mejía,
+body.modo-oscuro .cs-canton-badge-tag--Mejia {
+  background: rgba(234, 88, 12, 0.25);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+body.modo-oscuro .cs-canton-badge-tag--Rumiñahui,
+body.modo-oscuro .cs-canton-badge-tag--Ruminahui {
+  background: rgba(147, 51, 234, 0.25);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.45);
 }
 
 /* Badges Semánticos */

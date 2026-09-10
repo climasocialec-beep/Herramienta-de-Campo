@@ -74,8 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
         totalAlertas: 0,
         filtroTabla: '',
         modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
+        modoAgrupacionTabla: 'canton', // 'canton' | 'supervisor'
         ordenTabla: { columna: 'encuestador', asc: true },
         supervisoresExpandidos: new Set(),
+        cantonesColapsados: new Set(),
         ubicacionSupervisor: null,
         markerSupervisor: null,
         mapLoaded: false,
@@ -308,6 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tablaEncuestadoresBody: document.querySelector('#tablaEncuestadores tbody'),
         emptyState: document.getElementById('emptyState'),
         headersTabla: document.querySelectorAll('#tablaEncuestadores th'),
+        btnAgruparCanton: document.getElementById('btnAgruparCanton'),
+        btnAgruparSupervisor: document.getElementById('btnAgruparSupervisor'),
         
         // Pirámide Poblacional (Sexo y Edad)
         panelPiramide: document.getElementById('panelPiramide'),
@@ -376,6 +380,53 @@ document.addEventListener('DOMContentLoaded', () => {
         const padded = strVal.padStart(4, '0');
         if (DICCIONARIO_PARROQUIAS[padded]) return DICCIONARIO_PARROQUIAS[padded];
         return strVal;
+    }
+
+    function obtenerCantonEncuesta(encuesta) {
+        if (!encuesta) return 'Quito';
+        // 1. Campo directo si existe
+        if (encuesta.canton) {
+            const canNorm = normTexto(encuesta.canton);
+            for (const c of ['Quito', 'Cayambe', 'Mejía', 'Rumiñahui']) {
+                if (canNorm.includes(normTexto(c))) return c;
+            }
+        }
+        // 2. Por punto de muestreo / sector si tiene metadatos de cantón
+        const rawSc = String(encuesta.sc || campo(encuesta, 'sc') || '').trim();
+        const scNum = rawSc.replace(/[^0-9]/g, '');
+        if (scNum && AppState.sectoresMap) {
+            for (const [, secMeta] of AppState.sectoresMap.entries()) {
+                if (secMeta && String(secMeta.numero) === scNum && secMeta.canton) {
+                    return secMeta.canton;
+                }
+            }
+        }
+        // 3. Por parroquia de la encuesta
+        const p = normTexto(obtenerParroquiaEncuesta(encuesta));
+        if (p) {
+            for (const [canton, parroquias] of Object.entries(PARROQUIAS_POR_CANTON)) {
+                if (parroquias.some(cp => {
+                    const ncp = normTexto(cp);
+                    return p.includes(ncp) || ncp.includes(p);
+                })) {
+                    return canton;
+                }
+            }
+        }
+        // 4. Fallback espacial por GPS
+        if (encuesta._geolocation && AppState.cantonesMap) {
+            const lat = encuesta._geolocation[0];
+            const lng = encuesta._geolocation[1];
+            for (const [canton, cInfo] of AppState.cantonesMap.entries()) {
+                if (cInfo && cInfo.bbox) {
+                    const [minLng, minLat, maxLng, maxLat] = cInfo.bbox;
+                    if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
+                        return canton;
+                    }
+                }
+            }
+        }
+        return 'Quito';
     }
 
     function normalizarSupervisorEncuesta(e) {
@@ -3142,21 +3193,112 @@ document.addEventListener('DOMContentLoaded', () => {
                 g.maxStr = formatearMinutos(max);
             }
             g.numAlertas = g.encuestas.filter(e => e._tieneAlerta).length;
+
+            // Cantón principal asignado según encuestas recolectadas
+            let topCan = 'Quito';
+            let topCnt = -1;
+            for (const [can, cnt] of Object.entries(g.cantonesConteo || {})) {
+                if (cnt > topCnt) {
+                    topCnt = cnt;
+                    topCan = can;
+                }
+            }
+            g.cantonPrincipal = topCan;
             resultado.push(g);
         }
 
         return resultado;
     }
 
+    function ordenarEncuestadoresLista(lista) {
+        lista.sort((a, b) => {
+            if (AppState.ordenTabla.columna === 'encuestas') {
+                const diff = a.encuestas.length - b.encuestas.length;
+                return AppState.ordenTabla.asc ? diff : -diff;
+            } else {
+                const numA = parseInt(a.id, 10);
+                const numB = parseInt(b.id, 10);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return AppState.ordenTabla.asc ? (numA - numB) : (numB - numA);
+                }
+                const cmp = String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
+                return AppState.ordenTabla.asc ? cmp : -cmp;
+            }
+        });
+    }
+
+    function crearFilaEncuestador(grupo) {
+        const tr = document.createElement('tr');
+        tr.className = 'cs-enc-row';
+        if (AppState.encuestadorSeleccionado === grupo.id) {
+            tr.classList.add('selected');
+        }
+
+        const can = grupo.cantonPrincipal || 'Quito';
+        const infoCan = COLORES_CANTON[can] || { badge: '📍', nombre: can };
+        const supLabel = (grupo.supervisor && grupo.supervisor !== 'Sin asignar' && grupo.supervisor !== 'undefined' && grupo.supervisor !== 'null')
+            ? `Sup #${grupo.supervisor}`
+            : 'Sin Sup';
+
+        // Badge cantonal distintivo con su color de cantón
+        const badgeCantonHtml = `<span class="cs-canton-badge-tag cs-canton-badge-tag--${can}" title="Cantón: ${can}">${infoCan.badge} ${can}</span>`;
+        // Badge de supervisor
+        const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);">${supLabel}</span>`;
+
+        tr.innerHTML = `
+            <td>
+                <div class="cs-enc-card">
+                    <div class="cs-enc-avatar" style="--enc-color:${obtenerColorEncuestador(grupo.id)};">
+                        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="cs-enc-meta">
+                        <div class="cs-enc-name" title="Encuestador #${grupo.id} (${can} · ${supLabel})">
+                            <span>Encuestador #${grupo.id}</span>
+                            ${badgeCantonHtml}
+                            ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
+                        </div>
+                        <div class="cs-enc-sub">
+                            ${badgeSupHtml}
+                            <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
+                            <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
+                            <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td style="text-align:right;">
+                <span class="cs-enc-total-pill" title="Total de encuestas recolectadas">${grupo.encuestas.length}</span>
+            </td>
+        `;
+
+        tr.addEventListener('click', (e) => {
+            e.stopPropagation();
+            seleccionarEncuestador(grupo.id);
+        });
+
+        return tr;
+    }
+
     function actualizarTabla(encuestas) {
         if (!UI.tablaEncuestadoresBody) return;
 
+        // Sincronizar estado visual de los botones de agrupación
+        if (UI.btnAgruparCanton && UI.btnAgruparSupervisor) {
+            const esCanton = AppState.modoAgrupacionTabla === 'canton';
+            UI.btnAgruparCanton.classList.toggle('is-active', esCanton);
+            UI.btnAgruparSupervisor.classList.toggle('is-active', !esCanton);
+        }
+
         let datos = agruparPorEncuestador(encuestas);
 
-        // Búsqueda en vivo
+        // Búsqueda en vivo (por id, supervisor o cantón)
         if (AppState.filtroTabla) {
             const term = AppState.filtroTabla.toLowerCase();
-            datos = datos.filter(g => g.id.toLowerCase().includes(term) || (g.supervisor && g.supervisor.toLowerCase().includes(term)));
+            datos = datos.filter(g => 
+                g.id.toLowerCase().includes(term) || 
+                (g.supervisor && g.supervisor.toLowerCase().includes(term)) ||
+                (g.cantonPrincipal && g.cantonPrincipal.toLowerCase().includes(term))
+            );
         }
 
         UI.tablaEncuestadoresBody.innerHTML = '';
@@ -3168,142 +3310,174 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (UI.emptyState) UI.emptyState.style.display = 'none';
 
-        // 1. Agrupar por Supervisor
-        const gruposSupervisor = new Map();
-        datos.forEach(encuestador => {
-            const supId = (encuestador.supervisor && encuestador.supervisor !== 'undefined' && encuestador.supervisor !== 'null') 
-                ? encuestador.supervisor 
-                : 'Sin asignar';
-            if (!gruposSupervisor.has(supId)) {
-                gruposSupervisor.set(supId, {
-                    id: supId,
-                    encuestadores: [],
-                    totalEncuestas: 0
-                });
-            }
-            const gSup = gruposSupervisor.get(supId);
-            gSup.encuestadores.push(encuestador);
-            gSup.totalEncuestas += encuestador.encuestas.length;
-        });
-
-        // 2. Ordenar Supervisores numéricamente (1, 2, 3... y 'Sin asignar' al final)
-        const supKeys = Array.from(gruposSupervisor.keys()).sort((a, b) => {
-            if (a === 'Sin asignar') return 1;
-            if (b === 'Sin asignar') return -1;
-            const numA = parseInt(a, 10);
-            const numB = parseInt(b, 10);
-            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-        });
-
-        // 3. Ordenar encuestadores dentro de cada supervisor
-        supKeys.forEach(supId => {
-            const gSup = gruposSupervisor.get(supId);
-            gSup.encuestadores.sort((a, b) => {
-                if (AppState.ordenTabla.columna === 'encuestas') {
-                    const diff = a.encuestas.length - b.encuestas.length;
-                    return AppState.ordenTabla.asc ? diff : -diff;
-                } else {
-                    const numA = parseInt(a.id, 10);
-                    const numB = parseInt(b.id, 10);
-                    if (!isNaN(numA) && !isNaN(numB)) {
-                        return AppState.ordenTabla.asc ? (numA - numB) : (numB - numA);
-                    }
-                    const cmp = String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
-                    return AppState.ordenTabla.asc ? cmp : -cmp;
-                }
-            });
-        });
-
         const fragment = document.createDocumentFragment();
 
-        // 4. Renderizar grupos de supervisores y sus encuestadores
-        supKeys.forEach(supId => {
-            const gSup = gruposSupervisor.get(supId);
-            const colorSupervisor = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
-            const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
-            const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
-            const hasSearch = Boolean(AppState.filtroTabla);
-            const isExpanded = isExplicitlyExpanded || isFilteredSup || hasSearch;
-            const isCollapsed = !isExpanded;
+        // ---------------------------------------------------------------------
+        // MODO A: AGRUPAR POR CANTÓN
+        // ---------------------------------------------------------------------
+        if (AppState.modoAgrupacionTabla === 'canton') {
+            const CANTONES_ORDEN = ['Quito', 'Cayambe', 'Mejía', 'Rumiñahui'];
+            const gruposCanton = new Map();
 
-            // Fila de encabezado de grupo (Supervisor)
-            const trHeader = document.createElement('tr');
-            trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
-            trHeader.dataset.supId = supId;
-
-            const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : `Supervisor #${supId}`;
-            const pluralEnc = gSup.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
-            const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
-
-            trHeader.innerHTML = `
-                <td colspan="2">
-                    <div class="cs-table-group-title">
-                        <span class="cs-group-toggle-icon">
-                            <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </span>
-                        <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
-                        <span class="cs-group-name">${supLabel}</span>
-                        <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
-                    </div>
-                </td>
-            `;
-
-            trHeader.addEventListener('click', () => {
-                if (!AppState.supervisoresExpandidos) AppState.supervisoresExpandidos = new Set();
-                if (AppState.supervisoresExpandidos.has(supId)) {
-                    AppState.supervisoresExpandidos.delete(supId);
-                } else {
-                    AppState.supervisoresExpandidos.add(supId);
+            datos.forEach(encuestador => {
+                const canId = encuestador.cantonPrincipal || 'Quito';
+                if (!gruposCanton.has(canId)) {
+                    gruposCanton.set(canId, {
+                        id: canId,
+                        encuestadores: [],
+                        totalEncuestas: 0
+                    });
                 }
-                const encs = obtenerEncuestasFiltradas();
-                actualizarTabla(encs);
+                const gCan = gruposCanton.get(canId);
+                gCan.encuestadores.push(encuestador);
+                gCan.totalEncuestas += encuestador.encuestas.length;
             });
 
-            fragment.appendChild(trHeader);
+            // Ordenar cantones según el orden oficial
+            const canKeys = Array.from(gruposCanton.keys()).sort((a, b) => {
+                const idxA = CANTONES_ORDEN.indexOf(a);
+                const idxB = CANTONES_ORDEN.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.localeCompare(b);
+            });
 
-            // Filas de encuestadores del supervisor (si no está colapsado)
-            if (!isCollapsed) {
-                gSup.encuestadores.forEach(grupo => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'cs-enc-row';
-                    if (AppState.encuestadorSeleccionado === grupo.id) {
-                        tr.classList.add('selected');
+            canKeys.forEach(canId => {
+                const gCan = gruposCanton.get(canId);
+                ordenarEncuestadoresLista(gCan.encuestadores);
+
+                const infoCanton = COLORES_CANTON[canId] || { hex: '#7c3aed', badge: '📍', nombre: canId };
+                const isExplicitlyCollapsed = AppState.cantonesColapsados && AppState.cantonesColapsados.has(canId);
+                const isFilteredCan = AppState.cantonSeleccionado !== 'Todos' && AppState.cantonSeleccionado === canId;
+                const hasSearch = Boolean(AppState.filtroTabla);
+                const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredCan;
+
+                const trHeader = document.createElement('tr');
+                trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
+                trHeader.dataset.cantonId = canId;
+
+                const pluralEnc = gCan.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
+                const pluralEncuestas = gCan.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
+
+                trHeader.innerHTML = `
+                    <td colspan="2">
+                        <div class="cs-table-group-title">
+                            <span class="cs-group-toggle-icon">
+                                <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </span>
+                            <span class="cs-group-color-dot" style="--sup-dot-color: ${infoCanton.hex};"></span>
+                            <span class="cs-group-name">${infoCanton.badge} ${canId}</span>
+                            <span class="cs-group-pill">${gCan.encuestadores.length} ${pluralEnc} · ${gCan.totalEncuestas} ${pluralEncuestas}</span>
+                        </div>
+                    </td>
+                `;
+
+                trHeader.addEventListener('click', () => {
+                    if (!AppState.cantonesColapsados) AppState.cantonesColapsados = new Set();
+                    if (AppState.cantonesColapsados.has(canId)) {
+                        AppState.cantonesColapsados.delete(canId);
+                    } else {
+                        AppState.cantonesColapsados.add(canId);
                     }
-
-                    tr.innerHTML = `
-                        <td>
-                            <div class="cs-enc-card">
-                                <div class="cs-enc-avatar" style="--enc-color:${obtenerColorEncuestador(grupo.id)};">
-                                    <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                </div>
-                                <div class="cs-enc-meta">
-                                    <div class="cs-enc-name" title="Encuestador #${grupo.id} (Sup #${supId})">
-                                        Encuestador #${grupo.id}
-                                        ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
-                                    </div>
-                                    <div class="cs-enc-sub">
-                                        <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
-                                        <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
-                                        <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="text-align:right;">
-                            <span class="cs-enc-total-pill" title="Total de encuestas recolectadas">${grupo.encuestas.length}</span>
-                        </td>
-                    `;
-
-                    tr.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        seleccionarEncuestador(grupo.id);
-                    });
-
-                    fragment.appendChild(tr);
+                    const encs = obtenerEncuestasFiltradas();
+                    actualizarTabla(encs);
                 });
-            }
-        });
+
+                fragment.appendChild(trHeader);
+
+                if (!isCollapsed) {
+                    gCan.encuestadores.forEach(grupo => {
+                        fragment.appendChild(crearFilaEncuestador(grupo));
+                    });
+                }
+            });
+        } 
+        // ---------------------------------------------------------------------
+        // MODO B: AGRUPAR POR SUPERVISOR
+        // ---------------------------------------------------------------------
+        else {
+            const gruposSupervisor = new Map();
+            datos.forEach(encuestador => {
+                const supId = (encuestador.supervisor && encuestador.supervisor !== 'undefined' && encuestador.supervisor !== 'null') 
+                    ? encuestador.supervisor 
+                    : 'Sin asignar';
+                if (!gruposSupervisor.has(supId)) {
+                    gruposSupervisor.set(supId, {
+                        id: supId,
+                        encuestadores: [],
+                        totalEncuestas: 0
+                    });
+                }
+                const gSup = gruposSupervisor.get(supId);
+                gSup.encuestadores.push(encuestador);
+                gSup.totalEncuestas += encuestador.encuestas.length;
+            });
+
+            // Ordenar Supervisores numéricamente (1, 2, 3... y 'Sin asignar' al final)
+            const supKeys = Array.from(gruposSupervisor.keys()).sort((a, b) => {
+                if (a === 'Sin asignar') return 1;
+                if (b === 'Sin asignar') return -1;
+                const numA = parseInt(a, 10);
+                const numB = parseInt(b, 10);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            supKeys.forEach(supId => {
+                const gSup = gruposSupervisor.get(supId);
+                ordenarEncuestadoresLista(gSup.encuestadores);
+
+                const colorSupervisor = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
+                const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
+                const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
+                const hasSearch = Boolean(AppState.filtroTabla);
+                const isExpanded = isExplicitlyExpanded || isFilteredSup || hasSearch;
+                const isCollapsed = !isExpanded;
+
+                // Fila de encabezado de grupo (Supervisor)
+                const trHeader = document.createElement('tr');
+                trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
+                trHeader.dataset.supId = supId;
+
+                const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : `Supervisor #${supId}`;
+                const pluralEnc = gSup.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
+                const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
+
+                trHeader.innerHTML = `
+                    <td colspan="2">
+                        <div class="cs-table-group-title">
+                            <span class="cs-group-toggle-icon">
+                                <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </span>
+                            <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
+                            <span class="cs-group-name">${supLabel}</span>
+                            <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
+                        </div>
+                    </td>
+                `;
+
+                trHeader.addEventListener('click', () => {
+                    if (!AppState.supervisoresExpandidos) AppState.supervisoresExpandidos = new Set();
+                    if (AppState.supervisoresExpandidos.has(supId)) {
+                        AppState.supervisoresExpandidos.delete(supId);
+                    } else {
+                        AppState.supervisoresExpandidos.add(supId);
+                    }
+                    const encs = obtenerEncuestasFiltradas();
+                    actualizarTabla(encs);
+                });
+
+                fragment.appendChild(trHeader);
+
+                // Filas de encuestadores del supervisor (si no está colapsado)
+                if (!isCollapsed) {
+                    gSup.encuestadores.forEach(grupo => {
+                        fragment.appendChild(crearFilaEncuestador(grupo));
+                    });
+                }
+            });
+        }
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
     }
@@ -3726,6 +3900,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 UI.btnEtiquetasOn.classList.remove('active');
                 actualizarClaseZoom();
                 mostrarToast('Etiquetas ocultadas', 'info');
+            });
+        }
+
+        // 5.5 Selector de Agrupación de Tabla: Cantón vs Supervisor
+        if (UI.btnAgruparCanton) {
+            UI.btnAgruparCanton.addEventListener('click', () => {
+                if (AppState.modoAgrupacionTabla === 'canton') return;
+                AppState.modoAgrupacionTabla = 'canton';
+                UI.btnAgruparCanton.classList.add('is-active');
+                if (UI.btnAgruparSupervisor) UI.btnAgruparSupervisor.classList.remove('is-active');
+                const encuestas = obtenerEncuestasFiltradas();
+                actualizarTabla(encuestas);
+            });
+        }
+        if (UI.btnAgruparSupervisor) {
+            UI.btnAgruparSupervisor.addEventListener('click', () => {
+                if (AppState.modoAgrupacionTabla === 'supervisor') return;
+                AppState.modoAgrupacionTabla = 'supervisor';
+                UI.btnAgruparSupervisor.classList.add('is-active');
+                if (UI.btnAgruparCanton) UI.btnAgruparCanton.classList.remove('is-active');
+                const encuestas = obtenerEncuestasFiltradas();
+                actualizarTabla(encuestas);
             });
         }
 
