@@ -1469,6 +1469,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         AppState.puntosMuestreoMap = AppState.sectoresMap;
 
+        // Crear colección de centroides puntuales para etiquetas únicas de parroquias (evita duplicación por teselado en MapLibre)
+        const parroquiasCentroidesData = {
+            type: 'FeatureCollection',
+            features: (parroquiasData.features || []).map(f => {
+                const p = f.properties || {};
+                const nom = (p.nombre || p.PARROQUIA || p.name || '').toUpperCase().trim();
+                let coords = [-78.48, -0.19];
+                if (p.bbox && Array.isArray(p.bbox)) {
+                    const minX = Array.isArray(p.bbox[0]) ? p.bbox[0][0] : p.bbox[0];
+                    const minY = Array.isArray(p.bbox[0]) ? p.bbox[0][1] : p.bbox[1];
+                    const maxX = Array.isArray(p.bbox[1]) ? p.bbox[1][0] : p.bbox[2];
+                    const maxY = Array.isArray(p.bbox[1]) ? p.bbox[1][1] : p.bbox[3];
+                    coords = [(minX + maxX) / 2, (minY + maxY) / 2];
+                } else if (f.geometry) {
+                    const b = calcularBBOX(f.geometry);
+                    coords = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2];
+                }
+                return {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: coords },
+                    properties: { ...p, nombre: nom }
+                };
+            })
+        };
+        AppState.parroquiasCentroidesGeojson = parroquiasCentroidesData;
+
         // Auto-calcular Bounding Box global desde las 42 parroquias a encuestar
         let globalMinX = Infinity, globalMinY = Infinity, globalMaxX = -Infinity, globalMaxY = -Infinity;
         if (parroquiasData.features && parroquiasData.features.length > 0) {
@@ -1529,6 +1555,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: 'geojson',
                         data: parroquiasData
                     },
+                    'parroquias-centroides-source': {
+                        type: 'geojson',
+                        data: parroquiasCentroidesData
+                    },
                     'sectores-source': {
                         type: 'geojson',
                         data: sectoresData
@@ -1562,7 +1592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         id: 'parroquias-label',
                         type: 'symbol',
-                        source: 'parroquias-source',
+                        source: 'parroquias-centroides-source',
                         minzoom: 10.0,
                         maxzoom: 14.5,
                         layout: {
@@ -1781,6 +1811,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (AppState.parroquiasGeojson && map.getSource('parroquias-source')) {
             map.getSource('parroquias-source').setData(AppState.parroquiasGeojson);
+        }
+        if (AppState.parroquiasCentroidesGeojson && map.getSource('parroquias-centroides-source')) {
+            map.getSource('parroquias-centroides-source').setData(AppState.parroquiasCentroidesGeojson);
         }
         if (AppState.sectoresGeojson && map.getSource('sectores-source')) {
             map.getSource('sectores-source').setData(AppState.sectoresGeojson);
@@ -2041,6 +2074,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const geojsonData = await res.json();
 
             AppState.parroquiasGeojson = geojsonData;
+            AppState.parroquiasCentroidesGeojson = {
+                type: 'FeatureCollection',
+                features: (geojsonData.features || []).map(f => {
+                    const p = f.properties || {};
+                    const nom = (p.nombre || p.PARROQUIA || p.name || '').toUpperCase().trim();
+                    const bbox = f.geometry ? calcularBBOX(f.geometry) : null;
+                    let coords = [-78.48, -0.19];
+                    if (bbox) {
+                        coords = [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2];
+                    }
+                    return {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: coords },
+                        properties: { ...p, nombre: nom }
+                    };
+                })
+            };
             AppState.parroquiasMap.clear();
             const listaParroquias = [];
 
