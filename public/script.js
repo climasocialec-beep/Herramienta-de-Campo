@@ -274,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtros Cruzados
         supervisorFilter: document.getElementById('supervisorFilter'),
         cantonFilter: document.getElementById('cantonFilter'),
+        wrapCircunscripcionFilter: document.getElementById('wrapCircunscripcionFilter'),
         circunscripcionFilter: document.getElementById('circunscripcionFilter'),
         sectorFilter: document.getElementById('sectorFilter'),
         parroquiaFilter: document.getElementById('parroquiaFilter'),
@@ -1136,6 +1137,63 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.cantonFilter.value = actualCan;
         }
 
+        // 1.2 Selector Circunscripción (Especial para Quito y Rumiñahui)
+        if (UI.circunscripcionFilter) {
+            const actualCan = AppState.cantonSeleccionado || 'Todos';
+            const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+            let circList = [];
+
+            if (actualCan === 'Quito') {
+                circList = [
+                    { id: 'Urbana 1 (Norte)', label: 'Circunscripción Urbana 1 (Norte)' },
+                    { id: 'Urbana 2 (Centro)', label: 'Circunscripción Urbana 2 (Centro)' },
+                    { id: 'Urbana 3 (Sur)', label: 'Circunscripción Urbana 3 (Sur)' },
+                    { id: 'Rural', label: 'Circunscripción Rural' }
+                ];
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                UI.circunscripcionFilter.disabled = false;
+            } else if (actualCan === 'Rumiñahui') {
+                circList = [
+                    { id: 'Urbana 1', label: 'Circunscripción Urbana 1 (Fajardo / San Pedro / San Rafael)' },
+                    { id: 'Urbana 2', label: 'Circunscripción Urbana 2 (Sangolquí)' },
+                    { id: 'Rural', label: 'Circunscripción Rural (Cotogchoa)' }
+                ];
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                UI.circunscripcionFilter.disabled = false;
+            } else if (actualCan === 'Cayambe' || actualCan === 'Mejía') {
+                circList = [
+                    { id: 'Circunscripción Única', label: `Circunscripción Única (${actualCan})` }
+                ];
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                UI.circunscripcionFilter.disabled = true;
+            } else {
+                // Cantón: 'Todos'
+                circList = [
+                    { id: 'Urbana 1 (Norte)', label: 'Quito: Urbana 1 (Norte)' },
+                    { id: 'Urbana 2 (Centro)', label: 'Quito: Urbana 2 (Centro)' },
+                    { id: 'Urbana 3 (Sur)', label: 'Quito: Urbana 3 (Sur)' },
+                    { id: 'Rural', label: 'Quito / Rumiñahui: Rural' },
+                    { id: 'Urbana 1', label: 'Rumiñahui: Urbana 1' },
+                    { id: 'Urbana 2', label: 'Rumiñahui: Urbana 2' }
+                ];
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                UI.circunscripcionFilter.disabled = false;
+            }
+
+            let circHtml = '<option value="Todas">Todas las circunscripciones</option>';
+            circList.forEach(c => {
+                circHtml += `<option value="${c.id}">${c.label}</option>`;
+            });
+            UI.circunscripcionFilter.innerHTML = circHtml;
+            const validCircValues = ['Todas', ...circList.map(c => c.id)];
+            if (validCircValues.includes(actualCirc)) {
+                UI.circunscripcionFilter.value = actualCirc;
+            } else {
+                AppState.circunscripcionSeleccionada = 'Todas';
+                UI.circunscripcionFilter.value = 'Todas';
+            }
+        }
+
         // Sincronizar estado visual de las píldoras de cantón sobre el mapa
         const cantonPills = document.querySelectorAll('.cs-canton-pill');
         if (cantonPills && cantonPills.length > 0) {
@@ -1155,6 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
+            const circActivaNorm = (AppState.circunscripcionSeleccionada !== 'Todas') ? normTexto(AppState.circunscripcionSeleccionada) : null;
             const listaSectores = [];
 
             if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
@@ -1165,12 +1224,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const etiqueta = p.etiquetaSC || `${scNum} | ${tipologia}`;
                     const parroquia = String(p.parroquia || p.PARROQUIA || '').trim();
                     const canton = String(p.canton || p.CANTON || '').trim();
+                    const circunscripcion = String(p.circunscripcion || '').trim();
                     const secAnm = String(p.sec_anm || '').trim();
                     const scKey = p.sc_key || `${canton}_${scNum}`;
 
                     // Filtrar por Cantón si está activo (Cascada Cantón ➔ Sectores)
                     if (AppState.cantonSeleccionado !== 'Todos') {
                         if (canton && normTexto(canton) !== normTexto(AppState.cantonSeleccionado)) {
+                            return;
+                        }
+                    }
+
+                    // Filtrar por Circunscripción si está activa (Cascada Circunscripción ➔ Sectores)
+                    if (circActivaNorm && circunscripcion) {
+                        const cNorm = normTexto(circunscripcion);
+                        if (!cNorm.includes(circActivaNorm) && !circActivaNorm.includes(cNorm)) {
                             return;
                         }
                     }
@@ -1186,6 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         sc: scNum,
                         scKey: scKey,
                         canton: canton,
+                        circunscripcion: circunscripcion,
                         etiqueta: etiqueta,
                         etiquetaKey: `${scNum}${tipologia}`,
                         detalle: `Sector ${etiqueta}${parroquia ? ` (${parroquia})` : ''}`,
@@ -1225,6 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const opt = document.createElement('option');
                 opt.value = item.sc;
                 opt.dataset.canton = item.canton;
+                opt.dataset.circunscripcion = item.circunscripcion;
                 opt.dataset.parroquia = item.parroquia;
                 opt.dataset.scKey = item.scKey;
                 opt.dataset.secAnm = item.sec_anm;
@@ -1276,6 +1346,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         const coincideCanton = normC && (normC === targetCan || normC.includes(targetCan) || targetCan.includes(normC));
                         const coincideParroquia = permitidasCanton.some(pp => pp === normStr(p) || normStr(p).includes(pp) || pp.includes(normStr(p)));
                         if (!coincideCanton && !coincideParroquia) return;
+                    }
+
+                    // Si hay circunscripción seleccionada, filtrar por circunscripción
+                    if (AppState.circunscripcionSeleccionada !== 'Todas') {
+                        const targetCirc = normStr(AppState.circunscripcionSeleccionada);
+                        const circP = normStr(f.properties.circunscripcion || '');
+                        if (circP && !circP.includes(targetCirc) && !targetCirc.includes(circP)) return;
                     }
 
                     if (p && !parList.includes(p)) parList.push(p);
@@ -1375,6 +1452,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
                             return true;
                         }
+                    }
+                }
+                return false;
+            });
+        }
+
+        // Filtro por Circunscripción (Quito y Rumiñahui)
+        if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+            const targetCirc = normTexto(AppState.circunscripcionSeleccionada);
+            filtradas = filtradas.filter(e => {
+                // 1. Campo directo circunscripcion si existiera en la encuesta
+                if (e.circunscripcion && normTexto(e.circunscripcion).includes(targetCirc)) return true;
+
+                // 2. Por el sector censal
+                const rawSc = String(e.sc || campo(e, 'sc') || '').trim();
+                const scNum = rawSc.replace(/[^0-9]/g, '');
+                const cantonE = e.canton || '';
+                const sectorMeta = (cantonE ? AppState.sectoresMap.get(`${cantonE}_${scNum}`) : null) || AppState.sectoresMap.get(scNum);
+                if (sectorMeta && sectorMeta.circunscripcion) {
+                    const cNorm = normTexto(sectorMeta.circunscripcion);
+                    if (cNorm.includes(targetCirc) || targetCirc.includes(cNorm)) return true;
+                }
+
+                // 3. Por la parroquia
+                const parrE = normTexto(obtenerParroquiaEncuesta(e));
+                if (parrE && AppState.parroquiasGeojson && AppState.parroquiasGeojson.features) {
+                    const parFeat = AppState.parroquiasGeojson.features.find(pf => {
+                        const np = normTexto(pf.properties.nombre || pf.properties.PARROQUIA || '');
+                        return np === parrE || np.includes(parrE) || parrE.includes(np);
+                    });
+                    if (parFeat && parFeat.properties && parFeat.properties.circunscripcion) {
+                        const cNorm = normTexto(parFeat.properties.circunscripcion);
+                        if (cNorm.includes(targetCirc) || targetCirc.includes(cNorm)) return true;
                     }
                 }
                 return false;
@@ -2461,6 +2571,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.setPaintProperty('parroquias-line', 'line-width', 3.5);
                 map.setPaintProperty('parroquias-line', 'line-color', EXPR_CANTON_PARROQUIAS_LINE);
                 map.setPaintProperty('parroquias-line', 'line-opacity', 1.0);
+            } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+                // Si hay circunscripción seleccionada: mostrar solo parroquias de esa circunscripción
+                const targetCirc = AppState.circunscripcionSeleccionada;
+                const filterCirc = [
+                    'any',
+                    ['==', ['get', 'circunscripcion'], targetCirc],
+                    ['==', ['upcase', ['get', 'circunscripcion']], targetCirc.toUpperCase()]
+                ];
+                map.setFilter('parroquias-line', filterCirc);
+                if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterCirc);
+
+                map.setPaintProperty('parroquias-line', 'line-width', [
+                    'interpolate', ['linear'], ['zoom'],
+                    9, 1.4,
+                    12, 2.2,
+                    15, 3.0
+                ]);
+                map.setPaintProperty('parroquias-line', 'line-color', EXPR_CANTON_PARROQUIAS_LINE);
+                map.setPaintProperty('parroquias-line', 'line-opacity', 0.90);
             } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                 // Si está en 'Todas' las parroquias pero hay cantón seleccionado: mostrar solo las de ese cantón
                 const targetCanton = AppState.cantonSeleccionado;
@@ -2581,6 +2710,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     map.setFilter('sectores-fill', filterSectoresParroquia);
                     map.setFilter('sectores-line', filterSectoresParroquia);
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSectoresParroquia);
+                } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+                    // B1. Si hay Circunscripción específica: filtrar por los sectores de esa circunscripción
+                    const targetCirc = AppState.circunscripcionSeleccionada;
+                    const filterSecCirc = [
+                        'any',
+                        ['==', ['get', 'circunscripcion'], targetCirc],
+                        ['==', ['upcase', ['get', 'circunscripcion']], targetCirc.toUpperCase()]
+                    ];
+                    map.setFilter('sectores-fill', filterSecCirc);
+                    map.setFilter('sectores-line', filterSecCirc);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCirc);
                 } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                     // B. Si hay Cantón específico: filtrar por los sectores del cantón
                     const targetCan = AppState.cantonSeleccionado;
@@ -2643,6 +2783,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     map.fitBounds(bboxPar, {
                         padding: { top: 60, bottom: 50, left: 50, right: 50 },
                         maxZoom: 15.0,
+                        duration: 850
+                    });
+                }
+            } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+                // Nivel 2.5: Zoom a la Circunscripción seleccionada
+                const targetCirc = normTexto(AppState.circunscripcionSeleccionada);
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                let found = 0;
+                if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
+                    AppState.sectoresGeojson.features.forEach(f => {
+                        const cNorm = normTexto(f.properties.circunscripcion || '');
+                        if (cNorm.includes(targetCirc) || targetCirc.includes(cNorm)) {
+                            const bbox = f.properties.bbox;
+                            if (bbox) {
+                                if (bbox[0][0] < minX) minX = bbox[0][0];
+                                if (bbox[0][1] < minY) minY = bbox[0][1];
+                                if (bbox[1][0] > maxX) maxX = bbox[1][0];
+                                if (bbox[1][1] > maxY) maxY = bbox[1][1];
+                                found++;
+                            }
+                        }
+                    });
+                }
+                if (found > 0 && minX !== Infinity) {
+                    map.fitBounds([[minX, minY], [maxX, maxY]], {
+                        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+                        maxZoom: 14.0,
                         duration: 850
                     });
                 }
@@ -3350,6 +3517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.cantonFilter) {
             UI.cantonFilter.addEventListener('change', (e) => {
                 AppState.cantonSeleccionado = e.target.value;
+                AppState.circunscripcionSeleccionada = 'Todas';
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
                 poblarFiltros();
@@ -3372,6 +3540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     AppState.cantonSeleccionado = targetCanton;
                 }
+                AppState.circunscripcionSeleccionada = 'Todas';
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
                 if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
