@@ -155,6 +155,88 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
+    // Paleta cromática oficial por Cantón (Encuesta Pichincha 2026)
+    const COLORES_CANTON = {
+        'Quito': {
+            nombre: 'Quito (D.M.)',
+            linea: '#2563eb',       // Azul Cobalto
+            fill: '#3b82f6',        // Azul vibrante
+            fillActive: '#1d4ed8',
+            label: '#1e40af',       // Texto legible oscuro con halo blanco
+            badge: '🔵',
+            hex: '#2563eb'
+        },
+        'Cayambe': {
+            nombre: 'Cayambe',
+            linea: '#059669',       // Verde Esmeralda
+            fill: '#10b981',        // Verde vivo
+            fillActive: '#047857',
+            label: '#065f46',
+            badge: '🟢',
+            hex: '#059669'
+        },
+        'Mejía': {
+            nombre: 'Mejía',
+            linea: '#ea580c',       // Naranja Fuego
+            fill: '#f97316',        // Naranja vivo
+            fillActive: '#c2410c',
+            label: '#9a3412',
+            badge: '🟠',
+            hex: '#ea580c'
+        },
+        'Rumiñahui': {
+            nombre: 'Rumiñahui',
+            linea: '#9333ea',       // Violeta Real
+            fill: '#a855f7',        // Violeta vivo
+            fillActive: '#6d28d9',
+            label: '#581c87',
+            badge: '🟣',
+            hex: '#9333ea'
+        }
+    };
+
+    // Expresiones MapLibre GL por cantón (Pintado vectorial diferenciado)
+    const EXPR_CANTON_PARROQUIAS_LINE = [
+        'match', ['get', 'canton'],
+        'Quito', '#2563eb',
+        'Cayambe', '#059669',
+        'Mejía', '#ea580c',
+        'Rumiñahui', '#9333ea',
+        '#7c3aed'
+    ];
+    const EXPR_CANTON_PARROQUIAS_LABEL = [
+        'match', ['get', 'canton'],
+        'Quito', '#1e40af',
+        'Cayambe', '#065f46',
+        'Mejía', '#9a3412',
+        'Rumiñahui', '#581c87',
+        '#581c87'
+    ];
+    const EXPR_CANTON_SECTORES_FILL = [
+        'match', ['get', 'canton'],
+        'Quito', '#3b82f6',
+        'Cayambe', '#10b981',
+        'Mejía', '#f97316',
+        'Rumiñahui', '#a855f7',
+        '#f59e0b'
+    ];
+    const EXPR_CANTON_SECTORES_LINE = [
+        'match', ['get', 'canton'],
+        'Quito', '#2563eb',
+        'Cayambe', '#059669',
+        'Mejía', '#ea580c',
+        'Rumiñahui', '#9333ea',
+        '#d97706'
+    ];
+    const EXPR_CANTON_SECTORES_LABEL = [
+        'match', ['get', 'canton'],
+        'Quito', '#1d4ed8',
+        'Cayambe', '#047857',
+        'Mejía', '#c2410c',
+        'Rumiñahui', '#6d28d9',
+        '#7c2d12'
+    ];
+
     function obtenerColorEncuestador(enc) {
         if (enc === undefined || enc === null || enc === '') return '#64748b';
         const str = String(enc).trim();
@@ -1027,10 +1109,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Todos';
             const cantonesList = [
-                { id: 'Quito', label: 'Quito (D.M.)' },
-                { id: 'Rumiñahui', label: 'Rumiñahui' },
-                { id: 'Cayambe', label: 'Cayambe' },
-                { id: 'Mejía', label: 'Mejía' }
+                { id: 'Quito', label: 'Quito (D.M.)', badge: '🔵' },
+                { id: 'Cayambe', label: 'Cayambe', badge: '🟢' },
+                { id: 'Mejía', label: 'Mejía', badge: '🟠' },
+                { id: 'Rumiñahui', label: 'Rumiñahui', badge: '🟣' }
             ];
 
             let html = '<option value="Todos">Todos los cantones (4)</option>';
@@ -1048,10 +1130,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).length;
                 }
                 const extra = cnt > 0 ? ` (${cnt} enc.)` : '';
-                html += `<option value="${c.id}">${c.label}${extra}</option>`;
+                html += `<option value="${c.id}">${c.badge} ${c.label}${extra}</option>`;
             });
             UI.cantonFilter.innerHTML = html;
             UI.cantonFilter.value = actualCan;
+        }
+
+        // Sincronizar estado visual de las píldoras de cantón sobre el mapa
+        const cantonPills = document.querySelectorAll('.cs-canton-pill');
+        if (cantonPills && cantonPills.length > 0) {
+            cantonPills.forEach(pill => {
+                const can = pill.dataset.canton;
+                const isSelected = (AppState.cantonSeleccionado === can);
+                pill.classList.toggle('is-active', isSelected);
+                if (AppState.cantonSeleccionado === 'Todos') {
+                    pill.style.opacity = '1';
+                } else {
+                    pill.style.opacity = isSelected ? '1' : '0.45';
+                }
+            });
         }
 
         // 2b. Selector Sectores Censales (160 sectores en Pichincha)
@@ -1111,6 +1208,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const frag = document.createDocumentFragment();
             const sectoresValidos = new Set();
+            const cantonBadges = {
+                'Quito': '🔵',
+                'Cayambe': '🟢',
+                'Mejía': '🟠',
+                'Rumiñahui': '🟣'
+            };
 
             listaSectores.forEach(item => {
                 const count = sectores.get(item.etiquetaKey) || sectores.get(item.sc) || sectores.get(item.etiqueta) || 0;
@@ -1126,15 +1229,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.dataset.scKey = item.scKey;
                 opt.dataset.secAnm = item.sec_anm;
 
+                const cBadge = (AppState.cantonSeleccionado === 'Todos') ? `${cantonBadges[item.canton] || '⚪'} ` : '';
+
                 if (count >= 10) {
-                    opt.textContent = `🟢 ${item.detalle} (${count}/10 COMPLETO)`;
+                    opt.textContent = `🟢 ${cBadge}${item.detalle} (${count}/10 COMPLETO)`;
                     opt.style.color = '#059669';
                     opt.style.fontWeight = '700';
                 } else if (count > 0) {
-                    opt.textContent = `🟡 ${item.detalle} (${count}/10)`;
+                    opt.textContent = `🟡 ${cBadge}${item.detalle} (${count}/10)`;
                     opt.style.color = '#d97706';
                 } else {
-                    opt.textContent = `⚪ ${item.detalle} (0/10)`;
+                    opt.textContent = `⚪ ${cBadge}${item.detalle} (0/10)`;
                     opt.style.color = '#64748b';
                 }
                 frag.appendChild(opt);
@@ -1650,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: 'line',
                         source: 'parroquias-source',
                         paint: {
-                            'line-color': '#7c3aed',
+                            'line-color': EXPR_CANTON_PARROQUIAS_LINE,
                             'line-width': [
                                 'interpolate', ['linear'], ['zoom'],
                                 9, 1.2,
@@ -1680,18 +1785,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-max-width': 8
                         },
                         paint: {
-                            'text-color': '#581c87',
+                            'text-color': EXPR_CANTON_PARROQUIAS_LABEL,
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 3.0
                         }
                     },
-                    // 2. Sectores Censales Sorteados (160 polígonos de Pichincha)
+                    // 2. Sectores Censales Sorteados (160 polígonos de Pichincha con color por cantón)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
                         source: 'sectores-source',
                         paint: {
-                            'fill-color': '#f59e0b',
+                            'fill-color': EXPR_CANTON_SECTORES_FILL,
                             'fill-opacity': 0.16
                         }
                     },
@@ -1700,7 +1805,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: 'line',
                         source: 'sectores-source',
                         paint: {
-                            'line-color': '#d97706',
+                            'line-color': EXPR_CANTON_SECTORES_LINE,
                             'line-width': [
                                 'interpolate', ['linear'], ['zoom'],
                                 10, 2.0,
@@ -1729,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'visibility': 'visible'
                         },
                         paint: {
-                            'text-color': '#7c2d12',
+                            'text-color': EXPR_CANTON_SECTORES_LABEL,
                             'text-halo-color': '#ffffff',
                             'text-halo-width': 3.5
                         }
@@ -2354,7 +2459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterSoloParroquia);
 
                 map.setPaintProperty('parroquias-line', 'line-width', 3.5);
-                map.setPaintProperty('parroquias-line', 'line-color', '#4c1d95');
+                map.setPaintProperty('parroquias-line', 'line-color', EXPR_CANTON_PARROQUIAS_LINE);
                 map.setPaintProperty('parroquias-line', 'line-opacity', 1.0);
             } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                 // Si está en 'Todas' las parroquias pero hay cantón seleccionado: mostrar solo las de ese cantón
@@ -2372,14 +2477,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 map.setPaintProperty('parroquias-line', 'line-width', [
                     'interpolate', ['linear'], ['zoom'],
-                    9, 1.2,
-                    12, 1.8,
-                    15, 2.5
+                    9, 1.4,
+                    12, 2.2,
+                    15, 3.0
                 ]);
-                map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
-                map.setPaintProperty('parroquias-line', 'line-opacity', 0.85);
+                map.setPaintProperty('parroquias-line', 'line-color', EXPR_CANTON_PARROQUIAS_LINE);
+                map.setPaintProperty('parroquias-line', 'line-opacity', 0.90);
             } else {
-                // Vista global: todas las parroquias
+                // Vista global: todas las parroquias con color por cantón
                 map.setFilter('parroquias-line', null);
                 if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', null);
 
@@ -2389,8 +2494,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     12, 1.8,
                     15, 2.5
                 ]);
-                map.setPaintProperty('parroquias-line', 'line-color', '#7c3aed');
+                map.setPaintProperty('parroquias-line', 'line-color', EXPR_CANTON_PARROQUIAS_LINE);
                 map.setPaintProperty('parroquias-line', 'line-opacity', 0.85);
+            }
+            if (map.getLayer('parroquias-label')) {
+                map.setPaintProperty('parroquias-label', 'text-color', EXPR_CANTON_PARROQUIAS_LABEL);
             }
         }
 
@@ -2422,22 +2530,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]
                 ] : matchSC;
 
-                map.setFilter('sectores-fill', filterSC);
-                map.setPaintProperty('sectores-fill', 'fill-color', '#ea580c');
-                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.35);
-
-                map.setFilter('sectores-line', filterSC);
-                map.setPaintProperty('sectores-line', 'line-color', '#c2410c');
-                map.setPaintProperty('sectores-line', 'line-width', 5.0);
-                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
-
-                if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSC);
-
-                // Configurar Barra Flotante de Navegación
+                // Identificar cantón del sector para asignarle su color de resalte
                 const sectorMeta = (targetCanton ? (AppState.sectoresMap.get(`${targetCanton}_${targetSC}`) || AppState.sectoresMap.get(`${targetCanton.toUpperCase()}_${targetSC}`)) : null)
                     || AppState.sectoresMap.get(targetSC) 
                     || (parseInt(targetSC, 10) ? AppState.sectoresMap.get(String(parseInt(targetSC, 10))) : null);
 
+                const cSector = (sectorMeta && sectorMeta.canton) || targetCanton;
+                const colSector = (cSector && COLORES_CANTON[cSector]) ? COLORES_CANTON[cSector] : null;
+                const fillActivo = colSector ? colSector.fill : '#ea580c';
+                const lineActivo = colSector ? colSector.linea : '#c2410c';
+                const labelActivo = colSector ? colSector.label : '#7c2d12';
+
+                map.setFilter('sectores-fill', filterSC);
+                map.setPaintProperty('sectores-fill', 'fill-color', fillActivo);
+                map.setPaintProperty('sectores-fill', 'fill-opacity', 0.38);
+
+                map.setFilter('sectores-line', filterSC);
+                map.setPaintProperty('sectores-line', 'line-color', lineActivo);
+                map.setPaintProperty('sectores-line', 'line-width', 5.0);
+                map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
+
+                if (map.getLayer('sectores-label')) {
+                    map.setFilter('sectores-label', filterSC);
+                    map.setPaintProperty('sectores-label', 'text-color', labelActivo);
+                }
+
+                // Configurar Barra Flotante de Navegación
                 if (sectorMeta && barra && titulo && btnGmaps) {
                     const etiq = sectorMeta.etiquetaSC || `Sector ${targetSC}`;
                     const parr = sectorMeta.parroquia ? ` (${sectorMeta.parroquia})` : '';
@@ -2483,10 +2601,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
                 }
 
-                map.setPaintProperty('sectores-fill', 'fill-color', '#f59e0b');
+                map.setPaintProperty('sectores-fill', 'fill-color', EXPR_CANTON_SECTORES_FILL);
                 map.setPaintProperty('sectores-fill', 'fill-opacity', 0.16);
 
-                map.setPaintProperty('sectores-line', 'line-color', '#d97706');
+                map.setPaintProperty('sectores-line', 'line-color', EXPR_CANTON_SECTORES_LINE);
                 map.setPaintProperty('sectores-line', 'line-width', [
                     'interpolate', ['linear'], ['zoom'],
                     10, 2.0,
@@ -2494,6 +2612,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     16, 5.0
                 ]);
                 map.setPaintProperty('sectores-line', 'line-opacity', 1.0);
+
+                if (map.getLayer('sectores-label')) {
+                    map.setPaintProperty('sectores-label', 'text-color', EXPR_CANTON_SECTORES_LABEL);
+                }
             }
         }
         // 2. ZOOM AUTOMÁTICO INTELIGENTE EN CASCADA SEGÚN FILTROS ACTIVOS
@@ -3230,6 +3352,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.cantonSeleccionado = e.target.value;
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
+                poblarFiltros();
+                renderizarVista(true, true);
+            });
+        }
+
+        // 1.1.1 Barra de Píldoras de Cantón (Mapa interactivo)
+        const cantonLegendBar = document.getElementById('cantonLegendBar');
+        if (cantonLegendBar) {
+            cantonLegendBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.cs-canton-pill');
+                if (!btn) return;
+                const targetCanton = btn.dataset.canton;
+                if (!targetCanton) return;
+
+                // Toggle: Si ya estaba activo, volver a Todos; si no, seleccionar el cantón
+                if (AppState.cantonSeleccionado === targetCanton) {
+                    AppState.cantonSeleccionado = 'Todos';
+                } else {
+                    AppState.cantonSeleccionado = targetCanton;
+                }
+                AppState.parroquiaSeleccionada = 'Todas';
+                AppState.sectorSeleccionado = 'Todos';
+                if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
                 poblarFiltros();
                 renderizarVista(true, true);
             });

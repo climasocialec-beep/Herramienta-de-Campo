@@ -2701,6 +2701,73 @@ body.dark-mode .cs-piramide-val--mujeres {
 /* =========================================================================
    BARRA FLOTANTE DE CONTROL DE CAPAS DEL MAPA (PRENDER / APAGAR)
    ========================================================================= */
+.cs-canton-legend-bar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  max-width: calc(100% - 210px);
+  pointer-events: auto;
+}
+
+.cs-canton-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.26rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  color: var(--text-muted, #475569);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-canton-pill:hover {
+  background: #ffffff;
+  color: var(--text-main, #0f172a);
+  transform: translateY(-1px);
+}
+
+.cs-canton-pill.is-active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+}
+
+.cs-canton-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+body.modo-oscuro .cs-canton-pill {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(51, 65, 85, 0.9);
+  color: #cbd5e1;
+}
+
+body.modo-oscuro .cs-canton-pill.is-active {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+}
+
 .cs-map-layer-toggles {
   position: absolute;
   top: 10px;
@@ -2914,6 +2981,18 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
 }
 
 @media (max-width: 640px) {
+  .cs-canton-legend-bar {
+    top: 6px;
+    left: 8px;
+    gap: 0.2rem;
+    max-width: calc(100% - 150px);
+  }
+  .cs-canton-pill {
+    padding: 0.18rem 0.42rem;
+    font-size: 0.64rem;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
   .cs-map-layer-toggles {
     top: 6px;
     right: 8px;
