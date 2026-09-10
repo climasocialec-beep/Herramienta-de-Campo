@@ -2768,6 +2768,70 @@ body.modo-oscuro .cs-canton-pill.is-active {
   border-color: #38bdf8;
 }
 
+/* Barra secundaria de Circunscripciones en el Mapa (Quito y Rumiñahui) */
+.cs-circ-legend-bar {
+  position: absolute;
+  top: 44px;
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  max-width: calc(100% - 210px);
+  pointer-events: auto;
+  transition: all 0.25s ease-out;
+}
+
+.cs-circ-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.52rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  color: var(--text-muted, #475569);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs-circ-pill:hover {
+  background: #ffffff;
+  color: var(--text-main, #0f172a);
+  transform: translateY(-1px);
+}
+
+.cs-circ-pill.is-active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+  box-shadow: 0 2px 6px rgba(30, 41, 59, 0.25);
+}
+
+body.modo-oscuro .cs-circ-pill {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(71, 85, 105, 0.85);
+  color: #cbd5e1;
+}
+
+body.modo-oscuro .cs-circ-pill.is-active {
+  background: #0ea5e9;
+  color: #ffffff;
+  border-color: #0ea5e9;
+}
+
+#wrapCircunscripcionFilter.is-hidden {
+  display: none !important;
+}
+
 .cs-map-layer-toggles {
   position: absolute;
   top: 10px;
@@ -2990,6 +3054,18 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
   .cs-canton-pill {
     padding: 0.18rem 0.42rem;
     font-size: 0.64rem;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .cs-circ-legend-bar {
+    top: 32px;
+    left: 8px;
+    gap: 0.18rem;
+    max-width: calc(100% - 140px);
+  }
+  .cs-circ-pill {
+    padding: 0.14rem 0.38rem;
+    font-size: 0.60rem;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }

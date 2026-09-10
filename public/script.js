@@ -299,6 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSectores: document.getElementById('toggleSectores'),
         toggleParroquias: document.getElementById('toggleParroquias'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
+        cantonLegendBar: document.getElementById('cantonLegendBar'),
+        circLegendBar: document.getElementById('circLegendBar'),
         toggleAlerta: document.getElementById('toggleAlerta'),
         
         // Tabla
@@ -1150,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'Urbana 3 (Sur)', label: 'Circunscripción Urbana 3 (Sur)' },
                     { id: 'Rural', label: 'Circunscripción Rural' }
                 ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
                 UI.circunscripcionFilter.disabled = false;
             } else if (actualCan === 'Rumiñahui') {
                 circList = [
@@ -1158,26 +1160,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'Urbana 2', label: 'Circunscripción Urbana 2 (Sangolquí)' },
                     { id: 'Rural', label: 'Circunscripción Rural (Cotogchoa)' }
                 ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
                 UI.circunscripcionFilter.disabled = false;
-            } else if (actualCan === 'Cayambe' || actualCan === 'Mejía') {
-                circList = [
-                    { id: 'Circunscripción Única', label: `Circunscripción Única (${actualCan})` }
-                ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
-                UI.circunscripcionFilter.disabled = true;
             } else {
-                // Cantón: 'Todos'
-                circList = [
-                    { id: 'Urbana 1 (Norte)', label: 'Quito: Urbana 1 (Norte)' },
-                    { id: 'Urbana 2 (Centro)', label: 'Quito: Urbana 2 (Centro)' },
-                    { id: 'Urbana 3 (Sur)', label: 'Quito: Urbana 3 (Sur)' },
-                    { id: 'Rural', label: 'Quito / Rumiñahui: Rural' },
-                    { id: 'Urbana 1', label: 'Rumiñahui: Urbana 1' },
-                    { id: 'Urbana 2', label: 'Rumiñahui: Urbana 2' }
-                ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.style.display = '';
-                UI.circunscripcionFilter.disabled = false;
+                // Cayambe, Mejía o Todos: Smart Disclosure (auto-ocultar para ahorrar espacio móvil)
+                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.add('is-hidden');
+                UI.circunscripcionFilter.disabled = true;
             }
 
             let circHtml = '<option value="Todas">Todas las circunscripciones</option>';
@@ -1191,6 +1179,37 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 AppState.circunscripcionSeleccionada = 'Todas';
                 UI.circunscripcionFilter.value = 'Todas';
+            }
+        }
+
+        // 1.2.1 Barra Rápida de Píldoras de Circunscripción sobre el Mapa (1-Tap)
+        if (UI.circLegendBar) {
+            const actualCan = AppState.cantonSeleccionado || 'Todos';
+            const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+
+            if (actualCan === 'Quito' || actualCan === 'Rumiñahui') {
+                UI.circLegendBar.style.display = 'flex';
+                let pillsHtml = `<button type="button" class="cs-circ-pill ${actualCirc === 'Todas' ? 'is-active' : ''}" data-circ="Todas">Todas</button>`;
+                
+                const cList = (actualCan === 'Quito') ? [
+                    { id: 'Urbana 1 (Norte)', short: 'Urb. 1 Norte' },
+                    { id: 'Urbana 2 (Centro)', short: 'Urb. 2 Centro' },
+                    { id: 'Urbana 3 (Sur)', short: 'Urb. 3 Sur' },
+                    { id: 'Rural', short: 'Rural' }
+                ] : [
+                    { id: 'Urbana 1', short: 'Urb. 1' },
+                    { id: 'Urbana 2', short: 'Urb. 2' },
+                    { id: 'Rural', short: 'Rural' }
+                ];
+
+                cList.forEach(c => {
+                    const isAct = (actualCirc === c.id);
+                    pillsHtml += `<button type="button" class="cs-circ-pill ${isAct ? 'is-active' : ''}" data-circ="${c.id}" title="${c.id}">${c.short}</button>`;
+                });
+                UI.circLegendBar.innerHTML = pillsHtml;
+            } else {
+                UI.circLegendBar.style.display = 'none';
+                UI.circLegendBar.innerHTML = '';
             }
         }
 
@@ -3549,12 +3568,34 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro Circunscripción (compatibilidad)
+        // Filtro Circunscripción (Select nativo)
         if (UI.circunscripcionFilter) {
             UI.circunscripcionFilter.addEventListener('change', (e) => {
                 AppState.circunscripcionSeleccionada = e.target.value;
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
+                poblarFiltros();
+                renderizarVista(true, true);
+            });
+        }
+
+        // 1.1.2 Barra de Píldoras de Circunscripción (Mapa interactivo 1-tap)
+        if (UI.circLegendBar) {
+            UI.circLegendBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.cs-circ-pill');
+                if (!btn) return;
+                const targetCirc = btn.dataset.circ;
+                if (!targetCirc) return;
+
+                // Toggle: si ya estaba activa esa circunscripción, volver a Todas
+                if (AppState.circunscripcionSeleccionada === targetCirc) {
+                    AppState.circunscripcionSeleccionada = 'Todas';
+                } else {
+                    AppState.circunscripcionSeleccionada = targetCirc;
+                }
+                AppState.parroquiaSeleccionada = 'Todas';
+                AppState.sectorSeleccionado = 'Todos';
+                if (UI.circunscripcionFilter) UI.circunscripcionFilter.value = AppState.circunscripcionSeleccionada;
                 poblarFiltros();
                 renderizarVista(true, true);
             });
