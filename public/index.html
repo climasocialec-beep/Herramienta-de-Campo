@@ -12,6 +12,7 @@
   <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social · Encuesta Pichincha 2026">
   <title>Clima Social · Encuesta Pichincha 2026</title>
   <link rel="icon" type="image/png" href="assets/icono.png">
+  <link rel="manifest" href="manifest.webmanifest">
 
   <!-- Preconnect & DNS-Prefetch para Fuentes y Tiles -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -477,7 +478,16 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=3.9.18"></script>
+  <script src="script.js?v=4.0.0"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(error => {
+          console.warn('No se pudo preparar el modo sin conexión:', error);
+        });
+      });
+    }
+  </script>
 
 </body>
 </html>
