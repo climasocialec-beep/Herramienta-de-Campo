@@ -3070,6 +3070,20 @@ body.modo-oscuro .cs-layer-pill:not(.active) {
   color: #64748b;
 }
 
+.cs-layer-pill--pendientes.active {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #b45309 !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.28) !important;
+}
+
+body.modo-oscuro .cs-layer-pill--pendientes.active {
+  background: rgba(180, 83, 9, 0.25) !important;
+  border-color: #f59e0b !important;
+  color: #fde68a !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2) !important;
+}
+
 /* =========================================================================
    POPUPS INTERACTIVOS DE PUNTOS DE MUESTREO Y LLEGADA
    ========================================================================= */

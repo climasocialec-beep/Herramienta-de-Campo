@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=4.0.0">
+  <link rel="stylesheet" href="style.css?v=4.1.0">
 </head>
 <body>
 
@@ -162,10 +162,15 @@
             <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             <span>Filtros de Campo</span>
           </div>
-          <button type="button" class="cs-btn-reset" id="btnLimpiarFiltros" title="Restablecer todos los filtros">
-            <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            <span id="txtLimpiarFiltros">Limpiar</span>
-          </button>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <button type="button" class="cs-btn-reset" id="btnTestEncuestas" style="background:#fef3c7;border-color:#f59e0b;color:#b45309;" title="Inyectar encuestas simuladas temporales para verificar el filtro de pendientes">
+              <span id="txtTestEncuestas">🧪 Probar Pendientes</span>
+            </button>
+            <button type="button" class="cs-btn-reset" id="btnLimpiarFiltros" title="Restablecer todos los filtros">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <span id="txtLimpiarFiltros">Limpiar</span>
+            </button>
+          </div>
         </div>
 
         <div class="cs-ribbon-grid">
@@ -324,6 +329,10 @@
                   <span class="cs-layer-pill__dot" style="background: linear-gradient(135deg, #2563eb 25%, #059669 25% 50%, #ea580c 50% 75%, #9333ea 75%);"></span>
                   <span id="lblToggleSectores">Sectores (160)</span>
                 </button>
+                <button type="button" class="cs-layer-pill cs-layer-pill--pendientes" id="toggleSoloPendientes" title="Filtrar únicamente sectores pendientes de completar (<10 encuestas)">
+                  <span class="cs-layer-pill__dot" style="background: #f59e0b;"></span>
+                  <span id="lblToggleSoloPendientes">Solo Pendientes</span>
+                </button>
               </div>
             </div>
 
@@ -478,11 +487,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=4.0.0"></script>
+  <script src="script.js?v=4.1.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch(error => {
+        navigator.serviceWorker.register('/service-worker.js?v=2').catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });
       });

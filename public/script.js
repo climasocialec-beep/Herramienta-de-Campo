@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
         mostrarInconsistencias: false, // Flag maestro de auditoría espacial (oculto por defecto, activable bajo demanda)
         filtroSoloAlertas: false,
+        filtroSoloPendientes: false, // Flag para filtrar únicamente sectores con menos de 10 encuestas
+        conteoPorSector: new Map(), // Caché en memoria para conteos por sector O(1)
         totalAlertas: 0,
         filtroTabla: '',
         modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
@@ -284,6 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         datePills: document.querySelectorAll('#datePills .cs-date-pill'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
+        btnTestEncuestas: document.getElementById('btnTestEncuestas'),
+        txtTestEncuestas: document.getElementById('txtTestEncuestas'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
         btnFiltroAlertas: document.getElementById('btnFiltroAlertas'),
@@ -299,6 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mapStats: document.getElementById('mapStats'),
         toggleCantones: document.getElementById('toggleCantones'),
         toggleSectores: document.getElementById('toggleSectores'),
+        toggleSoloPendientes: document.getElementById('toggleSoloPendientes'),
+        lblToggleSoloPendientes: document.getElementById('lblToggleSoloPendientes'),
         toggleParroquias: document.getElementById('toggleParroquias'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         cantonLegendBar: document.getElementById('cantonLegendBar'),
@@ -416,6 +422,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function coincideSector(encuesta, clave) {
         const sector = resolverSectorEncuesta(encuesta);
         return Boolean(sector && sector.props.sc_key === clave);
+    }
+
+    function recalcularConteosSectores() {
+        const conteo = new Map();
+        const encuestas = AppState.encuestas || [];
+        for (let i = 0; i < encuestas.length; i++) {
+            const sec = resolverSectorEncuesta(encuestas[i]);
+            if (sec && sec.props && sec.props.sc_key) {
+                conteo.set(sec.props.sc_key, (conteo.get(sec.props.sc_key) || 0) + 1);
+            }
+        }
+        AppState.conteoPorSector = conteo;
+        return conteo;
     }
 
     function circunscripcionEncuesta(encuesta) {
@@ -887,6 +906,90 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
+    // SIMULACIÓN Y PRUEBAS CONTROLADAS (INYECCIÓN TEMPORAL)
+    // =========================================================================
+    function inyectarEncuestasPrueba() {
+        if (!window._backupEncuestas) {
+            window._backupEncuestas = [...(AppState.encuestas || [])];
+        }
+
+        const mock = [];
+        // 10 encuestas en Sector 4 (Cayambe) -> COMPLETO (10/10)
+        for (let i = 1; i <= 10; i++) {
+            mock.push({
+                _id: `mock_sec4_${i}`,
+                _geolocation: [0.06306 + (Math.random() - 0.5) * 0.003, -78.13967 + (Math.random() - 0.5) * 0.003],
+                sc_key: 'Cayambe_4',
+                sc: '4',
+                tipologia: 'D',
+                canton: 'Cayambe',
+                parroquia: 'CAYAMBE',
+                supervisor: '5',
+                encuestador: '20',
+                today: '2026-09-11',
+                _submission_time: new Date().toISOString(),
+                _esPrueba: true
+            });
+        }
+
+        // 4 encuestas en Sector 13 (Cayambe) -> EN CURSO (4/10)
+        for (let i = 1; i <= 4; i++) {
+            mock.push({
+                _id: `mock_sec13_${i}`,
+                _geolocation: [0.05124 + (Math.random() - 0.5) * 0.003, -78.14722 + (Math.random() - 0.5) * 0.003],
+                sc_key: 'Cayambe_13',
+                sc: '13',
+                tipologia: 'H',
+                canton: 'Cayambe',
+                parroquia: 'CAYAMBE',
+                supervisor: '5',
+                encuestador: '20',
+                today: '2026-09-11',
+                _submission_time: new Date().toISOString(),
+                _esPrueba: true
+            });
+        }
+
+        AppState.encuestas = [...mock.map(normalizarSupervisorEncuesta), ...(window._backupEncuestas || [])];
+        AppState.modoPruebaActivo = true;
+
+        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧹 Quitar Prueba';
+        if (UI.btnTestEncuestas) {
+            UI.btnTestEncuestas.style.background = '#fee2e2';
+            UI.btnTestEncuestas.style.borderColor = '#ef4444';
+            UI.btnTestEncuestas.style.color = '#b91c1c';
+        }
+
+        poblarFiltros();
+        renderizarVista(true, true);
+        mostrarToast('14 encuestas de prueba inyectadas: Sector 4 (10/10 COMPLETO), Sector 13 (4/10 EN CURSO)', 'info');
+    }
+
+    function limpiarEncuestasPrueba() {
+        if (window._backupEncuestas) {
+            AppState.encuestas = [...window._backupEncuestas];
+            window._backupEncuestas = null;
+        } else {
+            AppState.encuestas = (AppState.encuestas || []).filter(e => !e._esPrueba);
+        }
+        AppState.modoPruebaActivo = false;
+
+        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧪 Probar Pendientes';
+        if (UI.btnTestEncuestas) {
+            UI.btnTestEncuestas.style.background = '#fef3c7';
+            UI.btnTestEncuestas.style.borderColor = '#f59e0b';
+            UI.btnTestEncuestas.style.color = '#b45309';
+        }
+
+        poblarFiltros();
+        renderizarVista(true, true);
+        mostrarToast('Encuestas de prueba eliminadas. Estado original limpio restaurado.', 'info');
+    }
+
+    window.inyectarEncuestasPrueba = inyectarEncuestasPrueba;
+    window.limpiarEncuestasPrueba = limpiarEncuestasPrueba;
+
+    // =========================================================================
     // FILTROS CRUZADOS INTELIGENTES Y DINÁMICOS
     // =========================================================================
     function actualizarFiltrosUI() {
@@ -1036,6 +1139,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        if (AppState.filtroSoloPendientes) {
+            activeCount++;
+            chips.push({
+                tipo: 'pendientes',
+                label: `⏳ Solo Sectores Pendientes (<10)`,
+                onClear: () => {
+                    AppState.filtroSoloPendientes = false;
+                    if (UI.toggleSoloPendientes) UI.toggleSoloPendientes.classList.remove('active');
+                    renderizarVista(true, false);
+                }
+            });
+        }
         if (AppState.filtroTabla) {
             activeCount++;
             chips.push({
@@ -1109,6 +1224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function poblarFiltros() {
+        recalcularConteosSectores();
         const selSup = AppState.supervisorSeleccionado;
         const selSec = AppState.sectorSeleccionado;
         const selPar = AppState.parroquiaSeleccionada;
@@ -1364,11 +1480,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 return (parseInt(a.sc, 10) || 0) - (parseInt(b.sc, 10) || 0);
             });
 
-            const totalSectores = listaSectores.length;
-            const labelTodos = (AppState.cantonSeleccionado !== 'Todos') 
+            // Conteo total y conteo de pendientes en el ámbito territorial seleccionado
+            let countPendientesEnLista = 0;
+            listaSectores.forEach(item => {
+                const count = sectores.get(item.scKey) || 0;
+                if (count < 10) countPendientesEnLista++;
+            });
+
+            // Si está activo el filtro de solo pendientes, se limita la lista a sectores incompletos
+            let listaParaMostrar = listaSectores;
+            if (AppState.filtroSoloPendientes) {
+                listaParaMostrar = listaSectores.filter(item => {
+                    const count = sectores.get(item.scKey) || 0;
+                    return count < 10;
+                });
+            }
+
+            const totalSectores = listaParaMostrar.length;
+            let labelTodos = (AppState.cantonSeleccionado !== 'Todos') 
                 ? `Todos los sectores de ${AppState.cantonSeleccionado} (${totalSectores})`
                 : `Todos los sectores (${totalSectores})`;
+            if (AppState.filtroSoloPendientes) {
+                labelTodos = (AppState.cantonSeleccionado !== 'Todos')
+                    ? `Sectores pendientes en ${AppState.cantonSeleccionado} (${totalSectores})`
+                    : `Todos los sectores pendientes (${totalSectores})`;
+            }
             UI.sectorFilter.innerHTML = `<option value="Todos">${labelTodos}</option>`;
+
+            if (UI.lblToggleSoloPendientes) {
+                UI.lblToggleSoloPendientes.textContent = AppState.filtroSoloPendientes
+                    ? `Pendientes (${countPendientesEnLista})`
+                    : `Solo Pendientes (${countPendientesEnLista})`;
+            }
+            if (UI.toggleSoloPendientes) {
+                UI.toggleSoloPendientes.classList.toggle('active', AppState.filtroSoloPendientes);
+            }
 
             const frag = document.createDocumentFragment();
             const sectoresValidos = new Set();
@@ -1379,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Rumiñahui': '🟣'
             };
 
-            listaSectores.forEach(item => {
+            listaParaMostrar.forEach(item => {
                 const count = sectores.get(item.scKey) || 0;
                 sectoresValidos.add(item.scKey);
 
@@ -1579,6 +1725,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtro por Inconsistencias / Alertas
         if (AppState.filtroSoloAlertas) {
             filtradas = filtradas.filter(e => e._tieneAlerta);
+        }
+
+        // Filtro por Solo Sectores Pendientes (< 10 encuestas)
+        if (AppState.filtroSoloPendientes) {
+            const conteos = AppState.conteoPorSector || recalcularConteosSectores();
+            filtradas = filtradas.filter(e => {
+                const sec = resolverSectorEncuesta(e);
+                if (!sec || !sec.props || !sec.props.sc_key) return true; // Mantener encuestas sin resolver para auditoría
+                const c = conteos.get(sec.props.sc_key) || 0;
+                return c < 10;
+            });
         }
 
         return filtradas;
@@ -2363,6 +2520,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             };
         });
+
+        // Conectar botón específico de Solo Sectores Pendientes (< 10 encuestas)
+        if (UI.toggleSoloPendientes) {
+            UI.toggleSoloPendientes.onclick = () => {
+                AppState.filtroSoloPendientes = !AppState.filtroSoloPendientes;
+                UI.toggleSoloPendientes.classList.toggle('active', AppState.filtroSoloPendientes);
+                renderizarVista(true, false);
+                if (AppState.filtroSoloPendientes) {
+                    mostrarToast('Filtrando únicamente sectores pendientes (<10)', 'info');
+                } else {
+                    mostrarToast('Mostrando todos los sectores y encuestas', 'info');
+                }
+            };
+        }
     }
 
     function actualizarClaseZoom() {
@@ -2742,6 +2913,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Nivel 'Todos los sectores'
                 if (barra) barra.style.display = 'none';
 
+                let filterPendientes = null;
+                if (AppState.filtroSoloPendientes) {
+                    const conteos = AppState.conteoPorSector || recalcularConteosSectores();
+                    const keysPendientes = [];
+                    if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
+                        AppState.sectoresGeojson.features.forEach(f => {
+                            const p = f.properties || {};
+                            const k = p.sc_key || `${p.canton}_${p.sc}`;
+                            if (k && (conteos.get(k) || 0) < 10) {
+                                keysPendientes.push(k);
+                            }
+                        });
+                    }
+                    filterPendientes = ['in', ['to-string', ['get', 'sc_key']], ['literal', keysPendientes]];
+                }
+
+                const aplicarFiltroSectores = (baseFilter) => {
+                    const f = (baseFilter && filterPendientes) 
+                        ? ['all', baseFilter, filterPendientes] 
+                        : (baseFilter || filterPendientes);
+                    map.setFilter('sectores-fill', f);
+                    map.setFilter('sectores-line', f);
+                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', f);
+                };
+
                 // A. Si hay Parroquia específica seleccionada: MOSTRAR EXCLUSIVAMENTE LOS SECTORES DE ESA PARROQUIA
                 if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
                     const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
@@ -2750,9 +2946,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ['==', ['upcase', ['get', 'parroquia']], targetPar],
                         ['==', ['upcase', ['get', 'PARROQUIA']], targetPar]
                     ];
-                    map.setFilter('sectores-fill', filterSectoresParroquia);
-                    map.setFilter('sectores-line', filterSectoresParroquia);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSectoresParroquia);
+                    aplicarFiltroSectores(filterSectoresParroquia);
                 } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
                     // B1. Si hay Circunscripción específica: filtrar por los sectores de esa circunscripción
                     const targetCirc = AppState.circunscripcionSeleccionada;
@@ -2761,9 +2955,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ['==', ['get', 'circunscripcion'], targetCirc],
                         ['==', ['upcase', ['get', 'circunscripcion']], targetCirc.toUpperCase()]
                     ];
-                    map.setFilter('sectores-fill', filterSecCirc);
-                    map.setFilter('sectores-line', filterSecCirc);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCirc);
+                    aplicarFiltroSectores(filterSecCirc);
                 } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                     // B. Si hay Cantón específico: filtrar por los sectores del cantón
                     const targetCan = AppState.cantonSeleccionado;
@@ -2774,14 +2966,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         ['==', ['upcase', ['get', 'CANTON']], targetCan.toUpperCase()],
                         ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
                     ];
-                    map.setFilter('sectores-fill', filterSecCanton);
-                    map.setFilter('sectores-line', filterSecCanton);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', filterSecCanton);
+                    aplicarFiltroSectores(filterSecCanton);
                 } else {
-                    // C. Vista global: mostrar todos los sectores (160)
-                    map.setFilter('sectores-fill', null);
-                    map.setFilter('sectores-line', null);
-                    if (map.getLayer('sectores-label')) map.setFilter('sectores-label', null);
+                    // C. Vista global: mostrar todos los sectores (o solo pendientes si está activo)
+                    aplicarFiltroSectores(null);
                 }
 
                 map.setPaintProperty('sectores-fill', 'fill-color', EXPR_CANTON_SECTORES_FILL);
@@ -3833,10 +4021,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.fechaSeleccionada = 'Todas';
                 AppState.encuestadorSeleccionado = null;
                 AppState.filtroSoloAlertas = false;
+                AppState.filtroSoloPendientes = false;
                 AppState.mostrarEtiquetas = false;
                 AppState.filtroTabla = '';
                 if (UI.cantonFilter) UI.cantonFilter.value = 'Todos';
                 if (UI.circunscripcionFilter) UI.circunscripcionFilter.value = 'Todas';
+                if (UI.toggleSoloPendientes) UI.toggleSoloPendientes.classList.remove('active');
                 if (UI.btnEtiquetasOn) UI.btnEtiquetasOn.classList.remove('active');
                 if (UI.btnEtiquetasOff) UI.btnEtiquetasOff.classList.add('active');
                 if (UI.searchInput) UI.searchInput.value = '';
@@ -3844,6 +4034,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 poblarFiltros();
                 renderizarVista(true, true);
                 mostrarToast('Filtros restablecidos', 'info');
+            });
+        }
+
+        // 5.0 Botón de Prueba Temporal (Inyectar / Limpiar encuestas simuladas)
+        if (UI.btnTestEncuestas) {
+            UI.btnTestEncuestas.addEventListener('click', () => {
+                if (AppState.modoPruebaActivo) {
+                    limpiarEncuestasPrueba();
+                } else {
+                    inyectarEncuestasPrueba();
+                }
             });
         }
 
