@@ -70,6 +70,16 @@ test('field names advertised by config are accepted without extra environment va
     assert.equal(normalized.supervisor, '1');
 });
 
+test('obsolete Render field variables are normalized to the active XLSForm names', async () => {
+    const server = loadServer({ env: { CAMPO_ENCUESTADOR: 'cod_encu', CAMPO_SUPERVISOR: 'cod_sup' } });
+    const config = (await server.request('GET', '/api/config')).body;
+    assert.equal(config.campoEncuestador, 'cenc');
+    assert.equal(config.campoSupervisor, 'csup');
+    const normalized = server.normalize({ cenc: '4', csup: '1' });
+    assert.equal(normalized.encuestador, '4');
+    assert.equal(normalized.supervisor, '1');
+});
+
 test('legacy and configured grouped field names remain compatible', () => {
     const server = loadServer({ env: { CAMPO_ENCUESTADOR: 'staff', CAMPO_SUPERVISOR: 'lead' } });
     assert.equal(server.normalize({ 'grupo/staff': ' 4 ', 'grupo/lead': ' 1 ' }).encuestador, '4');

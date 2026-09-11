@@ -30,22 +30,24 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// Conexión robusta a KoboToolbox (Encuesta Pichincha 2026)
-// Acepta ASSET_ID_PICHINCHA, ASSET_ID o KOBO_ASSET_ID de Render, con fallback automático al formulario activo.
-const ASSET_ID = limpiarVar(
-    process.env.ASSET_ID_PICHINCHA ||
-    process.env.ASSET_ID ||
-    process.env.KOBO_ASSET_ID ||
-    "ancbTuC8Are53gNEaRh6TP"
-);
+// El identificador y el token se reciben solo por variables de entorno de Render.
+// Se ignoran ASSET_ID genéricos heredados de otros proyectos para evitar consultas cruzadas.
+const ASSET_ID = limpiarVar(process.env.ASSET_ID_PICHINCHA);
 const API_TOKEN = limpiarVar(
     process.env.API_TOKEN ||
     process.env.KOBO_API_TOKEN ||
-    process.env.KOBO_TOKEN ||
-    "07cf361cc0dcfc56f489d599435c8e0ed6ce9387"
+    process.env.KOBO_TOKEN
 );
-const CAMPO_ENCUESTADOR = limpiarVar(process.env.CAMPO_ENCUESTADOR) || "cenc";
-const CAMPO_SUPERVISOR = limpiarVar(process.env.CAMPO_SUPERVISOR) || "csup";
+
+function campoFormularioActual(valor, esperado, aliasAnteriores) {
+    const candidato = limpiarVar(valor);
+    return !candidato || aliasAnteriores.includes(candidato.toLowerCase()) ? esperado : candidato;
+}
+
+// El XLSForm vigente usa cenc/csup. Esto corrige variables antiguas de Render sin
+// impedir que se configure explícitamente otro campo si el formulario cambiara.
+const CAMPO_ENCUESTADOR = campoFormularioActual(process.env.CAMPO_ENCUESTADOR, "cenc", ["cod_encu", "codencu"]);
+const CAMPO_SUPERVISOR = campoFormularioActual(process.env.CAMPO_SUPERVISOR, "csup", ["cod_sup", "codsup"]);
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
@@ -356,6 +358,7 @@ async function obtenerDatosKobo() {
 app.get("/api/health", (req, res) => {
     res.json({
         estado: "ok",
+        koboConfigurado: Boolean(ASSET_ID && API_TOKEN),
         cacheActiva: Boolean(cache.datos),
         cacheEdadSegundos: cache.datos
             ? Math.round((Date.now() - cache.timestamp) / 1000)
