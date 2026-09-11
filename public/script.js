@@ -1940,18 +1940,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 sources: {
                     // Vías y referencias visibles para orientar el trabajo de campo.
                     // La memoria se mantiene acotada por maxTileCacheSize: 20 en esta misma configuración.
-                    // OpenStreetMap Estándar: Cartografía comunitaria ultra detallada
-                    // Incluye pasajes peatonales, quebradas, escalinatas, nombres de tiendas, paradas e iglesias
-                    'osm-tiles': {
+                    // Cartografía Base: CARTO Voyager (Basado 100% en OpenStreetMap con CDN global de alta velocidad)
+                    // Incluye vías, pasajes, edificios, parques, nombres de comercios y puntos de interés sin bloqueo 403
+                    'carto-voyager-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
                         ],
                         tileSize: 256,
-                        maxzoom: 19,
-                        attribution: '&copy; Colaboradores de OpenStreetMap'
+                        maxzoom: 20,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> colaboradores, &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1972,9 +1973,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'osm-layer',
+                        id: 'carto-voyager-layer',
                         type: 'raster',
-                        source: 'osm-tiles',
+                        source: 'carto-voyager-tiles',
                         minzoom: 0,
                         maxzoom: 22
                     },

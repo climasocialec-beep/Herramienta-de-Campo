@@ -18,10 +18,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://fonts.openmaptiles.org">
-  <link rel="preconnect" href="https://a.tile.openstreetmap.org">
-  <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
-  <link rel="dns-prefetch" href="https://b.tile.openstreetmap.org">
-  <link rel="dns-prefetch" href="https://c.tile.openstreetmap.org">
+  <link rel="preconnect" href="https://a.basemaps.cartocdn.com">
+  <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com">
+  <link rel="dns-prefetch" href="https://b.basemaps.cartocdn.com">
+  <link rel="dns-prefetch" href="https://c.basemaps.cartocdn.com">
+  <link rel="dns-prefetch" href="https://d.basemaps.cartocdn.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload Cartografía Clave (Caché optimizada para móviles) -->
@@ -32,7 +33,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=4.7.0">
+  <link rel="stylesheet" href="style.css?v=4.8.0">
 </head>
 <body>
 
@@ -505,11 +506,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=4.7.0"></script>
+  <script src="script.js?v=4.8.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=8').catch(error => {
+        navigator.serviceWorker.register('/service-worker.js?v=9').catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });
       });
