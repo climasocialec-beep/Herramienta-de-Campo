@@ -30,20 +30,27 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// Desconexión estricta de formulario de Machala:
-// Solo se conectará a Kobo cuando se defina explícitamente ASSET_ID_PICHINCHA.
-// Cualquier variable heredada de proyectos anteriores queda desactivada.
-const ASSET_ID = limpiarVar(process.env.ASSET_ID_PICHINCHA || "");
-const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
+// Conexión robusta a KoboToolbox (Encuesta Pichincha 2026)
+// Acepta ASSET_ID_PICHINCHA, ASSET_ID o KOBO_ASSET_ID de Render, con fallback automático al formulario activo.
+const ASSET_ID = limpiarVar(
+    process.env.ASSET_ID_PICHINCHA ||
+    process.env.ASSET_ID ||
+    process.env.KOBO_ASSET_ID ||
+    "ancbTuC8Are53gNEaRh6TP"
+);
+const API_TOKEN = limpiarVar(
+    process.env.API_TOKEN ||
+    process.env.KOBO_API_TOKEN ||
+    process.env.KOBO_TOKEN ||
+    "07cf361cc0dcfc56f489d599435c8e0ed6ce9387"
+);
 const CAMPO_ENCUESTADOR = limpiarVar(process.env.CAMPO_ENCUESTADOR) || "cenc";
 const CAMPO_SUPERVISOR = limpiarVar(process.env.CAMPO_SUPERVISOR) || "csup";
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
 
-if (!ASSET_ID) {
-    console.log("[SUPERVISOR] ℹ  API de Machala desconectada. Esperando configuración de ASSET_ID_PICHINCHA.");
-}
+console.log(`[SUPERVISOR] 📡 Formulario Kobo configurado: ${ASSET_ID} (${API_TOKEN ? "Token presente ✓" : "Sin token ⚠️"})`);
 
 // =======================================
 // MIDDLEWARE DE SEGURIDAD
@@ -128,6 +135,48 @@ function normalizarCoordenadas(valores) {
         ? [lat, lng] : null;
 }
 
+// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Pichincha 2026)
+const PARROQUIAS_FORMULARIO = {
+    // Quito (1..50)
+    "1": "CARCELEN", "2": "COCHAPAMBA", "3": "COTOCOLLAO", "4": "EL CONDADO", "5": "IÑAQUITO",
+    "6": "JIPIJAPA", "7": "KENNEDY", "8": "RUMIPAMBA", "9": "SAN ISIDRO DEL INCA", "10": "BELISARIO QUEVEDO",
+    "11": "CENTRO HISTORICO", "12": "CHIMBACALLE", "13": "ITCHIMBIA", "14": "LA MAGDALENA", "15": "LA FERROVIARIA",
+    "16": "SAN JUAN", "17": "SAN BARTOLO", "26": "CHILLOGALLO", "27": "GUAMANI", "28": "LA ARGELIA",
+    "29": "LA ECUATORIANA", "30": "QUITUMBE", "31": "SOLANDA", "32": "TURUBAMBA", "33": "ALANGASI",
+    "34": "AMAGUAÑA", "35": "CALDERON", "36": "CHECA", "37": "CONOCOTO", "38": "CUMBAYA",
+    "39": "GUAYLLABAMBA", "40": "LA MERCED", "41": "LLANO CHICO", "42": "NAYON", "43": "PIFO",
+    "44": "PINTAG", "45": "POMASQUI", "46": "PUEMBO", "47": "QUINCHE", "48": "SAN ANTONIO",
+    "49": "TUMBACO", "50": "YARUQUI",
+    // Rumiñahui (110..114)
+    "110": "FAJARDO", "111": "SAN PEDRO DE TABOADA", "112": "SAN RAFAEL", "113": "SANGOLQUI", "114": "COTOGCHOA",
+    // Cayambe (210..217)
+    "210": "ASCAZUBI", "211": "CANGAHUA", "212": "CAYAMBE", "213": "JUAN MONTALVO", "214": "OLMEDO/PESILLO",
+    "215": "OTON", "216": "SAN JOSE DE AYORA", "217": "SANTA ROSA DE CUSUBAMBA",
+    // Mejía (310..316)
+    "310": "ALOAG", "311": "ALOASI", "312": "CORNEJO ASTORGA /TANDAPI", "313": "CUTUGLAGUA", "314": "MACHACHI",
+    "315": "TAMBILLO", "316": "UYUMBICHO"
+};
+
+const CIRCUNSCRIPCIONES_FORMULARIO = {
+    "1q": "C1 (Urbana Norte)",
+    "2q": "C2 (Urbana Centro)",
+    "3q": "C3 (Urbana Sur)",
+    "4q": "C4 (Rural)",
+    "1r": "Urbana 1",
+    "2r": "Urbana 2",
+    "3r": "Rural"
+};
+
+const CANTONES_FORMULARIO = {
+    "1": "Quito", "2": "Rumiñahui", "3": "Cayambe", "4": "Mejía",
+    "60": "Quito", "80": "Rumiñahui", "90": "Cayambe", "100": "Mejía"
+};
+
+const TIPOLOGIAS_FORMULARIO = {
+    "a": "A", "b": "B", "c": "C", "d": "D", "e": "E", "f": "F", "g": "G", "h": "H",
+    "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H"
+};
+
 function normalizarEncuesta(raw) {
     const id = raw._id || "";
     const submissionTime = raw._submission_time || "";
@@ -137,7 +186,7 @@ function normalizarEncuesta(raw) {
     // Geolocation
     let geo = normalizarCoordenadas(raw._geolocation);
     if (!geo) {
-        const gps = extraerValor(raw, ["gps"]);
+        const gps = extraerValor(raw, ["gps", "ubicacion_gps"]);
         if (gps) geo = normalizarCoordenadas(gps.split(/\s+/));
     }
 
@@ -147,31 +196,33 @@ function normalizarEncuesta(raw) {
     let encuestador = extraerValor(raw, [campoEnc, "cenc", "codencu", "cod_encu", "cod_enc", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
     let supervisor = extraerValor(raw, [campoSup, "csup", "codsup", "cod_sup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
 
-    const sc = extraerValor(raw, ["sectorcen", "p_ref", "sc", "codigo_sc", "sector_censal"]);
-    const rawTipologia = extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipol", "tipo_sc"]).toUpperCase();
-    const tipologiasFormulario = { "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H" };
-    const tipologia = tipologiasFormulario[rawTipologia] || rawTipologia;
+    const sc = extraerValor(raw, ["sc", "sectorcen", "p_ref", "codigo_sc", "sector_censal"]);
+    const rawTipol = String(extraerValor(raw, ["tipol", "tipologia", "TIPOLOGIA", "tipo_sc"]) || "").trim().toLowerCase();
+    const tipologia = TIPOLOGIAS_FORMULARIO[rawTipol] || rawTipol.toUpperCase();
     const barrio = extraerValor(raw, ["barr", "barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
     
-    // Parroquia: extracción tolerante (nombre o código)
-    const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
-    const parroquia = String(rawParroquia).trim().toUpperCase();
+    // Parroquia: extracción tolerante (parroquiasI para Quito/Rumiñahui, parroquiasII para Cayambe/Mejía)
+    const rawParroquia = extraerValor(raw, ["parroquiasI", "parroquiasII", "parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
+    const parroquia = PARROQUIAS_FORMULARIO[rawParroquia] || String(rawParroquia).trim().toUpperCase();
 
-    // Cantón: extracción tolerante
+    // Cantón: extracción tolerante (60: Quito, 80: Rumiñahui, 90: Cayambe, 100: Mejía)
     const rawCanton = extraerValor(raw, ["canton", "CANTON", "cant", "nom_canton", "cod_canton", "can"]) || "";
-    // El XLSForm vigente usa 60/80/90/100; se conservan 1–4 para no romper
-    // registros históricos que pudieran seguir llegando desde una versión anterior.
-    const cantonesFormulario = {
-        "1": "Quito", "2": "Rumiñahui", "3": "Cayambe", "4": "Mejía",
-        "60": "Quito", "80": "Rumiñahui", "90": "Cayambe", "100": "Mejía"
-    };
-    const canton = cantonesFormulario[rawCanton] || String(rawCanton).trim();
+    let canton = CANTONES_FORMULARIO[rawCanton] || String(rawCanton).trim();
+    if (!canton && rawParroquia) {
+        const numP = parseInt(rawParroquia, 10);
+        if (!isNaN(numP)) {
+            if (numP >= 1 && numP <= 50) canton = "Quito";
+            else if (numP >= 110 && numP <= 114) canton = "Rumiñahui";
+            else if (numP >= 210 && numP <= 217) canton = "Cayambe";
+            else if (numP >= 310 && numP <= 316) canton = "Mejía";
+        }
+    }
 
-    // Circunscripción (compatibilidad)
+    // Circunscripción
     const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]) || "";
-    const circunscripcion = String(rawCircuns).trim();
+    const circunscripcion = CIRCUNSCRIPCIONES_FORMULARIO[rawCircuns] || String(rawCircuns).trim();
 
-    // Extracción tolerante de Género y Edad (Kobo Machala: p1=género [1=Masc, 2=Fem], p2=edad)
+    // Extracción tolerante de Género (p1: 1=Masculino, 2=Femenino, 3=LGBTIQ+, 4=Otro)
     const rawGen = extraerValor(raw, [
         "p1", "genero", "p_genero", "sexo", "gender",
         "1. ¿CUÁL ES SU GÉNERO?", "1._CU_L_ES_SU_G_NERO",
@@ -185,10 +236,12 @@ function normalizarEncuesta(raw) {
         genero = "Mujer";
     }
 
+    // Edad (p2: edad cumplida en años)
     const edadRaw = extraerValor(raw, [
         "p2", "edad", "p_edad", "age",
         "2. ¿CUÁL ES SU EDAD? (edad cumplida en años)",
         "2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os",
+        "2. ¿CUÁNTOS AÑOS TIENE?",
         "p2_edad"
     ]) || "";
     const edadNum = Number(edadRaw);
