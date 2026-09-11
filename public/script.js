@@ -1940,14 +1940,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 sources: {
                     // Vías y referencias visibles para orientar el trabajo de campo.
                     // La memoria se mantiene acotada por maxTileCacheSize: 20 en esta misma configuración.
-                    'esri-street-tiles': {
+                    // OpenStreetMap Estándar: Cartografía comunitaria ultra detallada
+                    // Incluye pasajes peatonales, quebradas, escalinatas, nombres de tiendas, paradas e iglesias
+                    'osm-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
                         ],
                         tileSize: 256,
-                        maxzoom: 23,
-                        attribution: 'Fuentes: Esri, HERE, Garmin, USGS, OpenStreetMap y la comunidad GIS'
+                        maxzoom: 19,
+                        attribution: '&copy; Colaboradores de OpenStreetMap'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1968,9 +1972,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'esri-street-layer',
+                        id: 'osm-layer',
                         type: 'raster',
-                        source: 'esri-street-tiles',
+                        source: 'osm-tiles',
                         minzoom: 0,
                         maxzoom: 22
                     },
