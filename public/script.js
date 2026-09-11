@@ -868,12 +868,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error cargando encuestas:', error);
-            if (AppState.encuestas.length === 0) {
+            const hayDatosGuardados = Array.isArray(AppState.encuestas) && AppState.encuestas.length > 0;
+            if (!hayDatosGuardados) {
                 mostrarError('No se pudieron cargar los datos de KoboToolbox.');
             } else {
                 mostrarToast('Modo sin conexión: datos desde caché local', 'info');
             }
-            if (UI.badgeTexto) UI.badgeTexto.textContent = 'Sin conexión';
+            if (UI.badgeTexto) UI.badgeTexto.textContent = hayDatosGuardados ? 'Sin conexión · datos guardados' : 'Sin conexión';
+            if (UI.ultimaActualizacion) {
+                UI.ultimaActualizacion.textContent = hayDatosGuardados
+                    ? 'Modo sin conexión · cartografía y última sincronización disponibles'
+                    : 'Modo sin conexión · cartografía disponible';
+            }
         } finally {
             AppState.cargandoDatos = false;
             if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
