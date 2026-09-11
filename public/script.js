@@ -286,8 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         datePills: document.querySelectorAll('#datePills .cs-date-pill'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
-        btnTestEncuestas: document.getElementById('btnTestEncuestas'),
-        txtTestEncuestas: document.getElementById('txtTestEncuestas'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
         btnFiltroAlertas: document.getElementById('btnFiltroAlertas'),
@@ -904,90 +902,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
         }
     }
-
-    // =========================================================================
-    // SIMULACIÓN Y PRUEBAS CONTROLADAS (INYECCIÓN TEMPORAL)
-    // =========================================================================
-    function inyectarEncuestasPrueba() {
-        if (!window._backupEncuestas) {
-            window._backupEncuestas = [...(AppState.encuestas || [])];
-        }
-
-        const mock = [];
-        // 10 encuestas en Sector 4 (Cayambe) -> COMPLETO (10/10)
-        for (let i = 1; i <= 10; i++) {
-            mock.push({
-                _id: `mock_sec4_${i}`,
-                _geolocation: [0.06306 + (Math.random() - 0.5) * 0.003, -78.13967 + (Math.random() - 0.5) * 0.003],
-                sc_key: 'Cayambe_4',
-                sc: '4',
-                tipologia: 'D',
-                canton: 'Cayambe',
-                parroquia: 'CAYAMBE',
-                supervisor: '5',
-                encuestador: '20',
-                today: '2026-09-11',
-                _submission_time: new Date().toISOString(),
-                _esPrueba: true
-            });
-        }
-
-        // 4 encuestas en Sector 13 (Cayambe) -> EN CURSO (4/10)
-        for (let i = 1; i <= 4; i++) {
-            mock.push({
-                _id: `mock_sec13_${i}`,
-                _geolocation: [0.05124 + (Math.random() - 0.5) * 0.003, -78.14722 + (Math.random() - 0.5) * 0.003],
-                sc_key: 'Cayambe_13',
-                sc: '13',
-                tipologia: 'H',
-                canton: 'Cayambe',
-                parroquia: 'CAYAMBE',
-                supervisor: '5',
-                encuestador: '20',
-                today: '2026-09-11',
-                _submission_time: new Date().toISOString(),
-                _esPrueba: true
-            });
-        }
-
-        AppState.encuestas = [...mock.map(normalizarSupervisorEncuesta), ...(window._backupEncuestas || [])];
-        AppState.modoPruebaActivo = true;
-
-        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧹 Quitar Prueba';
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.style.background = '#fee2e2';
-            UI.btnTestEncuestas.style.borderColor = '#ef4444';
-            UI.btnTestEncuestas.style.color = '#b91c1c';
-        }
-
-        poblarFiltros();
-        renderizarVista(true, true);
-        mostrarToast('14 encuestas de prueba inyectadas: Sector 4 (10/10 COMPLETO), Sector 13 (4/10 EN CURSO)', 'info');
-    }
-
-    function limpiarEncuestasPrueba() {
-        if (window._backupEncuestas) {
-            AppState.encuestas = [...window._backupEncuestas];
-            window._backupEncuestas = null;
-        } else {
-            AppState.encuestas = (AppState.encuestas || []).filter(e => !e._esPrueba);
-        }
-        AppState.modoPruebaActivo = false;
-
-        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧪 Probar Pendientes';
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.style.background = '#fef3c7';
-            UI.btnTestEncuestas.style.borderColor = '#f59e0b';
-            UI.btnTestEncuestas.style.color = '#b45309';
-        }
-
-        poblarFiltros();
-        renderizarVista(true, true);
-        mostrarToast('Encuestas de prueba eliminadas. Estado original limpio restaurado.', 'info');
-    }
-
-    window.inyectarEncuestasPrueba = inyectarEncuestasPrueba;
-    window.limpiarEncuestasPrueba = limpiarEncuestasPrueba;
 
     // =========================================================================
     // FILTROS CRUZADOS INTELIGENTES Y DINÁMICOS
@@ -4037,16 +3951,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 5.0 Botón de Prueba Temporal (Inyectar / Limpiar encuestas simuladas)
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.addEventListener('click', () => {
-                if (AppState.modoPruebaActivo) {
-                    limpiarEncuestasPrueba();
-                } else {
-                    inyectarEncuestasPrueba();
-                }
-            });
-        }
 
         // 5.1 Filtro Directo de Inconsistencias
         if (UI.btnFiltroAlertas) {
