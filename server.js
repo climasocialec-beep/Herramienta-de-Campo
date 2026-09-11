@@ -128,13 +128,19 @@ function extraerValor(obj, claves) {
     return "";
 }
 
-function normalizarCoordenadas(valores) {
+function normalizarCoordenadas(valores, validarEcuador = false) {
     if (!Array.isArray(valores) || valores.length < 2) return null;
     const par = valores.slice(0, 2);
     if (par.some(v => (typeof v !== "number" && typeof v !== "string") || String(v).trim() === "")) return null;
-    const [lat, lng] = par.map(Number);
-    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
-        ? [lat, lng] : null;
+    let [lat, lng] = par.map(Number);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    // Invertir si vienen como [lng, lat]
+    if (lat < -50 && lng > -10 && lng < 10) {
+        const tmp = lat; lat = lng; lng = tmp;
+    }
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    if (validarEcuador && !(lat >= -5.0 && lat <= 2.5 && lng >= -92.0 && lng <= -75.0)) return null;
+    return [lat, lng];
 }
 
 // Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Pichincha 2026)
@@ -185,11 +191,29 @@ function normalizarEncuesta(raw) {
     const start = raw.start || extraerValor(raw, ["start", "inicio"]) || "";
     const end = raw.end || extraerValor(raw, ["end", "fin"]) || "";
     
-    // Geolocation
+    // Geolocation: tolerante a _geolocation, ya_registrado, gps, ubicacion_gps, etc.
     let geo = normalizarCoordenadas(raw._geolocation);
     if (!geo) {
-        const gps = extraerValor(raw, ["gps", "ubicacion_gps"]);
+        const gps = extraerValor(raw, [
+            "ya_registrado", "gps", "ubicacion_gps", "coordenadas",
+            "geopoint", "punto_gps", "punto", "ubicacion"
+        ]);
         if (gps) geo = normalizarCoordenadas(gps.split(/\s+/));
+    }
+    // Fallback de escaneo universal de claves si aún no hay coordenadas
+    if (!geo) {
+        for (const [k, v] of Object.entries(raw)) {
+            if (typeof v === "string" && v.includes(" ")) {
+                const partes = v.trim().split(/\s+/);
+                if (partes.length >= 2) {
+                    const testGeo = normalizarCoordenadas(partes, true);
+                    if (testGeo) {
+                        geo = testGeo;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     const campoEnc = CAMPO_ENCUESTADOR;

@@ -512,20 +512,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function extraerCoordenadas(encuesta) {
+        if (!encuesta) return null;
         // 1. _geolocation [lat, lng]
         if (encuesta._geolocation && Array.isArray(encuesta._geolocation) && encuesta._geolocation.length >= 2 && encuesta._geolocation[0] !== null) {
-            const lat = parseFloat(encuesta._geolocation[0]);
-            const lng = parseFloat(encuesta._geolocation[1]);
-            if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng];
+            let lat = parseFloat(encuesta._geolocation[0]);
+            let lng = parseFloat(encuesta._geolocation[1]);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                if (lat < -50 && lng > -10 && lng < 10) { const tmp = lat; lat = lng; lng = tmp; }
+                if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng];
+            }
         }
-        // 2. Campo 'gps' ("-0.2540309 -78.5465494 ...")
-        const gpsStr = campo(encuesta, 'gps');
-        if (gpsStr && typeof gpsStr === 'string') {
-            const partes = gpsStr.trim().split(/\s+/);
-            if (partes.length >= 2) {
-                const lat = parseFloat(partes[0]);
-                const lng = parseFloat(partes[1]);
-                if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng];
+        // 2. Campos de GPS conocidos (incluyendo ya_registrado, gps, ubicacion_gps, etc.)
+        const posiblesCampos = ['ya_registrado', 'gps', 'ubicacion_gps', 'coordenadas', 'geopoint', 'punto_gps', 'punto', 'ubicacion'];
+        for (let i = 0; i < posiblesCampos.length; i++) {
+            const val = campo(encuesta, posiblesCampos[i]);
+            if (val && typeof val === 'string') {
+                const partes = val.trim().split(/\s+/);
+                if (partes.length >= 2) {
+                    let lat = parseFloat(partes[0]);
+                    let lng = parseFloat(partes[1]);
+                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                        if (lat < -50 && lng > -10 && lng < 10) { const tmp = lat; lat = lng; lng = tmp; }
+                        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng];
+                    }
+                }
+            }
+        }
+        // 3. Escaneo universal en todas las claves de la encuesta (validando rango Ecuador)
+        const keys = Object.keys(encuesta);
+        for (let i = 0; i < keys.length; i++) {
+            const val = encuesta[keys[i]];
+            if (typeof val === 'string' && val.includes(' ')) {
+                const partes = val.trim().split(/\s+/);
+                if (partes.length >= 2) {
+                    let lat = parseFloat(partes[0]);
+                    let lng = parseFloat(partes[1]);
+                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                        if (lat < -50 && lng > -10 && lng < 10) { const tmp = lat; lat = lng; lng = tmp; }
+                        if (lat >= -5.0 && lat <= 2.5 && lng >= -92.0 && lng <= -75.0) {
+                            return [lat, lng];
+                        }
+                    }
+                }
             }
         }
         return null;
@@ -1625,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=4.2.4';
+            const cacheBuster = '?v=4.2.5';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
