@@ -286,8 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         datePills: document.querySelectorAll('#datePills .cs-date-pill'),
         btnLimpiarFiltros: document.getElementById('btnLimpiarFiltros'),
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
-        btnTestEncuestas: document.getElementById('btnTestEncuestas'),
-        txtTestEncuestas: document.getElementById('txtTestEncuestas'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
         btnFiltroAlertas: document.getElementById('btnFiltroAlertas'),
@@ -905,149 +903,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
         }
     }
-
-    // =========================================================================
-    // SIMULACIÓN Y PRUEBAS CONTROLADAS (CAYAMBE - EQUIPO 5)
-    // =========================================================================
-    function inyectarEncuestasPrueba() {
-        if (!window._backupEncuestas) {
-            window._backupEncuestas = [...(AppState.encuestas || [])];
-        }
-
-        const mock = [];
-        // 1. Sector 4 (Cayambe) -> 10 encuestas (COMPLETADO 10/10) - Amialy (20)
-        // 5 Hombres y 5 Mujeres distribuidos en cohortes de edad
-        const demoSec4 = [
-            { g: 'Hombre', e: 18 }, { g: 'Mujer', e: 24 },
-            { g: 'Hombre', e: 27 }, { g: 'Mujer', e: 35 },
-            { g: 'Hombre', e: 42 }, { g: 'Mujer', e: 49 },
-            { g: 'Hombre', e: 56 }, { g: 'Mujer', e: 63 },
-            { g: 'Hombre', e: 71 }, { g: 'Mujer', e: 22 }
-        ];
-        for (let i = 1; i <= 10; i++) {
-            const d = demoSec4[i - 1];
-            mock.push({
-                _id: `mock_sec4_${i}`,
-                _geolocation: [0.06239 + (Math.random() - 0.5) * 0.003, -78.13848 + (Math.random() - 0.5) * 0.003],
-                sc_key: 'Cayambe_4',
-                sc: '4',
-                tipologia: 'D',
-                canton: 'Cayambe',
-                parroquia: 'CAYAMBE',
-                supervisor: '5',
-                encuestador: '20',
-                genero: d.g,
-                sexo: d.g,
-                p1: d.g === 'Hombre' ? '1' : '2',
-                edad: d.e,
-                p2: d.e,
-                today: '2026-09-11',
-                _submission_time: new Date().toISOString(),
-                _esPrueba: true
-            });
-        }
-
-        // 2. Sector 13 (Cayambe) -> 5 encuestas (EN CURSO 5/10) - Ingrid (21)
-        // 3 Hombres y 2 Mujeres
-        const demoSec13 = [
-            { g: 'Hombre', e: 25 }, { g: 'Mujer', e: 32 },
-            { g: 'Hombre', e: 48 }, { g: 'Mujer', e: 54 },
-            { g: 'Hombre', e: 66 }
-        ];
-        for (let i = 1; i <= 5; i++) {
-            const d = demoSec13[i - 1];
-            mock.push({
-                _id: `mock_sec13_${i}`,
-                _geolocation: [0.05321 + (Math.random() - 0.5) * 0.003, -78.14518 + (Math.random() - 0.5) * 0.003],
-                sc_key: 'Cayambe_13',
-                sc: '13',
-                tipologia: 'H',
-                canton: 'Cayambe',
-                parroquia: 'CAYAMBE',
-                supervisor: '5',
-                encuestador: '21',
-                genero: d.g,
-                sexo: d.g,
-                p1: d.g === 'Hombre' ? '1' : '2',
-                edad: d.e,
-                p2: d.e,
-                today: '2026-09-11',
-                _submission_time: new Date().toISOString(),
-                _esPrueba: true
-            });
-        }
-
-        // 3. Sector 28 (San José de Ayora) -> 3 encuestas (EN CURSO 3/10) - Pablo (22)
-        // 1 Hombre y 2 Mujeres
-        const demoSec28 = [
-            { g: 'Hombre', e: 30 }, { g: 'Mujer', e: 23 }, { g: 'Mujer', e: 55 }
-        ];
-        for (let i = 1; i <= 3; i++) {
-            const d = demoSec28[i - 1];
-            mock.push({
-                _id: `mock_sec28_${i}`,
-                _geolocation: [0.05735 + (Math.random() - 0.5) * 0.003, -78.13363 + (Math.random() - 0.5) * 0.003],
-                sc_key: 'Cayambe_28',
-                sc: '28',
-                tipologia: 'E',
-                canton: 'Cayambe',
-                parroquia: 'SAN JOSE DE AYORA',
-                supervisor: '5',
-                encuestador: '22',
-                genero: d.g,
-                sexo: d.g,
-                p1: d.g === 'Hombre' ? '1' : '2',
-                edad: d.e,
-                p2: d.e,
-                today: '2026-09-11',
-                _submission_time: new Date().toISOString(),
-                _esPrueba: true
-            });
-        }
-
-        AppState.encuestas = [...mock.map(normalizarSupervisorEncuesta), ...(window._backupEncuestas || [])];
-        AppState.modoPruebaActivo = true;
-
-        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧹 Quitar Simulación';
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.style.background = '#fee2e2';
-            UI.btnTestEncuestas.style.borderColor = '#ef4444';
-            UI.btnTestEncuestas.style.color = '#b91c1c';
-        }
-
-        // Centrar en Cayambe para comodidad
-        if (map) {
-            map.flyTo({ center: [-78.14, 0.05], zoom: 13.5 });
-        }
-
-        poblarFiltros();
-        renderizarVista(true, true);
-        mostrarToast('18 encuestas simuladas en Cayambe: Sector 4 (10/10), Sector 13 (5/10), Sector 28 (3/10)', 'info');
-    }
-
-    function limpiarEncuestasPrueba() {
-        if (window._backupEncuestas) {
-            AppState.encuestas = [...window._backupEncuestas];
-            window._backupEncuestas = null;
-        } else {
-            AppState.encuestas = (AppState.encuestas || []).filter(e => !e._esPrueba);
-        }
-        AppState.modoPruebaActivo = false;
-
-        if (UI.txtTestEncuestas) UI.txtTestEncuestas.textContent = '🧪 Simular Cayambe';
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.style.background = '#fef3c7';
-            UI.btnTestEncuestas.style.borderColor = '#f59e0b';
-            UI.btnTestEncuestas.style.color = '#b45309';
-        }
-
-        poblarFiltros();
-        renderizarVista(true, true);
-        mostrarToast('Simulación eliminada. Datos reales limpios restaurados.', 'info');
-    }
-
-    window.inyectarEncuestasPrueba = inyectarEncuestasPrueba;
-    window.limpiarEncuestasPrueba = limpiarEncuestasPrueba;
 
     // =========================================================================
     // FILTROS CRUZADOS INTELIGENTES Y DINÁMICOS
@@ -4204,16 +4059,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 5.0 Botón de Simulación Temporal Cayambe
-        if (UI.btnTestEncuestas) {
-            UI.btnTestEncuestas.addEventListener('click', () => {
-                if (AppState.modoPruebaActivo) {
-                    limpiarEncuestasPrueba();
-                } else {
-                    inyectarEncuestasPrueba();
-                }
-            });
-        }
 
 
         // 5.1 Filtro Directo de Inconsistencias
