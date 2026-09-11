@@ -3119,12 +3119,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (!AppState.markerSupervisor) {
                         const el = document.createElement('div');
-                        el.className = 'cs-gps-user';
-                        el.innerHTML = `<div style="background:#f26419;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px #f26419;animation:cs-pulse 1.5s infinite;"></div>`;
+                        el.className = 'cs-gps-pegman-wrap';
+                        el.setAttribute('title', 'Tu ubicación actual (Supervisor en campo)');
+                        el.innerHTML = `
+                            <div class="cs-gps-pegman-radar"></div>
+                            <svg class="cs-gps-pegman-svg" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Sombra de los pies en el suelo -->
+                                <ellipse cx="18" cy="45" rx="8" ry="2.5" fill="rgba(15,23,42,0.4)"/>
+                                
+                                <!-- Piernas y Zapatos -->
+                                <rect x="13" y="29" width="4" height="13" rx="2" fill="#1e293b"/>
+                                <ellipse cx="14" cy="42.5" rx="3.5" ry="2" fill="#0f172a"/>
+                                <ellipse cx="14" cy="43.5" rx="3" ry="0.8" fill="#ffffff" opacity="0.8"/>
+                                
+                                <rect x="19" y="29" width="4" height="13" rx="2" fill="#1e293b"/>
+                                <ellipse cx="22" cy="42.5" rx="3.5" ry="2" fill="#0f172a"/>
+                                <ellipse cx="22" cy="43.5" rx="3" ry="0.8" fill="#ffffff" opacity="0.8"/>
+                                
+                                <!-- Cuerpo / Chaleco de Encuestador Clima Social -->
+                                <path d="M11 16C11 14.5 12.5 13.5 14 13.5H22C23.5 13.5 25 14.5 25 16V28C25 29 24 30 23 30H13C12 30 11 29 11 28V16Z" fill="#f26419"/>
+                                <rect x="11" y="22" width="14" height="2.5" fill="#fef08a"/>
+                                <line x1="15" y1="13.5" x2="15" y2="22" stroke="#fef08a" stroke-width="1.5"/>
+                                <line x1="21" y1="13.5" x2="21" y2="22" stroke="#fef08a" stroke-width="1.5"/>
+                                <path d="M16 13.5L18 17L20 13.5" stroke="#ffffff" stroke-width="1.2" fill="none"/>
 
-                        AppState.markerSupervisor = new maplibregl.Marker({ element: el })
+                                <!-- Brazo izquierdo con portapapeles de encuestas -->
+                                <path d="M11 16L7.5 22C7 23 7.5 24.5 8.5 24.5L11 24" stroke="#f26419" stroke-width="2.8" stroke-linecap="round"/>
+                                <rect x="4" y="20" width="6.5" height="8.5" rx="1" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
+                                <rect x="5.5" y="19" width="3.5" height="1.5" rx="0.5" fill="#f26419"/>
+                                <line x1="5.5" y1="22.5" x2="9" y2="22.5" stroke="#64748b" stroke-width="0.8"/>
+                                <line x1="5.5" y1="24.5" x2="9" y2="24.5" stroke="#64748b" stroke-width="0.8"/>
+                                <line x1="5.5" y1="26.5" x2="8" y2="26.5" stroke="#64748b" stroke-width="0.8"/>
+
+                                <!-- Brazo derecho saludando -->
+                                <path d="M25 16L28.5 21C29.2 22 28.5 23.5 27.5 23.5L25 23" stroke="#f26419" stroke-width="2.8" stroke-linecap="round"/>
+                                <circle cx="28" cy="23.5" r="1.5" fill="#fcd34d"/>
+
+                                <!-- Cabeza y Rostro -->
+                                <circle cx="18" cy="8.5" r="5.5" fill="#fcd34d"/>
+                                <circle cx="16.5" cy="8.5" r="0.7" fill="#0f172a"/>
+                                <circle cx="19.5" cy="8.5" r="0.7" fill="#0f172a"/>
+                                <path d="M16.8 10.5C17.2 11 18.8 11 19.2 10.5" stroke="#0f172a" stroke-width="0.7" stroke-linecap="round"/>
+
+                                <!-- Gorrita de campo / visera Clima Social -->
+                                <path d="M12.5 7C13 4 15 3 18 3C21 3 23 4 23.5 7H12.5Z" fill="#0f172a"/>
+                                <path d="M12 7.5H24.5C25.5 7.5 26 8.2 25 8.5L23 9H13L12 7.5Z" fill="#f26419"/>
+                                <circle cx="18" cy="3" r="1" fill="#f26419"/>
+                            </svg>
+                        `;
+
+                        AppState.markerSupervisor = new maplibregl.Marker({ 
+                            element: el,
+                            anchor: 'bottom'
+                        })
                             .setLngLat([lng, lat])
-                            .setPopup(new maplibregl.Popup({ offset: [0, -10] }).setHTML('<strong>📍 Tu ubicación actual</strong>'))
+                            .setPopup(new maplibregl.Popup({ offset: [0, -48] }).setHTML(`
+                                <div style="font-family:'Plus Jakarta Sans',sans-serif;padding:3px 6px;text-align:center;">
+                                    <strong style="color:#0f172a;font-size:0.86rem;display:block;">📍 Tu ubicación actual</strong>
+                                    <span style="color:#64748b;font-size:0.74rem;">Supervisor en campo</span>
+                                </div>
+                            `))
                             .addTo(map);
                     } else {
                         AppState.markerSupervisor.setLngLat([lng, lat]);
