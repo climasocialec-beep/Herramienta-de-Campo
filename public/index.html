@@ -18,11 +18,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://fonts.openmaptiles.org">
-  <link rel="preconnect" href="https://a.basemaps.cartocdn.com">
-  <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com">
-  <link rel="dns-prefetch" href="https://b.basemaps.cartocdn.com">
-  <link rel="dns-prefetch" href="https://c.basemaps.cartocdn.com">
-  <link rel="dns-prefetch" href="https://d.basemaps.cartocdn.com">
+  <link rel="preconnect" href="https://server.arcgisonline.com">
+  <link rel="dns-prefetch" href="https://server.arcgisonline.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload Cartografía Clave (Caché optimizada para móviles) -->
@@ -33,7 +30,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=4.8.0">
+  <link rel="stylesheet" href="style.css?v=4.9.0">
 </head>
 <body>
 
@@ -332,6 +329,10 @@
                   <span class="cs-layer-pill__dot" style="background: #f59e0b;"></span>
                   <span id="lblToggleSoloPendientes">Solo Pendientes</span>
                 </button>
+                <button type="button" class="cs-layer-pill" id="toggleBasemap" title="Alternar mapa base: Topográfico / Calles / Satélite">
+                  <span class="cs-layer-pill__dot" style="background: #0284c7;"></span>
+                  <span id="lblToggleBasemap">🗺️ Topográfico</span>
+                </button>
               </div>
             </div>
 
@@ -506,11 +507,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=4.8.0"></script>
+  <script src="script.js?v=4.9.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=9').catch(error => {
+        navigator.serviceWorker.register('/service-worker.js?v=10').catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });
       });

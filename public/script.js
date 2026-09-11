@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarInconsistencias: false, // Flag maestro de auditoría espacial (oculto por defecto, activable bajo demanda)
         filtroSoloAlertas: false,
         filtroSoloPendientes: false, // Flag para filtrar únicamente sectores con menos de 10 encuestas
+        tipoMapaBase: 'topo', // 'topo' | 'calles' | 'satelite'
         conteoPorSector: new Map(), // Caché en memoria para conteos por sector O(1)
         totalAlertas: 0,
         filtroTabla: '',
@@ -303,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSectores: document.getElementById('toggleSectores'),
         toggleSoloPendientes: document.getElementById('toggleSoloPendientes'),
         lblToggleSoloPendientes: document.getElementById('lblToggleSoloPendientes'),
+        toggleBasemap: document.getElementById('toggleBasemap'),
+        lblToggleBasemap: document.getElementById('lblToggleBasemap'),
         toggleParroquias: document.getElementById('toggleParroquias'),
         toggleCircunscripciones: document.getElementById('toggleCircunscripciones'),
         cantonLegendBar: document.getElementById('cantonLegendBar'),
@@ -1940,19 +1943,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 sources: {
                     // Vías y referencias visibles para orientar el trabajo de campo.
                     // La memoria se mantiene acotada por maxTileCacheSize: 20 en esta misma configuración.
-                    // Cartografía Base: CARTO Voyager (Basado 100% en OpenStreetMap con CDN global de alta velocidad)
-                    // Incluye vías, pasajes, edificios, parques, nombres de comercios y puntos de interés sin bloqueo 403
-                    'carto-voyager-tiles': {
+                    // Cartografía Base Esri ArcGIS (Topográfico, Calles y Satélite sin API Key ni marcas de agua)
+                    // World_Topo_Map incluye curvas de nivel, relieve sombreado, quebradas, ríos y vías secundarias.
+                    'esri-topo-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
                         ],
                         tileSize: 256,
-                        maxzoom: 20,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> colaboradores, &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
+                        maxzoom: 19,
+                        attribution: '&copy; Esri, DeLorme, TomTom, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, GIS User Community'
+                    },
+                    'esri-street-tiles': {
+                        type: 'raster',
+                        tiles: [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+                        ],
+                        tileSize: 256,
+                        maxzoom: 19,
+                        attribution: '&copy; Esri, HERE, Garmin, USGS, NGA, EPA, USDA, NPS'
+                    },
+                    'esri-imagery-tiles': {
+                        type: 'raster',
+                        tiles: [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                        ],
+                        tileSize: 256,
+                        maxzoom: 19,
+                        attribution: '&copy; Esri, Maxar, Earthstar Geographics, GIS User Community'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1973,11 +1991,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'carto-voyager-layer',
+                        id: 'esri-topo-layer',
                         type: 'raster',
-                        source: 'carto-voyager-tiles',
+                        source: 'esri-topo-tiles',
                         minzoom: 0,
-                        maxzoom: 22
+                        maxzoom: 22,
+                        layout: {
+                            visibility: 'visible'
+                        }
+                    },
+                    {
+                        id: 'esri-street-layer',
+                        type: 'raster',
+                        source: 'esri-street-tiles',
+                        minzoom: 0,
+                        maxzoom: 22,
+                        layout: {
+                            visibility: 'none'
+                        }
+                    },
+                    {
+                        id: 'esri-imagery-layer',
+                        type: 'raster',
+                        source: 'esri-imagery-tiles',
+                        minzoom: 0,
+                        maxzoom: 22,
+                        layout: {
+                            visibility: 'none'
+                        }
                     },
                     // 1. Límites Parroquiales (62 Parroquias de Estudio en Pichincha)
                     {
@@ -2452,6 +2493,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     mostrarToast('Mostrando todos los sectores y encuestas', 'info');
                 }
+            };
+        }
+
+        // Conectar selector interactivo de Mapa Base (Topográfico / Calles / Satélite)
+        if (UI.toggleBasemap) {
+            UI.toggleBasemap.onclick = () => {
+                const mapas = ['topo', 'calles', 'satelite'];
+                const idx = mapas.indexOf(AppState.tipoMapaBase);
+                const nuevo = mapas[(idx + 1) % mapas.length];
+                AppState.tipoMapaBase = nuevo;
+
+                const visTopo = nuevo === 'topo' ? 'visible' : 'none';
+                const visStreet = nuevo === 'calles' ? 'visible' : 'none';
+                const visImagery = nuevo === 'satelite' ? 'visible' : 'none';
+
+                if (map.getLayer('esri-topo-layer')) map.setLayoutProperty('esri-topo-layer', 'visibility', visTopo);
+                if (map.getLayer('esri-street-layer')) map.setLayoutProperty('esri-street-layer', 'visibility', visStreet);
+                if (map.getLayer('esri-imagery-layer')) map.setLayoutProperty('esri-imagery-layer', 'visibility', visImagery);
+
+                const config = {
+                    topo: { text: '🗺️ Topográfico', toast: 'Mapa base cambiado a: Topográfico Esri (con relieve y curvas)' },
+                    calles: { text: '🛣️ Calles', toast: 'Mapa base cambiado a: Calles y Vías Esri' },
+                    satelite: { text: '🛰️ Satélite', toast: 'Mapa base cambiado a: Imagen Satelital Esri' }
+                };
+
+                if (UI.lblToggleBasemap) {
+                    UI.lblToggleBasemap.textContent = config[nuevo].text;
+                }
+                mostrarToast(config[nuevo].toast, 'info');
             };
         }
     }
