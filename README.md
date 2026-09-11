@@ -9,7 +9,7 @@ Sistema integral de visualización geoespacial y seguimiento en tiempo real de o
 - **🗺️ Motor WebGL Nativo (GPU):**
   - Renderizado fluido a 60 FPS sin glitches ni parpadeos.
   - Cero dependencias de API keys externas con mosaicos cartográficos de alta velocidad.
-  - Capas vectoriales de **Límites Parroquiales (36 parroquias)** y **Sectores Censales (77 sectores de Cuenca)**.
+  - Capas vectoriales de **62 parroquias** y **160 sectores censales sorteados** de Quito, Cayambe, Mejía y Rumiñahui.
   - Aislamiento visual automático y auto-zoom cinemático por sector con enlace directo a **Google Maps Navigation**.
 
 - **📊 Tablero de Control y KPIs:**
@@ -55,9 +55,9 @@ Sistema integral de visualización geoespacial y seguimiento en tiempo real de o
    Configura tus credenciales de KoboToolbox en .env:
    `ini
    PORT=3001
-   KOBO_API_TOKEN=tu_token_de_kobotoolbox
-   KOBO_ASSET_UID=tu_asset_uid
-   KOBO_SERVER_URL=https://kf.kobotoolbox.org
+   ASSET_ID_PICHINCHA=tu_asset_uid
+   API_TOKEN=tu_token_de_kobotoolbox
+   META_ENCUESTAS=1600
    `
 
 4. **Iniciar el servidor local:**
@@ -78,7 +78,7 @@ Sistema integral de visualización geoespacial y seguimiento en tiempo real de o
 ├── public/
 │   ├── assets/
 │   │   ├── parroquias.geojson        # Capa de parroquias cantonales
-│   │   └── sectores_censales.geojson # Capa de 77 sectores censales
+│   │   └── sectores_censales.geojson # 160 sectores sorteados de Pichincha
 │   ├── fonts/                         # Glifos vectoriales PBF locales
 │   ├── libs/
 │   │   ├── maplibre-gl.js            # Motor WebGL MapLibre

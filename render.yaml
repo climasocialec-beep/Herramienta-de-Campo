@@ -15,10 +15,10 @@ services:
       - key: NOMBRE_PROYECTO
         value: Encuesta Pichincha 2026
       - key: CAMPO_ENCUESTADOR
-        value: C_digo_encuestador
+        value: cenc
       - key: CAMPO_SUPERVISOR
-        value: C_digo_Supervisor
+        value: csup
       - key: META_ENCUESTAS
-        value: 2500
+        value: 1600
       - key: CACHE_TTL_SEGUNDOS
         value: 90

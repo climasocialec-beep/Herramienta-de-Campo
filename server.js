@@ -35,6 +35,8 @@ const PORT = Number(process.env.PORT) || 3001;
 // Cualquier variable heredada de proyectos anteriores queda desactivada.
 const ASSET_ID = limpiarVar(process.env.ASSET_ID_PICHINCHA || "");
 const API_TOKEN = limpiarVar(process.env.API_TOKEN || "");
+const CAMPO_ENCUESTADOR = limpiarVar(process.env.CAMPO_ENCUESTADOR) || "cenc";
+const CAMPO_SUPERVISOR = limpiarVar(process.env.CAMPO_SUPERVISOR) || "csup";
 const LIMITE_POR_PAGINA = 500;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;
@@ -92,17 +94,21 @@ let cache = {
 
 function extraerValor(obj, claves) {
     if (!obj || typeof obj !== "object") return "";
+    const valorTexto = value => value === undefined || value === null || typeof value === "object"
+        ? "" : String(value).trim();
     for (let i = 0; i < claves.length; i++) {
         const k = claves[i];
-        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return String(obj[k]).trim();
+        const valor = valorTexto(obj[k]);
+        if (valor) return valor;
     }
     const keys = Object.keys(obj);
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
         for (let j = 0; j < claves.length; j++) {
             const k = claves[j];
-            if (key.endsWith("/" + k) && obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
-                return String(obj[key]).trim();
+            const valor = valorTexto(obj[key]);
+            if (key.endsWith("/" + k) && valor) {
+                return valor;
             }
         }
         if (typeof obj[key] === "object" && obj[key] !== null) {
@@ -113,6 +119,15 @@ function extraerValor(obj, claves) {
     return "";
 }
 
+function normalizarCoordenadas(valores) {
+    if (!Array.isArray(valores) || valores.length < 2) return null;
+    const par = valores.slice(0, 2);
+    if (par.some(v => (typeof v !== "number" && typeof v !== "string") || String(v).trim() === "")) return null;
+    const [lat, lng] = par.map(Number);
+    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+        ? [lat, lng] : null;
+}
+
 function normalizarEncuesta(raw) {
     const id = raw._id || "";
     const submissionTime = raw._submission_time || "";
@@ -120,46 +135,37 @@ function normalizarEncuesta(raw) {
     const end = raw.end || extraerValor(raw, ["end", "fin"]) || "";
     
     // Geolocation
-    let geo = null;
-    if (Array.isArray(raw._geolocation) && raw._geolocation.length >= 2 && raw._geolocation[0] !== null) {
-        geo = [Number(raw._geolocation[0]), Number(raw._geolocation[1])];
+    let geo = normalizarCoordenadas(raw._geolocation);
+    if (!geo) {
+        const gps = extraerValor(raw, ["gps"]);
+        if (gps) geo = normalizarCoordenadas(gps.split(/\s+/));
     }
 
-    const campoEnc = process.env.CAMPO_ENCUESTADOR || "codencu";
-    const campoSup = process.env.CAMPO_SUPERVISOR || "codsup";
+    const campoEnc = CAMPO_ENCUESTADOR;
+    const campoSup = CAMPO_SUPERVISOR;
 
-    let encuestador = extraerValor(raw, [campoEnc, "codencu", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
-    let supervisor = extraerValor(raw, [campoSup, "codsup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
+    let encuestador = extraerValor(raw, [campoEnc, "cenc", "codencu", "cod_encu", "cod_enc", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
+    let supervisor = extraerValor(raw, [campoSup, "csup", "codsup", "cod_sup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
 
-    // Bloqueo estricto: Solo existen Supervisores 1 y 2 (corrección de códigos ingresados al revés)
-    let sSup = String(supervisor || "").trim();
-    let sEnc = String(encuestador || "").trim();
-    if (sSup !== "1" && sSup !== "2") {
-        if (sEnc === "1" || sEnc === "2") {
-            supervisor = sEnc;
-            encuestador = sSup;
-        } else {
-            const equipo1 = ["3", "4", "5", "6"];
-            const equipo2 = ["7", "8", "9", "10"];
-            if (equipo1.includes(sEnc)) {
-                supervisor = "1";
-            } else if (equipo2.includes(sEnc)) {
-                supervisor = "2";
-            }
-        }
-    }
-
-    const sc = extraerValor(raw, ["p_ref", "sc", "codigo_sc", "sector_censal"]);
-    const tipologia = (extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipo_sc"]) || "").toUpperCase();
-    const barrio = extraerValor(raw, ["barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
+    const sc = extraerValor(raw, ["sectorcen", "p_ref", "sc", "codigo_sc", "sector_censal"]);
+    const rawTipologia = extraerValor(raw, ["tipologia", "TIPOLOGIA", "tipol", "tipo_sc"]).toUpperCase();
+    const tipologiasFormulario = { "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H" };
+    const tipologia = tipologiasFormulario[rawTipologia] || rawTipologia;
+    const barrio = extraerValor(raw, ["barr", "barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
     
     // Parroquia: extracción tolerante (nombre o código)
     const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
     const parroquia = String(rawParroquia).trim().toUpperCase();
 
     // Cantón: extracción tolerante
-    const rawCanton = extraerValor(raw, ["canton", "CANTON", "nom_canton", "cod_canton", "can"]) || "";
-    const canton = String(rawCanton).trim();
+    const rawCanton = extraerValor(raw, ["canton", "CANTON", "cant", "nom_canton", "cod_canton", "can"]) || "";
+    // El XLSForm vigente usa 60/80/90/100; se conservan 1–4 para no romper
+    // registros históricos que pudieran seguir llegando desde una versión anterior.
+    const cantonesFormulario = {
+        "1": "Quito", "2": "Rumiñahui", "3": "Cayambe", "4": "Mejía",
+        "60": "Quito", "80": "Rumiñahui", "90": "Cayambe", "100": "Mejía"
+    };
+    const canton = cantonesFormulario[rawCanton] || String(rawCanton).trim();
 
     // Circunscripción (compatibilidad)
     const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]) || "";
@@ -239,20 +245,36 @@ async function obtenerDatosKobo() {
     }
 
     cache.enProceso = (async () => {
-        let url = `https://kf.kobotoolbox.org/api/v2/assets/${encodeURIComponent(ASSET_ID)}/data/?limit=${LIMITE_POR_PAGINA}`;
+        const origenKobo = new URL(`https://kf.kobotoolbox.org/api/v2/assets/${encodeURIComponent(ASSET_ID)}/data/`);
+        let url = `${origenKobo.href}?limit=${LIMITE_POR_PAGINA}`;
         const resultadosRaw = [];
-        let total = 0;
+        const paginasVisitadas = new Set();
+        let total = null;
 
         while (url) {
+            const pagina = new URL(url, origenKobo);
+            if (pagina.origin !== origenKobo.origin || pagina.pathname !== origenKobo.pathname || pagina.username || pagina.password || paginasVisitadas.has(pagina.href)) {
+                throw new Error("Paginación de Kobo inválida: destino ajeno al formulario o página repetida.");
+            }
+            paginasVisitadas.add(pagina.href);
+            url = pagina.href;
             const respuesta = await fetchConReintento(url, {
                 headers: { Authorization: `Token ${API_TOKEN}` },
                 timeout: TIMEOUT_MS,
-                maxRedirects: 5
+                maxRedirects: 0
             });
 
-            total = respuesta.data.count;
-            resultadosRaw.push(...respuesta.data.results);
-            url = respuesta.data.next;
+            const data = respuesta.data;
+            if (!data || !Array.isArray(data.results) || !Number.isInteger(data.count) || data.count < 0 ||
+                (data.next !== null && data.next !== undefined && typeof data.next !== "string")) {
+                throw new Error("Respuesta de Kobo inválida: estructura de paginación no reconocida.");
+            }
+            total = data.count;
+            resultadosRaw.push(...data.results);
+            url = data.next;
+        }
+        if (resultadosRaw.length !== total) {
+            throw new Error("Respuesta de Kobo incompleta: el conteo no coincide con las boletas recibidas.");
         }
 
         // Normalización ultra-ligera en memoria: reduce payload en un 95%
@@ -293,9 +315,9 @@ app.get("/api/config", (req, res) => {
     let nombre = process.env.NOMBRE_PROYECTO || "Encuesta Pichincha 2026";
     res.json({
         nombreProyecto: nombre,
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 1000,
-        campoEncuestador: process.env.CAMPO_ENCUESTADOR || "cod_encu",
-        campoSupervisor: process.env.CAMPO_SUPERVISOR || "cod_sup",
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 1600,
+        campoEncuestador: CAMPO_ENCUESTADOR,
+        campoSupervisor: CAMPO_SUPERVISOR,
         centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.4678,
         centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -0.1807,
         zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 11
