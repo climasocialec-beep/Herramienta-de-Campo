@@ -1825,16 +1825,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
-                    'carto-tiles': {
+                    'esri-tiles': {
                         type: 'raster',
                         tiles: [
-                            'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                            'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                            'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
                         ],
                         tileSize: 256,
-                        maxzoom: 19,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        maxzoom: 23,
+                        attribution: 'Fuentes: Esri, HERE, Garmin, USGS, OpenStreetMap y la comunidad GIS'
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1855,9 +1853,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'carto-layer',
+                        id: 'esri-layer',
                         type: 'raster',
-                        source: 'carto-tiles',
+                        source: 'esri-tiles',
                         minzoom: 0,
                         maxzoom: 22
                     },
