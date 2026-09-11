@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=4.2.0">
+  <link rel="stylesheet" href="style.css?v=4.3.0">
 </head>
 <body>
 
@@ -358,7 +358,27 @@
           </div>
 
           <button type="button" class="cs-locate-btn" id="locateBtn" title="Centrar en mi ubicación GPS" aria-label="Centrar ubicación GPS">
-            <svg class="cs-icon cs-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            <svg class="cs-locate-pegman-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true">
+              <!-- Cabeza con visera -->
+              <circle cx="12" cy="5" r="3.2" fill="#fcd34d"/>
+              <path d="M9 4.2C9.5 2.5 10.6 1.8 12 1.8C13.4 1.8 14.5 2.5 15 4.2H9Z" fill="#0f172a"/>
+              <path d="M8.8 4.6H15.8C16.4 4.6 16.8 5.1 16 5.3L14.8 5.6H9.2L8.8 4.6Z" fill="#f26419"/>
+              <!-- Chaleco naranja Clima Social -->
+              <path d="M8 9.2C8 8.4 8.8 7.8 9.6 7.8H14.4C15.2 7.8 16 8.4 16 9.2V15.5H8V9.2Z" fill="#f26419"/>
+              <rect x="8" y="12" width="8" height="1.4" fill="#fef08a"/>
+              <!-- Brazos -->
+              <path d="M8 9.5L6 13C5.6 13.6 6 14.4 6.8 14.4L8 14.2" stroke="#f26419" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M16 9.5L18 13C18.4 13.6 18 14.4 17.2 14.4L16 14.2" stroke="#f26419" stroke-width="1.6" stroke-linecap="round"/>
+              <!-- Manos -->
+              <circle cx="6.4" cy="14" r="0.9" fill="#fcd34d"/>
+              <circle cx="17.6" cy="14" r="0.9" fill="#fcd34d"/>
+              <!-- Piernas y Pantalón -->
+              <rect x="9.2" y="15.5" width="2.4" height="6" rx="1.2" fill="#1e293b"/>
+              <rect x="12.4" y="15.5" width="2.4" height="6" rx="1.2" fill="#1e293b"/>
+              <!-- Zapatos -->
+              <ellipse cx="9.8" cy="21.8" rx="1.8" ry="1.1" fill="#0f172a"/>
+              <ellipse cx="14.2" cy="21.8" rx="1.8" ry="1.1" fill="#0f172a"/>
+            </svg>
           </button>
         </div>
 
@@ -482,11 +502,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=4.2.0"></script>
+  <script src="script.js?v=4.3.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=3').catch(error => {
+        navigator.serviceWorker.register('/service-worker.js?v=4').catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });
       });
