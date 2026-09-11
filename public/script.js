@@ -1825,14 +1825,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 version: 8,
                 glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
                 sources: {
-                    'esri-tiles': {
+                    // Dos capas ligeras: la base aporta contexto y la referencia solo nombres.
+                    // En el Galaxy A01 Core descargan ~63% menos que World Street Map.
+                    'esri-light-base': {
                         type: 'raster',
                         tiles: [
-                            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
                         ],
                         tileSize: 256,
                         maxzoom: 23,
                         attribution: 'Fuentes: Esri, HERE, Garmin, USGS, OpenStreetMap y la comunidad GIS'
+                    },
+                    'esri-light-reference': {
+                        type: 'raster',
+                        tiles: [
+                            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+                        ],
+                        tileSize: 256,
+                        maxzoom: 23
                     },
                     'parroquias-source': {
                         type: 'geojson',
@@ -1853,9 +1863,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 layers: [
                     {
-                        id: 'esri-layer',
+                        id: 'esri-light-base-layer',
                         type: 'raster',
-                        source: 'esri-tiles',
+                        source: 'esri-light-base',
+                        minzoom: 0,
+                        maxzoom: 22
+                    },
+                    {
+                        id: 'esri-light-reference-layer',
+                        type: 'raster',
+                        source: 'esri-light-reference',
                         minzoom: 0,
                         maxzoom: 22
                     },
