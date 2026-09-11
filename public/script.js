@@ -1587,7 +1587,14 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarPoligonosMapa(ajustarCamara);
         const encuestas = obtenerEncuestasFiltradas();
         actualizarKPIs(encuestas);
-        actualizarMapa(encuestas, ajustarCamara && AppState.sectorSeleccionado === 'Todos' && AppState.parroquiaSeleccionada === 'Todas');
+        // Los filtros territoriales definen la cámara mediante los polígonos.
+        // Así, una boleta previa de Quito nunca puede volver a centrar el mapa
+        // cuando se selecciona Cayambe, Mejía o Rumiñahui.
+        const hayFiltroTerritorial = AppState.cantonSeleccionado !== 'Todos'
+            || AppState.circunscripcionSeleccionada !== 'Todas'
+            || AppState.parroquiaSeleccionada !== 'Todas'
+            || AppState.sectorSeleccionado !== 'Todos';
+        actualizarMapa(encuestas, ajustarCamara && !hayFiltroTerritorial);
         actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
         actualizarPiramidePoblacional(encuestas);
