@@ -322,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pirámide Poblacional (Sexo y Edad)
         panelPiramide: document.getElementById('panelPiramide'),
         togglePiramide: document.getElementById('togglePiramide'),
+        subtextoPiramide: document.getElementById('subtextoPiramide'),
         tagHombres: document.getElementById('tagHombres'),
         tagMujeres: document.getElementById('tagMujeres'),
         filasPiramide: document.getElementById('filasPiramide'),
@@ -915,7 +916,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const mock = [];
         // 1. Sector 4 (Cayambe) -> 10 encuestas (COMPLETADO 10/10) - Amialy (20)
+        // 5 Hombres y 5 Mujeres distribuidos en cohortes de edad
+        const demoSec4 = [
+            { g: 'Hombre', e: 18 }, { g: 'Mujer', e: 24 },
+            { g: 'Hombre', e: 27 }, { g: 'Mujer', e: 35 },
+            { g: 'Hombre', e: 42 }, { g: 'Mujer', e: 49 },
+            { g: 'Hombre', e: 56 }, { g: 'Mujer', e: 63 },
+            { g: 'Hombre', e: 71 }, { g: 'Mujer', e: 22 }
+        ];
         for (let i = 1; i <= 10; i++) {
+            const d = demoSec4[i - 1];
             mock.push({
                 _id: `mock_sec4_${i}`,
                 _geolocation: [0.06239 + (Math.random() - 0.5) * 0.003, -78.13848 + (Math.random() - 0.5) * 0.003],
@@ -926,6 +936,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 parroquia: 'CAYAMBE',
                 supervisor: '5',
                 encuestador: '20',
+                genero: d.g,
+                sexo: d.g,
+                p1: d.g === 'Hombre' ? '1' : '2',
+                edad: d.e,
+                p2: d.e,
                 today: '2026-09-11',
                 _submission_time: new Date().toISOString(),
                 _esPrueba: true
@@ -933,7 +948,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Sector 13 (Cayambe) -> 5 encuestas (EN CURSO 5/10) - Ingrid (21)
+        // 3 Hombres y 2 Mujeres
+        const demoSec13 = [
+            { g: 'Hombre', e: 25 }, { g: 'Mujer', e: 32 },
+            { g: 'Hombre', e: 48 }, { g: 'Mujer', e: 54 },
+            { g: 'Hombre', e: 66 }
+        ];
         for (let i = 1; i <= 5; i++) {
+            const d = demoSec13[i - 1];
             mock.push({
                 _id: `mock_sec13_${i}`,
                 _geolocation: [0.05321 + (Math.random() - 0.5) * 0.003, -78.14518 + (Math.random() - 0.5) * 0.003],
@@ -944,6 +966,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 parroquia: 'CAYAMBE',
                 supervisor: '5',
                 encuestador: '21',
+                genero: d.g,
+                sexo: d.g,
+                p1: d.g === 'Hombre' ? '1' : '2',
+                edad: d.e,
+                p2: d.e,
                 today: '2026-09-11',
                 _submission_time: new Date().toISOString(),
                 _esPrueba: true
@@ -951,7 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Sector 28 (San José de Ayora) -> 3 encuestas (EN CURSO 3/10) - Pablo (22)
+        // 1 Hombre y 2 Mujeres
+        const demoSec28 = [
+            { g: 'Hombre', e: 30 }, { g: 'Mujer', e: 23 }, { g: 'Mujer', e: 55 }
+        ];
         for (let i = 1; i <= 3; i++) {
+            const d = demoSec28[i - 1];
             mock.push({
                 _id: `mock_sec28_${i}`,
                 _geolocation: [0.05735 + (Math.random() - 0.5) * 0.003, -78.13363 + (Math.random() - 0.5) * 0.003],
@@ -962,6 +994,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 parroquia: 'SAN JOSE DE AYORA',
                 supervisor: '5',
                 encuestador: '22',
+                genero: d.g,
+                sexo: d.g,
+                p1: d.g === 'Hombre' ? '1' : '2',
+                edad: d.e,
+                p2: d.e,
                 today: '2026-09-11',
                 _submission_time: new Date().toISOString(),
                 _esPrueba: true
@@ -3735,33 +3772,67 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     function extraerSexoYEdad(e) {
-        // 1. Sexo
+        if (!e) return { sexo: null, edad: null };
+
+        // 1. Sexo / Género (Detección directa y tolerante a variantes de formulario)
         let sexo = null;
-        const rawGen = String(
+        let rawGen = (
             e.genero ||
+            e.sexo ||
             e.p1 ||
             e.p_genero ||
-            e.sexo ||
+            e.p_sexo ||
+            e.filtro_genero ||
+            e.filtro_sexo ||
             e['1. ¿CUÁL ES SU GÉNERO?'] ||
             e['1._CU_L_ES_SU_G_NERO'] ||
             campo(e, 'genero') ||
+            campo(e, 'sexo') ||
             campo(e, 'p1') ||
             campo(e, 'p_genero') ||
-            campo(e, 'sexo') ||
             ''
-        ).toLowerCase().trim();
+        );
 
-        if (rawGen.includes('masc') || rawGen.includes('hombre') || rawGen === '1' || rawGen === 'h') {
+        if (!rawGen) {
+            const keys = Object.keys(e);
+            for (let i = 0; i < keys.length; i++) {
+                const k = keys[i].toLowerCase();
+                if (k.includes('genero') || k.includes('sexo') || k.endsWith('/p1') || k === 'p1') {
+                    rawGen = e[keys[i]];
+                    if (rawGen) break;
+                }
+            }
+        }
+
+        const genStr = String(rawGen || '').toLowerCase().trim();
+        if (genStr.includes('masc') || genStr.includes('hombre') || genStr === '1' || genStr === 'h') {
             sexo = 'Hombre';
-        } else if (rawGen.includes('fem') || rawGen.includes('mujer') || rawGen === '2' || rawGen === 'm') {
+        } else if (genStr.includes('fem') || genStr.includes('mujer') || genStr === '2' || genStr === 'm') {
             sexo = 'Mujer';
         }
 
-        // 2. Edad
+        // 2. Edad (Detección directa y numérica segura)
         let edad = null;
-        const rawEdad = (e.edad !== undefined && e.edad !== null && e.edad !== '')
-            ? e.edad
-            : (e.p2 || e.p_edad || e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] || e['2._CU_L_ES_SU_EDAD_edad_cumplida_en_a_os'] || campo(e, 'p2') || campo(e, 'edad') || campo(e, 'p_edad'));
+        let rawEdad = (
+            e.edad !== undefined ? e.edad :
+            e.p2 !== undefined ? e.p2 :
+            e.p_edad !== undefined ? e.p_edad :
+            e.filtro_edad !== undefined ? e.filtro_edad :
+            e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] !== undefined ? e['2. ¿CUÁL ES SU EDAD? (edad cumplida en años)'] :
+            campo(e, 'edad') !== undefined ? campo(e, 'edad') :
+            campo(e, 'p2')
+        );
+
+        if (rawEdad === undefined || rawEdad === null || rawEdad === '') {
+            const keys = Object.keys(e);
+            for (let i = 0; i < keys.length; i++) {
+                const k = keys[i].toLowerCase();
+                if (k.includes('edad') || k.endsWith('/p2') || k === 'p2') {
+                    rawEdad = e[keys[i]];
+                    if (rawEdad !== undefined && rawEdad !== null && rawEdad !== '') break;
+                }
+            }
+        }
 
         if (rawEdad !== undefined && rawEdad !== null && rawEdad !== '') {
             const n = parseInt(rawEdad, 10);
@@ -3785,7 +3856,7 @@ document.addEventListener('DOMContentLoaded', () => {
             conteo[c.id] = { hombres: 0, mujeres: 0 };
         });
 
-        const total = encuestas.length;
+        const total = encuestas ? encuestas.length : 0;
         for (let i = 0; i < total; i++) {
             const { sexo, edad } = extraerSexoYEdad(encuestas[i]);
             if (sexo && edad !== null) {
@@ -3815,10 +3886,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.tagHombres) UI.tagHombres.textContent = `♂ ${pctHombres}% (${totalHombres})`;
         if (UI.tagMujeres) UI.tagMujeres.textContent = `♀ ${pctMujeres}% (${totalMujeres})`;
 
+        // Subtítulo contextual reactivo al sector o filtro activo
+        if (UI.subtextoPiramide) {
+            if (AppState.sectorSeleccionado && AppState.sectorSeleccionado !== 'Todos') {
+                const scLimpio = AppState.sectorSeleccionado.includes('_') 
+                    ? AppState.sectorSeleccionado.split('_')[1] 
+                    : AppState.sectorSeleccionado;
+                UI.subtextoPiramide.textContent = `(Sector ${scLimpio} · ${total} encuestas)`;
+                // Asegurar que la pirámide esté abierta al enfocar un sector
+                if (UI.panelPiramide && UI.panelPiramide.classList.contains('collapsed')) {
+                    UI.panelPiramide.classList.remove('collapsed');
+                    if (UI.togglePiramide) UI.togglePiramide.setAttribute('aria-expanded', 'true');
+                }
+            } else if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+                UI.subtextoPiramide.textContent = `(${AppState.parroquiaSeleccionada} · ${total} encuestas)`;
+            } else {
+                UI.subtextoPiramide.textContent = `(Total · ${total} encuestas)`;
+            }
+        }
+
         if (total === 0 || conRegistroValido === 0) {
             UI.filasPiramide.innerHTML = `
                 <div style="text-align:center; padding:0.6rem; color:var(--text-secondary); font-size:0.68rem;">
-                    Sin registros de edad y sexo en la selección activa
+                    Sin registros demográficos (sexo/edad) en el sector seleccionado
                 </div>
             `;
             return;

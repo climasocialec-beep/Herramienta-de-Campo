@@ -405,7 +405,7 @@
               <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 22h20L12 2z"/>
               </svg>
-              <span>Pirámide Poblacional <span class="cs-piramide-subtext">(Sexo y Edad)</span></span>
+              <span>Pirámide Poblacional <span class="cs-piramide-subtext" id="subtextoPiramide">(Sexo y Edad)</span></span>
             </div>
             <div class="cs-piramide-summary" id="piramideResumen">
               <span class="cs-piramide-tag cs-piramide-tag--hombres" id="tagHombres">♂ 0% (0)</span>
@@ -507,11 +507,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=4.4.0"></script>
+  <script src="script.js?v=4.5.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=5').catch(error => {
+        navigator.serviceWorker.register('/service-worker.js?v=6').catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });
       });
