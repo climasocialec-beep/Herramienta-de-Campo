@@ -1687,10 +1687,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function obtenerMetaActiva() {
         const METAS_CANTON = {
-            'Quito': 700,
-            'Cayambe': 300,
-            'Mejía': 300,
-            'Rumiñahui': 300
+            'QUITO': 700,
+            'CAYAMBE': 300,
+            'MEJIA': 300,
+            'RUMINAHUI': 300
         };
 
         // 1. Filtro por Sector Censal Sorteado (cuota: 10 encuestas)
@@ -1707,12 +1707,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Filtro por Parroquia (número de sectores en esa parroquia × 10)
         if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
             let numSectores = 0;
+            const targetP = normTexto(AppState.parroquiaSeleccionada);
             if (AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
                 numSectores = AppState.sectoresGeojson.features.filter(f => {
                     const props = f.properties || {};
-                    const p = normalizarTexto(props.parroquia || props.PARROQUIA || props.nom_par || '');
-                    const target = normalizarTexto(AppState.parroquiaSeleccionada);
-                    return p === target;
+                    const p = normTexto(props.parroquia || props.PARROQUIA || props.nom_par || '');
+                    return p === targetP;
                 }).length;
             }
             const metaParr = Math.max(10, (numSectores || 1) * 10);
@@ -1727,16 +1727,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. Filtro por Cantón (Quito: 700, Cayambe: 300, Mejía: 300, Rumiñahui: 300)
         if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
-            let numSectores = 0;
-            if (AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
-                numSectores = AppState.sectoresGeojson.features.filter(f => {
+            const cNorm = normTexto(AppState.cantonSeleccionado);
+            let metaCanton = METAS_CANTON[cNorm];
+            if (!metaCanton && AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
+                const numSecs = AppState.sectoresGeojson.features.filter(f => {
                     const props = f.properties || {};
-                    const c = normalizarTexto(props.canton || props.CANTON || props.nom_can || '');
-                    const target = normalizarTexto(AppState.cantonSeleccionado);
-                    return c === target;
+                    const c = normTexto(props.canton || props.CANTON || props.nom_can || '');
+                    return c === cNorm;
                 }).length;
+                if (numSecs > 0) metaCanton = numSecs * 10;
             }
-            const metaCanton = numSectores > 0 ? (numSectores * 10) : (METAS_CANTON[AppState.cantonSeleccionado] || 300);
+            metaCanton = metaCanton || 300;
             return {
                 meta: metaCanton,
                 etiquetaMeta: `Meta: ${metaCanton.toLocaleString()} (${AppState.cantonSeleccionado})`,
