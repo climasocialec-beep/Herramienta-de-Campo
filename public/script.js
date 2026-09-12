@@ -271,7 +271,10 @@ document.addEventListener('DOMContentLoaded', () => {
         kpiTotal: document.getElementById('kpiTotal'),
         kpiHoy: document.getElementById('kpiHoy'),
         kpiPendientes: document.getElementById('kpiPendientes'),
+        kpiSubPendientes: document.getElementById('kpiSubPendientes'),
         kpiAvance: document.getElementById('kpiAvance'),
+        kpiTituloAvance: document.getElementById('kpiTituloAvance'),
+        kpiSubAvance: document.getElementById('kpiSubAvance'),
         barraAvance: document.getElementById('barraAvance'),
         kpiMeta: document.getElementById('kpiMeta'),
         
@@ -1680,11 +1683,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
+    // DETERMINAR META ACTIVA SEGÚN FILTRO TERRITORIAL (CANTÓN / PARROQUIA / SECTOR)
+    // =========================================================================
+    function obtenerMetaActiva() {
+        const METAS_CANTON = {
+            'Quito': 700,
+            'Cayambe': 300,
+            'Mejía': 300,
+            'Rumiñahui': 300
+        };
+
+        // 1. Filtro por Sector Censal Sorteado (cuota: 10 encuestas)
+        if (AppState.sectorSeleccionado && AppState.sectorSeleccionado !== 'Todos') {
+            return {
+                meta: 10,
+                etiquetaMeta: `Meta: 10 (Sector ${AppState.sectorSeleccionado})`,
+                subPendientes: `Para completar Sector ${AppState.sectorSeleccionado}`,
+                tituloAvance: `Avance Sector`,
+                subAvance: `Cuota sectorial (10 encuestas)`
+            };
+        }
+
+        // 2. Filtro por Parroquia (número de sectores en esa parroquia × 10)
+        if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+            let numSectores = 0;
+            if (AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
+                numSectores = AppState.sectoresGeojson.features.filter(f => {
+                    const props = f.properties || {};
+                    const p = normalizarTexto(props.parroquia || props.PARROQUIA || props.nom_par || '');
+                    const target = normalizarTexto(AppState.parroquiaSeleccionada);
+                    return p === target;
+                }).length;
+            }
+            const metaParr = Math.max(10, (numSectores || 1) * 10);
+            return {
+                meta: metaParr,
+                etiquetaMeta: `Meta: ${metaParr.toLocaleString()} (${AppState.parroquiaSeleccionada})`,
+                subPendientes: `Para meta en ${AppState.parroquiaSeleccionada}`,
+                tituloAvance: `Avance Parroquia`,
+                subAvance: `${numSectores || 1} sectores (${metaParr} encuestas)`
+            };
+        }
+
+        // 3. Filtro por Cantón (Quito: 700, Cayambe: 300, Mejía: 300, Rumiñahui: 300)
+        if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
+            let numSectores = 0;
+            if (AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
+                numSectores = AppState.sectoresGeojson.features.filter(f => {
+                    const props = f.properties || {};
+                    const c = normalizarTexto(props.canton || props.CANTON || props.nom_can || '');
+                    const target = normalizarTexto(AppState.cantonSeleccionado);
+                    return c === target;
+                }).length;
+            }
+            const metaCanton = numSectores > 0 ? (numSectores * 10) : (METAS_CANTON[AppState.cantonSeleccionado] || 300);
+            return {
+                meta: metaCanton,
+                etiquetaMeta: `Meta: ${metaCanton.toLocaleString()} (${AppState.cantonSeleccionado})`,
+                subPendientes: `Para meta en ${AppState.cantonSeleccionado}`,
+                tituloAvance: `Avance ${AppState.cantonSeleccionado}`,
+                subAvance: `Meta cantonal (${metaCanton.toLocaleString()})`
+            };
+        }
+
+        // 4. Ámbito General (Toda la provincia de Pichincha)
+        const metaProvincial = AppState.config.metaEncuestas || 1600;
+        return {
+            meta: metaProvincial,
+            etiquetaMeta: `Meta: ${metaProvincial.toLocaleString()} (Pichincha)`,
+            subPendientes: `Faltan para la meta total`,
+            tituloAvance: `Avance General`,
+            subAvance: `Cumplimiento provincial (${metaProvincial.toLocaleString()})`
+        };
+    }
+
+    // =========================================================================
     // KPIS
     // =========================================================================
     function actualizarKPIs(encuestas) {
         const total = encuestas.length;
-        const meta = AppState.config.metaEncuestas || 1600;
+        const infoMeta = obtenerMetaActiva();
+        const meta = infoMeta.meta;
         
         const hoyStr = obtenerFechaLocalEcuador();
         const hoy = encuestas.filter(e => {
@@ -1693,11 +1772,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }).length;
         
         const pendientes = Math.max(0, meta - total);
-        const avancePorcentaje = ((total / meta) * 100).toFixed(1);
+        const avancePorcentaje = meta > 0 ? ((total / meta) * 100).toFixed(1) : '0.0';
 
         animarNumero(UI.kpiTotal, total);
         animarNumero(UI.kpiHoy, hoy);
         animarNumero(UI.kpiPendientes, pendientes);
+        
+        if (UI.kpiMeta) UI.kpiMeta.textContent = infoMeta.etiquetaMeta;
+        if (UI.kpiSubPendientes) UI.kpiSubPendientes.textContent = infoMeta.subPendientes;
+        if (UI.kpiTituloAvance) UI.kpiTituloAvance.textContent = infoMeta.tituloAvance;
+        if (UI.kpiSubAvance) UI.kpiSubAvance.textContent = infoMeta.subAvance;
         
         if (UI.kpiAvance) UI.kpiAvance.textContent = `${avancePorcentaje}%`;
         if (UI.barraAvance) UI.barraAvance.style.width = `${Math.min(100, parseFloat(avancePorcentaje))}%`;
@@ -3903,6 +3987,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.sectorSeleccionado = 'Todos';
                 poblarFiltros();
                 renderizarVista(true, true);
+                const METAS_MAP = { 'Quito': 700, 'Cayambe': 300, 'Mejía': 300, 'Rumiñahui': 300 };
+                if (AppState.cantonSeleccionado !== 'Todos') {
+                    const m = METAS_MAP[AppState.cantonSeleccionado] || 300;
+                    mostrarToast(`Filtrando por ${AppState.cantonSeleccionado} · Meta: ${m.toLocaleString()} encuestas`, 'info');
+                } else {
+                    mostrarToast('Mostrando todos los cantones · Meta: 1,600 encuestas', 'info');
+                }
             });
         }
 
@@ -3927,6 +4018,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
                 poblarFiltros();
                 renderizarVista(true, true);
+                const METAS_MAP = { 'Quito': 700, 'Cayambe': 300, 'Mejía': 300, 'Rumiñahui': 300 };
+                if (AppState.cantonSeleccionado !== 'Todos') {
+                    const m = METAS_MAP[AppState.cantonSeleccionado] || 300;
+                    mostrarToast(`Filtrando por ${AppState.cantonSeleccionado} · Meta: ${m.toLocaleString()} encuestas`, 'info');
+                } else {
+                    mostrarToast('Mostrando todos los cantones · Meta: 1,600 encuestas', 'info');
+                }
             });
         }
 
