@@ -3121,44 +3121,84 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <!-- Sombra de los pies en el suelo -->
                                 <ellipse cx="18" cy="45" rx="8" ry="2.5" fill="rgba(15,23,42,0.4)"/>
                                 
-                                <!-- Piernas y Zapatos -->
-                                <rect x="13" y="29" width="4" height="13" rx="2" fill="#1e293b"/>
-                                <ellipse cx="14" cy="42.5" rx="3.5" ry="2" fill="#0f172a"/>
-                                <ellipse cx="14" cy="43.5" rx="3" ry="0.8" fill="#ffffff" opacity="0.8"/>
+                                <!-- Piernas: Jeans azul moderno -->
+                                <rect x="13" y="29" width="4" height="13" rx="2" fill="#2563eb"/>
+                                <rect x="13" y="39.5" width="4" height="2.5" rx="1" fill="#1d4ed8"/>
+                                <!-- Zapato izquierdo: Sneaker blanco con suela oscura -->
+                                <ellipse cx="14" cy="43" rx="3.5" ry="2" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
+                                <ellipse cx="14" cy="44" rx="3" ry="0.8" fill="#0f172a"/>
+                                <ellipse cx="14.5" cy="42.5" rx="1.5" ry="0.7" fill="#94a3b8"/>
                                 
-                                <rect x="19" y="29" width="4" height="13" rx="2" fill="#1e293b"/>
-                                <ellipse cx="22" cy="42.5" rx="3.5" ry="2" fill="#0f172a"/>
-                                <ellipse cx="22" cy="43.5" rx="3" ry="0.8" fill="#ffffff" opacity="0.8"/>
+                                <!-- Pierna derecha -->
+                                <rect x="19" y="29" width="4" height="13" rx="2" fill="#2563eb"/>
+                                <rect x="19" y="39.5" width="4" height="2.5" rx="1" fill="#1d4ed8"/>
+                                <!-- Zapato derecho: Sneaker blanco con suela oscura -->
+                                <ellipse cx="22" cy="43" rx="3.5" ry="2" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
+                                <ellipse cx="22" cy="44" rx="3" ry="0.8" fill="#0f172a"/>
+                                <ellipse cx="22.5" cy="42.5" rx="1.5" ry="0.7" fill="#94a3b8"/>
                                 
-                                <!-- Cuerpo / Chaleco de Encuestador Clima Social -->
-                                <path d="M11 16C11 14.5 12.5 13.5 14 13.5H22C23.5 13.5 25 14.5 25 16V28C25 29 24 30 23 30H13C12 30 11 29 11 28V16Z" fill="#f26419"/>
-                                <rect x="11" y="22" width="14" height="2.5" fill="#fef08a"/>
-                                <line x1="15" y1="13.5" x2="15" y2="22" stroke="#fef08a" stroke-width="1.5"/>
-                                <line x1="21" y1="13.5" x2="21" y2="22" stroke="#fef08a" stroke-width="1.5"/>
-                                <path d="M16 13.5L18 17L20 13.5" stroke="#ffffff" stroke-width="1.2" fill="none"/>
+                                <!-- Camiseta interior visible en cuello -->
+                                <path d="M15 14H21V16H15V14Z" fill="#0f172a"/>
+
+                                <!-- Cuerpo / Chaleco gris técnico de campo Clima Social -->
+                                <path d="M11 16C11 14.5 12.5 13.5 14 13.5H22C23.5 13.5 25 14.5 25 16V28C25 29 24 30 23 30H13C12 30 11 29 11 28V16Z" fill="#64748b" stroke="#334155" stroke-width="0.8"/>
+                                <!-- Cremallera central plateada -->
+                                <line x1="18" y1="14" x2="18" y2="30" stroke="#cbd5e1" stroke-width="0.9" stroke-dasharray="1 0.7"/>
+                                
+                                <!-- Bolsillos inferiores del chaleco con tiradores -->
+                                <rect x="12" y="23" width="4.5" height="5" rx="0.8" fill="#475569" stroke="#334155" stroke-width="0.5"/>
+                                <rect x="19.5" y="23" width="4.5" height="5" rx="0.8" fill="#475569" stroke="#334155" stroke-width="0.5"/>
+                                <line x1="12" y1="24.2" x2="16.5" y2="24.2" stroke="#334155" stroke-width="0.6"/>
+                                <line x1="19.5" y1="24.2" x2="24" y2="24.2" stroke="#334155" stroke-width="0.6"/>
+
+                                <!-- Bolsillo superior derecho con gafete -->
+                                <rect x="12" y="16" width="3.8" height="3.5" rx="0.6" fill="#475569" stroke="#334155" stroke-width="0.5"/>
+                                <rect x="12.6" y="16.8" width="2.6" height="1.8" rx="0.3" fill="#ffffff"/>
+                                <line x1="13" y1="17.7" x2="14.8" y2="17.7" stroke="#0284c7" stroke-width="0.5"/>
+
+                                <!-- ISOTIPO OFICIAL CLIMA SOCIAL EN EL PECHO (4 Nodos) -->
+                                <circle cx="21.6" cy="17.8" r="3.3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.4"/>
+                                <!-- Nodo Superior: Coral Red (#C23B49) -->
+                                <circle cx="21.6" cy="16.3" r="1.1" fill="#C23B49"/>
+                                <!-- Nodo Derecho: Slate Teal (#4F7E90) -->
+                                <circle cx="23.1" cy="17.8" r="1.1" fill="#4F7E90"/>
+                                <!-- Nodo Inferior: Amber Gold (#F0A200) -->
+                                <circle cx="21.6" cy="19.3" r="1.1" fill="#F0A200"/>
+                                <!-- Nodo Izquierdo: Deep Purple (#40004F) -->
+                                <circle cx="20.1" cy="17.8" r="1.1" fill="#40004F"/>
+                                <!-- Centro blanco nexus -->
+                                <circle cx="21.6" cy="17.8" r="0.65" fill="#ffffff"/>
 
                                 <!-- Brazo izquierdo con portapapeles de encuestas -->
-                                <path d="M11 16L7.5 22C7 23 7.5 24.5 8.5 24.5L11 24" stroke="#f26419" stroke-width="2.8" stroke-linecap="round"/>
+                                <path d="M11 16L7.5 22C7 23 7.5 24.5 8.5 24.5L11 24" stroke="#64748b" stroke-width="2.8" stroke-linecap="round"/>
                                 <rect x="4" y="20" width="6.5" height="8.5" rx="1" fill="#ffffff" stroke="#0f172a" stroke-width="0.8"/>
-                                <rect x="5.5" y="19" width="3.5" height="1.5" rx="0.5" fill="#f26419"/>
+                                <rect x="5.5" y="19" width="3.5" height="1.5" rx="0.5" fill="#0284c7"/>
                                 <line x1="5.5" y1="22.5" x2="9" y2="22.5" stroke="#64748b" stroke-width="0.8"/>
                                 <line x1="5.5" y1="24.5" x2="9" y2="24.5" stroke="#64748b" stroke-width="0.8"/>
                                 <line x1="5.5" y1="26.5" x2="8" y2="26.5" stroke="#64748b" stroke-width="0.8"/>
+                                <circle cx="10.2" cy="24.2" r="1.2" fill="#fcd34d"/>
 
-                                <!-- Brazo derecho saludando -->
-                                <path d="M25 16L28.5 21C29.2 22 28.5 23.5 27.5 23.5L25 23" stroke="#f26419" stroke-width="2.8" stroke-linecap="round"/>
-                                <circle cx="28" cy="23.5" r="1.5" fill="#fcd34d"/>
+                                <!-- Brazo derecho saludando (animado) -->
+                                <g class="cs-pegman-arm-waving">
+                                    <path d="M25 16L28.5 21C29.2 22 28.5 23.5 27.5 23.5L25 23" stroke="#64748b" stroke-width="2.8" stroke-linecap="round"/>
+                                    <circle cx="28" cy="23.5" r="1.5" fill="#fcd34d"/>
+                                </g>
 
                                 <!-- Cabeza y Rostro -->
+                                <rect x="16.5" y="12.5" width="3" height="2" fill="#fcd34d"/>
                                 <circle cx="18" cy="8.5" r="5.5" fill="#fcd34d"/>
-                                <circle cx="16.5" cy="8.5" r="0.7" fill="#0f172a"/>
-                                <circle cx="19.5" cy="8.5" r="0.7" fill="#0f172a"/>
-                                <path d="M16.8 10.5C17.2 11 18.8 11 19.2 10.5" stroke="#0f172a" stroke-width="0.7" stroke-linecap="round"/>
+                                <circle cx="16.5" cy="8.5" r="0.75" fill="#0f172a"/>
+                                <circle cx="16.3" cy="8.2" r="0.28" fill="#ffffff"/>
+                                <circle cx="19.5" cy="8.5" r="0.75" fill="#0f172a"/>
+                                <circle cx="19.3" cy="8.2" r="0.28" fill="#ffffff"/>
+                                <path d="M16.8 10.5C17.2 11.2 18.8 11.2 19.2 10.5" stroke="#0f172a" stroke-width="0.75" stroke-linecap="round"/>
+                                <circle cx="15.2" cy="9.8" r="0.8" fill="#f87171" opacity="0.45"/>
+                                <circle cx="20.8" cy="9.8" r="0.8" fill="#f87171" opacity="0.45"/>
 
-                                <!-- Gorrita de campo / visera Clima Social -->
-                                <path d="M12.5 7C13 4 15 3 18 3C21 3 23 4 23.5 7H12.5Z" fill="#0f172a"/>
-                                <path d="M12 7.5H24.5C25.5 7.5 26 8.2 25 8.5L23 9H13L12 7.5Z" fill="#f26419"/>
-                                <circle cx="18" cy="3" r="1" fill="#f26419"/>
+                                <!-- Gorrita de campo deportiva -->
+                                <path d="M12.5 7C13 4 15 3 18 3C21 3 23 4 23.5 7H12.5Z" fill="#334155"/>
+                                <path d="M12 7.5H24.5C25.5 7.5 26 8.2 25 8.5L23 9H13L12 7.5Z" fill="#0f172a"/>
+                                <circle cx="18" cy="3" r="1" fill="#4F7E90"/>
                             </svg>
                         `;
 
