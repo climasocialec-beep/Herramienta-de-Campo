@@ -745,6 +745,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await cargarDatos(AppState.encuestas.length === 0);
             
+            window.addEventListener('online', () => cargarDatos(false));
+
             // Auto-refresco inteligente (pausa si la pantalla se apaga o se cambia de app)
             AppState.intervaloPolling = setInterval(() => cargarDatos(false), 180000);
             
@@ -791,8 +793,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let reintentoDatos = null;
+
     async function cargarDatos(mostrarOverlay = false, forzarFresco = false) {
-        if (AppState.cargandoDatos) return;
+        if (AppState.cargandoDatos) return false;
+        clearTimeout(reintentoDatos);
+        reintentoDatos = null;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120000);
         AppState.cargandoDatos = true;
         if (mostrarOverlay && UI.cargaOverlay) UI.cargaOverlay.style.display = 'flex';
         ocultarError();
@@ -802,6 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const url = `/api/encuestas?_ts=${Date.now()}${forzarFresco ? '&fresh=1' : ''}`;
             const res = await fetch(url, {
+                signal: controller.signal,
                 cache: 'no-store',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -844,21 +853,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     UI.ultimaActualizacion.textContent = `Última sincronización: ${ahora.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil' })}`;
                 }
             }
+            return true;
         } catch (error) {
             console.error('Error cargando encuestas:', error);
             const hayDatosGuardados = Array.isArray(AppState.encuestas) && AppState.encuestas.length > 0;
             if (!hayDatosGuardados) {
                 mostrarError('No se pudieron cargar los datos de KoboToolbox.');
-            } else {
-                mostrarToast('Modo sin conexión: datos desde caché local', 'info');
             }
-            if (UI.badgeTexto) UI.badgeTexto.textContent = hayDatosGuardados ? 'Sin conexión · datos guardados' : 'Sin conexión';
+            if (UI.badgeTexto) UI.badgeTexto.textContent = 'Actualización pendiente';
             if (UI.ultimaActualizacion) {
                 UI.ultimaActualizacion.textContent = hayDatosGuardados
-                    ? 'Modo sin conexión · cartografía y última sincronización disponibles'
-                    : 'Modo sin conexión · cartografía disponible';
+                    ? 'No se pudo actualizar · mostrando los últimos datos disponibles. Reintentando en 30 s…'
+                    : 'No se pudo cargar la información. Reintentando en 30 s…';
             }
+            reintentoDatos = setTimeout(() => {
+                reintentoDatos = null;
+                if (!document.hidden) cargarDatos(false);
+            }, 30000);
+            return false;
         } finally {
+            clearTimeout(timeout);
             AppState.cargandoDatos = false;
             if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
         }
@@ -4013,10 +4027,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (icono) icono.classList.add('anim-girar');
                 mostrarToast('Sincronizando con KoboToolbox…', 'info');
                 try {
-                    await cargarDatos(false, true);
-                    mostrarToast('Datos sincronizados en vivo ✓', 'success');
+                    const actualizado = await cargarDatos(false, true);
+                    mostrarToast(
+                        actualizado ? 'Datos sincronizados en vivo ✓' : 'No se completó la actualización. Se reintentará automáticamente.',
+                        actualizado ? 'success' : 'info'
+                    );
                 } catch (e) {
-                    mostrarToast('No se pudo sincronizar en vivo. Usando datos locales.', 'error');
+                    mostrarToast('No se pudo completar la actualización.', 'error');
                 } finally {
                     if (icono) icono.classList.remove('anim-girar');
                 }
