@@ -48,14 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     const AppState = {
         config: {
-            nombreProyecto: 'Supervisión de Campo',
-            metaEncuestas: 1600,
-            campoEncuestador: 'cenc',
-            campoSupervisor: 'csup'
+            nombreProyecto: 'Encuesta Quito - Septiembre - 2026',
+            metaEncuestas: 1200,
+            campoEncuestador: 'encuestador',
+            campoSupervisor: 'supervisor'
         },
         encuestas: [],
         supervisorSeleccionado: 'Todos',
-        cantonSeleccionado: 'Todos',
+        cantonSeleccionado: 'Quito',
         circunscripcionSeleccionada: 'Todas', // Compatibilidad
         sectorSeleccionado: 'Todos',
         parroquiaSeleccionada: 'Todas',
@@ -133,33 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
         '#15803d'  // 24: Verde Pino
     ];
 
-    // Parroquias oficiales en estudio por cantón (Encuesta Pichincha 2026 - 62 parroquias)
+    // Parroquias oficiales en estudio (Encuesta Quito - Septiembre - 2026 - 48 parroquias)
     const PARROQUIAS_POR_CANTON = {
         'Quito': [
             'ALANGASI', 'AMAGUAÑA', 'BELISARIO QUEVEDO', 'CALDERON', 'CARCELEN',
-            'CENTRO HISTORICO', 'CHECA', 'CHILLOGALLO', 'CHIMBACALLE', 'COCHAPAMBA',
-            'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA', 'EL CONDADO', 'GUAMANI',
-            'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO', 'JIPIJAPA', 'KENNEDY',
-            'LA ARGELIA', 'LA ECUATORIANA', 'LA FERROVIARIA', 'LA MAGDALENA',
-            'LA MERCED', 'LLANO CHICO', 'NAYON', 'PIFO', 'PINTAG', 'POMASQUI',
-            'PUEMBO', 'QUINCHE', 'QUITUMBE', 'RUMIPAMBA', 'SAN ANTONIO',
-            'SAN BARTOLO', 'SAN ISIDRO DEL INCA', 'SAN JUAN', 'SOLANDA',
+            'CENTRO HISTORICO', 'CHILIBULO', 'CHILLOGALLO', 'CHIMBACALLE', 'COCHAPAMBA',
+            'COMITE DEL PUEBLO', 'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA', 'EL CONDADO',
+            'GUAMANI', 'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO', 'JIPIJAPA',
+            'KENNEDY', 'LA ARGELIA', 'LA CONCEPCION', 'LA ECUATORIANA', 'LA FERROVIARIA',
+            'LA LIBERTAD', 'LA MAGDALENA', 'LA MENA', 'LLANO CHICO', 'MARISCAL SUCRE',
+            'NAYON', 'PIFO', 'PINTAG', 'POMASQUI', 'PONCEANO',
+            'PUEMBO', 'PUENGASI', 'QUINCHE', 'QUITUMBE', 'RUMIPAMBA',
+            'SAN ANTONIO', 'SAN BARTOLO', 'SAN ISIDRO DEL INCA', 'SAN JUAN', 'SOLANDA',
             'TUMBACO', 'TURUBAMBA', 'YARUQUI'
-        ],
-        'Cayambe': [
-            'ASCAZUBI', 'CANGAHUA', 'CAYAMBE', 'JUAN MONTALVO', 'OLMEDO/PESILLO', 'OTON',
-            'SAN JOSE DE AYORA', 'STA.ROSA DE CUSUBAMBA'
-        ],
-        'Mejía': [
-            'ALOAG', 'ALOASI', 'CORNEJO ASTORGA /TANDAPI', 'CUTUGLAGUA',
-            'MACHACHI', 'TAMBILLO', 'UYUMBICHO'
-        ],
-        'Rumiñahui': [
-            'COTOGCHOA', 'FAJARDO', 'SAN PEDRO DE TABOADA', 'SAN RAFAEL', 'SANGOLQUI'
         ]
     };
 
-    // Paleta cromática oficial por Cantón (Encuesta Pichincha 2026)
+    // Paleta cromática oficial por Cantón (Encuesta Quito - Septiembre - 2026)
     const COLORES_CANTON = {
         'Quito': {
             nombre: 'Quito (D.M.)',
@@ -169,77 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
             label: '#1e40af',       // Texto legible oscuro con halo blanco
             badge: '🔵',
             hex: '#2563eb'
-        },
-        'Cayambe': {
-            nombre: 'Cayambe',
-            linea: '#059669',       // Verde Esmeralda
-            fill: '#10b981',        // Verde vivo
-            fillActive: '#047857',
-            label: '#065f46',
-            badge: '🟢',
-            hex: '#059669'
-        },
-        'Mejía': {
-            nombre: 'Mejía',
-            linea: '#ea580c',       // Naranja Fuego
-            fill: '#f97316',        // Naranja vivo
-            fillActive: '#c2410c',
-            label: '#9a3412',
-            badge: '🟠',
-            hex: '#ea580c'
-        },
-        'Rumiñahui': {
-            nombre: 'Rumiñahui',
-            linea: '#9333ea',       // Violeta Real
-            fill: '#a855f7',        // Violeta vivo
-            fillActive: '#6d28d9',
-            label: '#581c87',
-            badge: '🟣',
-            hex: '#9333ea'
         }
     };
 
-    // Expresiones MapLibre GL por cantón (Pintado vectorial diferenciado)
-    const EXPR_CANTON_PARROQUIAS_LINE = [
-        'match', ['get', 'canton'],
-        'Quito', '#2563eb',
-        'Cayambe', '#059669',
-        'Mejía', '#ea580c',
-        'Rumiñahui', '#9333ea',
-        '#7c3aed'
-    ];
-    const EXPR_CANTON_PARROQUIAS_LABEL = [
-        'match', ['get', 'canton'],
-        'Quito', '#1e40af',
-        'Cayambe', '#065f46',
-        'Mejía', '#9a3412',
-        'Rumiñahui', '#581c87',
-        '#581c87'
-    ];
-    const EXPR_CANTON_SECTORES_FILL = [
-        'match', ['get', 'canton'],
-        'Quito', '#3b82f6',
-        'Cayambe', '#10b981',
-        'Mejía', '#f97316',
-        'Rumiñahui', '#a855f7',
-        '#f59e0b'
-    ];
-    const EXPR_CANTON_SECTORES_LINE = [
-        'match', ['get', 'canton'],
-        'Quito', '#2563eb',
-        'Cayambe', '#059669',
-        'Mejía', '#ea580c',
-        'Rumiñahui', '#9333ea',
-        '#d97706'
-    ];
-    const EXPR_CANTON_SECTORES_LABEL = [
-        'match', ['get', 'canton'],
-        'Quito', '#1d4ed8',
-        'Cayambe', '#047857',
-        'Mejía', '#c2410c',
-        'Rumiñahui', '#6d28d9',
-        '#7c2d12'
-    ];
+    // Expresiones MapLibre GL (Pintado vectorial Quito)
+    const EXPR_CANTON_PARROQUIAS_LINE = '#2563eb';
+    const EXPR_CANTON_PARROQUIAS_LABEL = '#1e40af';
+    const EXPR_CANTON_SECTORES_FILL = '#3b82f6';
+    const EXPR_CANTON_SECTORES_LINE = '#2563eb';
+    const EXPR_CANTON_SECTORES_LABEL = '#1d4ed8';
 
     function obtenerColorEncuestador(enc) {
         if (enc === undefined || enc === null || enc === '') return '#64748b';
@@ -766,12 +694,12 @@ document.addEventListener('DOMContentLoaded', () => {
         configurarNavegacionMovil();
         configurarEventos();
 
-        // 1. Limpieza de caché previa y Boot Instantáneo Pichincha 2026
+        // 1. Limpieza de caché previa y Boot Instantáneo Quito 2026
         try {
-            ['cs_encuestas_cache', 'cs_encuestas_machala_v1', 'cs_encuestas_pichincha_v1'].forEach(k => {
+            ['cs_encuestas_cache', 'cs_encuestas_machala_v1', 'cs_encuestas_pichincha_v1', 'cs_encuestas_pichincha_v2'].forEach(k => {
                 if (localStorage.getItem(k)) localStorage.removeItem(k);
             });
-            const cached = localStorage.getItem('cs_encuestas_pichincha_v2');
+            const cached = localStorage.getItem('cs_encuestas_quito_2026');
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -832,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.config = { ...AppState.config, ...configData };
             }
             if (UI.tituloProyecto) {
-                let nom = AppState.config.nombreProyecto || 'Encuesta Pichincha 2026';
+                let nom = AppState.config.nombreProyecto || 'Encuesta Quito - Septiembre - 2026';
                 UI.tituloProyecto.textContent = nom;
                 document.title = 'Clima Social · ' + nom;
             }
@@ -879,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar último resultado; el mapa base sigue necesitando conexión.
             try {
-                localStorage.setItem('cs_encuestas_pichincha_v2', JSON.stringify(AppState.encuestas));
+                localStorage.setItem('cs_encuestas_quito_2026', JSON.stringify(AppState.encuestas));
             } catch (e) {
                 console.warn('[Cache] Error al guardar caché:', e);
             }
@@ -1236,17 +1164,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        // 1.1 Selector Cantón (4 Cantones de la Encuesta Pichincha 2026)
+        // 1.1 Selector Cantón (Encuesta Quito - Septiembre - 2026)
         if (UI.cantonFilter) {
-            const actualCan = AppState.cantonSeleccionado || 'Todos';
+            const actualCan = AppState.cantonSeleccionado || 'Quito';
             const cantonesList = [
-                { id: 'Quito', label: 'Quito (D.M.)', badge: '🔵' },
-                { id: 'Cayambe', label: 'Cayambe', badge: '🟢' },
-                { id: 'Mejía', label: 'Mejía', badge: '🟠' },
-                { id: 'Rumiñahui', label: 'Rumiñahui', badge: '🟣' }
+                { id: 'Quito', label: 'Quito (D.M.)', badge: '🔵' }
             ];
 
-            let html = '<option value="Todos">Todos los cantones (4)</option>';
+            let html = '';
             cantonesList.forEach(c => {
                 let cnt = 0;
                 if (AppState.encuestas && AppState.encuestas.length > 0) {
@@ -1256,37 +1181,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `<option value="${c.id}">${c.badge} ${c.label}${extra}</option>`;
             });
             UI.cantonFilter.innerHTML = html;
-            UI.cantonFilter.value = actualCan;
+            UI.cantonFilter.value = 'Quito';
         }
 
-        // 1.2 Selector Circunscripción (Especial para Quito y Rumiñahui)
+        // 1.2 Selector Circunscripción (Quito)
         if (UI.circunscripcionFilter) {
-            const actualCan = AppState.cantonSeleccionado || 'Todos';
             const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
-            let circList = [];
-
-            if (actualCan === 'Quito') {
-                circList = [
-                    { id: 'Urbana 1 (Norte)', label: 'Circunscripción Urbana 1 (Norte)' },
-                    { id: 'Urbana 2 (Centro)', label: 'Circunscripción Urbana 2 (Centro)' },
-                    { id: 'Urbana 3 (Sur)', label: 'Circunscripción Urbana 3 (Sur)' },
-                    { id: 'Rural', label: 'Circunscripción Rural' }
-                ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
-                UI.circunscripcionFilter.disabled = false;
-            } else if (actualCan === 'Rumiñahui') {
-                circList = [
-                    { id: 'Urbana 1', label: 'Circunscripción Urbana 1 (Fajardo / San Pedro / San Rafael)' },
-                    { id: 'Urbana 2', label: 'Circunscripción Urbana 2 (Sangolquí)' },
-                    { id: 'Rural', label: 'Circunscripción Rural (Cotogchoa)' }
-                ];
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
-                UI.circunscripcionFilter.disabled = false;
-            } else {
-                // Cayambe, Mejía o Todos: Smart Disclosure (auto-ocultar para ahorrar espacio móvil)
-                if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.add('is-hidden');
-                UI.circunscripcionFilter.disabled = true;
-            }
+            const circList = [
+                { id: 'Urbana 1', label: 'Circunscripción Urbana 1 (Norte)' },
+                { id: 'Urbana 2', label: 'Circunscripción Urbana 2 (Centro)' },
+                { id: 'Urbana 3', label: 'Circunscripción Urbana 3 (Sur)' },
+                { id: 'Rural', label: 'Circunscripción Rural' }
+            ];
+            if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
+            UI.circunscripcionFilter.disabled = false;
 
             let circHtml = '<option value="Todas">Todas las circunscripciones</option>';
             circList.forEach(c => {
@@ -1304,33 +1212,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1.2.1 Barra Rápida de Píldoras de Circunscripción sobre el Mapa (1-Tap)
         if (UI.circLegendBar) {
-            const actualCan = AppState.cantonSeleccionado || 'Todos';
             const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+            UI.circLegendBar.style.display = 'flex';
+            let pillsHtml = `<button type="button" class="cs-circ-pill ${actualCirc === 'Todas' ? 'is-active' : ''}" data-circ="Todas">Todas</button>`;
+            
+            const cList = [
+                { id: 'Urbana 1', short: 'Urb. 1 Norte' },
+                { id: 'Urbana 2', short: 'Urb. 2 Centro' },
+                { id: 'Urbana 3', short: 'Urb. 3 Sur' },
+                { id: 'Rural', short: 'Rural' }
+            ];
 
-            if (actualCan === 'Quito' || actualCan === 'Rumiñahui') {
-                UI.circLegendBar.style.display = 'flex';
-                let pillsHtml = `<button type="button" class="cs-circ-pill ${actualCirc === 'Todas' ? 'is-active' : ''}" data-circ="Todas">Todas</button>`;
-                
-                const cList = (actualCan === 'Quito') ? [
-                    { id: 'Urbana 1 (Norte)', short: 'Urb. 1 Norte' },
-                    { id: 'Urbana 2 (Centro)', short: 'Urb. 2 Centro' },
-                    { id: 'Urbana 3 (Sur)', short: 'Urb. 3 Sur' },
-                    { id: 'Rural', short: 'Rural' }
-                ] : [
-                    { id: 'Urbana 1', short: 'Urb. 1' },
-                    { id: 'Urbana 2', short: 'Urb. 2' },
-                    { id: 'Rural', short: 'Rural' }
-                ];
-
-                cList.forEach(c => {
-                    const isAct = (actualCirc === c.id);
-                    pillsHtml += `<button type="button" class="cs-circ-pill ${isAct ? 'is-active' : ''}" data-circ="${c.id}" title="${c.id}">${c.short}</button>`;
-                });
-                UI.circLegendBar.innerHTML = pillsHtml;
-            } else {
-                UI.circLegendBar.style.display = 'none';
-                UI.circLegendBar.innerHTML = '';
-            }
+            cList.forEach(c => {
+                const isAct = (actualCirc === c.id);
+                pillsHtml += `<button type="button" class="cs-circ-pill ${isAct ? 'is-active' : ''}" data-circ="${c.id}" title="${c.id}">${c.short}</button>`;
+            });
+            UI.circLegendBar.innerHTML = pillsHtml;
         }
 
         // Sincronizar estado visual de las píldoras de cantón sobre el mapa
@@ -1697,10 +1594,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function obtenerMetaActiva() {
         const METAS_CANTON = {
-            'QUITO': 700,
-            'CAYAMBE': 300,
-            'MEJIA': 300,
-            'RUMINAHUI': 300
+            'QUITO': 1200
         };
 
         // 1. Filtro por Sector Censal Sorteado (cuota: 10 encuestas)
@@ -1710,19 +1604,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 etiquetaMeta: `Meta: 10 (Sector ${AppState.sectorSeleccionado})`,
                 subPendientes: `Para completar Sector ${AppState.sectorSeleccionado}`,
                 tituloAvance: `Avance Sector`,
-                subAvance: `Cuota sectorial (10 encuestas)`
+                subAvance: `Cuota estándar (10 encuestas)`
             };
         }
 
-        // 2. Filtro por Parroquia (número de sectores en esa parroquia × 10)
+        // 2. Filtro por Parroquia (dinámica según sectores sorteados)
         if (AppState.parroquiaSeleccionada && AppState.parroquiaSeleccionada !== 'Todas') {
+            const pNorm = normTexto(AppState.parroquiaSeleccionada);
             let numSectores = 0;
-            const targetP = normTexto(AppState.parroquiaSeleccionada);
             if (AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
                 numSectores = AppState.sectoresGeojson.features.filter(f => {
                     const props = f.properties || {};
                     const p = normTexto(props.parroquia || props.PARROQUIA || props.nom_par || '');
-                    return p === targetP;
+                    return p === pNorm;
                 }).length;
             }
             const metaParr = Math.max(10, (numSectores || 1) * 10);
@@ -1735,19 +1629,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 3. Filtro por Cantón (Quito: 700, Cayambe: 300, Mejía: 300, Rumiñahui: 300)
+        // 3. Filtro por Cantón (Quito: 1200)
         if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
             const cNorm = normTexto(AppState.cantonSeleccionado);
-            let metaCanton = METAS_CANTON[cNorm];
-            if (!metaCanton && AppState.sectoresGeojson && Array.isArray(AppState.sectoresGeojson.features)) {
-                const numSecs = AppState.sectoresGeojson.features.filter(f => {
-                    const props = f.properties || {};
-                    const c = normTexto(props.canton || props.CANTON || props.nom_can || '');
-                    return c === cNorm;
-                }).length;
-                if (numSecs > 0) metaCanton = numSecs * 10;
-            }
-            metaCanton = metaCanton || 300;
+            let metaCanton = METAS_CANTON[cNorm] || 1200;
             return {
                 meta: metaCanton,
                 etiquetaMeta: `Meta: ${metaCanton.toLocaleString()} (${AppState.cantonSeleccionado})`,
@@ -1757,14 +1642,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 4. Ámbito General (Toda la provincia de Pichincha)
-        const metaProvincial = AppState.config.metaEncuestas || 1600;
+        // 4. Ámbito General (Quito)
+        const metaGeneral = AppState.config.metaEncuestas || 1200;
         return {
-            meta: metaProvincial,
-            etiquetaMeta: `Meta: ${metaProvincial.toLocaleString()} (Pichincha)`,
+            meta: metaGeneral,
+            etiquetaMeta: `Meta: ${metaGeneral.toLocaleString()} (Quito)`,
             subPendientes: `Faltan para la meta total`,
             tituloAvance: `Avance General`,
-            subAvance: `Cumplimiento provincial (${metaProvincial.toLocaleString()})`
+            subAvance: `Cumplimiento cantonal (${metaGeneral.toLocaleString()})`
         };
     }
 
@@ -3998,13 +3883,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.sectorSeleccionado = 'Todos';
                 poblarFiltros();
                 renderizarVista(true, true);
-                const METAS_MAP = { 'Quito': 700, 'Cayambe': 300, 'Mejía': 300, 'Rumiñahui': 300 };
-                if (AppState.cantonSeleccionado !== 'Todos') {
-                    const m = METAS_MAP[AppState.cantonSeleccionado] || 300;
-                    mostrarToast(`Filtrando por ${AppState.cantonSeleccionado} · Meta: ${m.toLocaleString()} encuestas`, 'info');
-                } else {
-                    mostrarToast('Mostrando todos los cantones · Meta: 1,600 encuestas', 'info');
-                }
+                const METAS_MAP = { 'Quito': 1200 };
+                const m = METAS_MAP[AppState.cantonSeleccionado] || 1200;
+                mostrarToast(`Quito (D.M.) · Meta: ${m.toLocaleString()} encuestas`, 'info');
             });
         }
 
@@ -4017,25 +3898,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const targetCanton = btn.dataset.canton;
                 if (!targetCanton) return;
 
-                // Toggle: Si ya estaba activo, volver a Todos; si no, seleccionar el cantón
-                if (AppState.cantonSeleccionado === targetCanton) {
-                    AppState.cantonSeleccionado = 'Todos';
-                } else {
-                    AppState.cantonSeleccionado = targetCanton;
-                }
+                AppState.cantonSeleccionado = targetCanton;
                 AppState.circunscripcionSeleccionada = 'Todas';
                 AppState.parroquiaSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
                 if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
                 poblarFiltros();
                 renderizarVista(true, true);
-                const METAS_MAP = { 'Quito': 700, 'Cayambe': 300, 'Mejía': 300, 'Rumiñahui': 300 };
-                if (AppState.cantonSeleccionado !== 'Todos') {
-                    const m = METAS_MAP[AppState.cantonSeleccionado] || 300;
-                    mostrarToast(`Filtrando por ${AppState.cantonSeleccionado} · Meta: ${m.toLocaleString()} encuestas`, 'info');
-                } else {
-                    mostrarToast('Mostrando todos los cantones · Meta: 1,600 encuestas', 'info');
-                }
+                const METAS_MAP = { 'Quito': 1200 };
+                const m = METAS_MAP[AppState.cantonSeleccionado] || 1200;
+                mostrarToast(`Quito (D.M.) · Meta: ${m.toLocaleString()} encuestas`, 'info');
             });
         }
 

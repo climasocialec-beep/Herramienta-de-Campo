@@ -13,12 +13,12 @@ services:
       - key: API_TOKEN
         sync: false
       - key: NOMBRE_PROYECTO
-        value: Encuesta Pichincha 2026
+        value: Encuesta Quito - Septiembre - 2026
       - key: CAMPO_ENCUESTADOR
-        value: cenc
+        value: encuestador
       - key: CAMPO_SUPERVISOR
-        value: csup
+        value: supervisor
       - key: META_ENCUESTAS
-        value: 1600
+        value: 1200
       - key: CACHE_TTL_SEGUNDOS
         value: 90
