@@ -367,10 +367,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return conteo;
     }
 
+    function normCirc(c) {
+        if (!c) return '';
+        let s = normTexto(c);
+        if (s.includes('urbana 1') || s.includes('norte')) return 'CIRCUNSCRIPCION URBANA 1';
+        if (s.includes('urbana 2') || s.includes('centro')) return 'CIRCUNSCRIPCION URBANA 2';
+        if (s.includes('urbana 3') || s.includes('sur')) return 'CIRCUNSCRIPCION URBANA 3';
+        if (s.includes('rural')) return 'CIRCUNSCRIPCION RURAL';
+        return s.toUpperCase();
+    }
+
     function circunscripcionEncuesta(encuesta) {
-        if (encuesta.circunscripcion) return encuesta.circunscripcion;
+        if (encuesta.circunscripcion) return normCirc(encuesta.circunscripcion);
         const sector = resolverSectorEncuesta(encuesta);
-        return sector ? sector.circunscripcion : '';
+        return sector ? normCirc(sector.circunscripcion) : '';
+    }
+
+    function crearFiltroMapLibreCircunscripcion(circVal) {
+        if (!circVal || circVal === 'Todas') return null;
+        const cNorm = normCirc(circVal);
+        const cShort = cNorm.replace('CIRCUNSCRIPCION ', '');
+        return [
+            'any',
+            ['==', ['get', 'circunscripcion'], circVal],
+            ['==', ['get', 'circunscripcion'], cNorm],
+            ['==', ['upcase', ['get', 'circunscripcion']], cNorm],
+            ['==', ['get', 'circunscripcion'], cShort],
+            ['==', ['upcase', ['get', 'circunscripcion']], cShort]
+        ];
     }
 
     function normalizarSupervisorEncuesta(e) {
@@ -1111,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchSup = (selSup === 'Todos' || sup === selSup);
             const matchSec = (selSec === 'Todos' || etiq === selSec);
             const matchCan = AppState.cantonSeleccionado === 'Todos' || obtenerCantonEncuesta(e) === AppState.cantonSeleccionado;
-            const matchCirc = AppState.circunscripcionSeleccionada === 'Todas' || normTexto(circunscripcionEncuesta(e)) === normTexto(AppState.circunscripcionSeleccionada);
+            const matchCirc = AppState.circunscripcionSeleccionada === 'Todas' || normCirc(circunscripcionEncuesta(e)) === normCirc(AppState.circunscripcionSeleccionada);
             if (!matchCan || !matchCirc) continue;
             let matchFec = true;
             if (selFec !== 'Todas') {
@@ -1186,12 +1210,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1.2 Selector Circunscripción (Quito)
         if (UI.circunscripcionFilter) {
-            const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+            const actualCircNorm = normCirc(AppState.circunscripcionSeleccionada || 'Todas');
             const circList = [
-                { id: 'Urbana 1', label: 'Circunscripción Urbana 1 (Norte)' },
-                { id: 'Urbana 2', label: 'Circunscripción Urbana 2 (Centro)' },
-                { id: 'Urbana 3', label: 'Circunscripción Urbana 3 (Sur)' },
-                { id: 'Rural', label: 'Circunscripción Rural' }
+                { id: 'CIRCUNSCRIPCION URBANA 1', short: 'Urb. 1 Norte', label: 'Circunscripción Urbana 1 (Norte)' },
+                { id: 'CIRCUNSCRIPCION URBANA 2', short: 'Urb. 2 Centro', label: 'Circunscripción Urbana 2 (Centro)' },
+                { id: 'CIRCUNSCRIPCION URBANA 3', short: 'Urb. 3 Sur', label: 'Circunscripción Urbana 3 (Sur)' },
+                { id: 'CIRCUNSCRIPCION RURAL', short: 'Rural', label: 'Circunscripción Rural' }
             ];
             if (UI.wrapCircunscripcionFilter) UI.wrapCircunscripcionFilter.classList.remove('is-hidden');
             UI.circunscripcionFilter.disabled = false;
@@ -1202,8 +1226,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             UI.circunscripcionFilter.innerHTML = circHtml;
             const validCircValues = ['Todas', ...circList.map(c => c.id)];
-            if (validCircValues.includes(actualCirc)) {
-                UI.circunscripcionFilter.value = actualCirc;
+            if (validCircValues.includes(actualCircNorm)) {
+                UI.circunscripcionFilter.value = actualCircNorm;
+                AppState.circunscripcionSeleccionada = actualCircNorm;
             } else {
                 AppState.circunscripcionSeleccionada = 'Todas';
                 UI.circunscripcionFilter.value = 'Todas';
@@ -1212,20 +1237,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1.2.1 Barra Rápida de Píldoras de Circunscripción sobre el Mapa (1-Tap)
         if (UI.circLegendBar) {
-            const actualCirc = AppState.circunscripcionSeleccionada || 'Todas';
+            const actualCircNorm = normCirc(AppState.circunscripcionSeleccionada || 'Todas');
             UI.circLegendBar.style.display = 'flex';
-            let pillsHtml = `<button type="button" class="cs-circ-pill ${actualCirc === 'Todas' ? 'is-active' : ''}" data-circ="Todas">Todas</button>`;
+            let pillsHtml = `<button type="button" class="cs-circ-pill ${actualCircNorm === 'TODAS' || actualCircNorm === '' ? 'is-active' : ''}" data-circ="Todas">Todas</button>`;
             
             const cList = [
-                { id: 'Urbana 1', short: 'Urb. 1 Norte' },
-                { id: 'Urbana 2', short: 'Urb. 2 Centro' },
-                { id: 'Urbana 3', short: 'Urb. 3 Sur' },
-                { id: 'Rural', short: 'Rural' }
+                { id: 'CIRCUNSCRIPCION URBANA 1', short: 'Urb. 1 Norte' },
+                { id: 'CIRCUNSCRIPCION URBANA 2', short: 'Urb. 2 Centro' },
+                { id: 'CIRCUNSCRIPCION URBANA 3', short: 'Urb. 3 Sur' },
+                { id: 'CIRCUNSCRIPCION RURAL', short: 'Rural' }
             ];
 
             cList.forEach(c => {
-                const isAct = (actualCirc === c.id);
-                pillsHtml += `<button type="button" class="cs-circ-pill ${isAct ? 'is-active' : ''}" data-circ="${c.id}" title="${c.id}">${c.short}</button>`;
+                const isAct = (actualCircNorm === c.id);
+                pillsHtml += `<button type="button" class="cs-circ-pill ${isAct ? 'is-active' : ''}" data-circ="${c.id}" title="${c.short}">${c.short}</button>`;
             });
             UI.circLegendBar.innerHTML = pillsHtml;
         }
@@ -1272,9 +1297,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Filtrar por Circunscripción si está activa (Cascada Circunscripción ➔ Sectores)
-                    if (circActivaNorm && circunscripcion) {
-                        const cNorm = normTexto(circunscripcion);
-                        if (!cNorm.includes(circActivaNorm) && !circActivaNorm.includes(cNorm)) {
+                    if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+                        if (normCirc(circunscripcion) !== normCirc(AppState.circunscripcionSeleccionada)) {
                             return;
                         }
                     }
@@ -1412,10 +1436,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Si hay circunscripción seleccionada, filtrar por circunscripción
-                    if (AppState.circunscripcionSeleccionada !== 'Todas') {
-                        const targetCirc = normStr(AppState.circunscripcionSeleccionada);
-                        const circP = normStr(f.properties.circunscripcion || '');
-                        if (circP && !circP.includes(targetCirc) && !targetCirc.includes(circP)) return;
+                    if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
+                        const circP = f.properties.circunscripcion || '';
+                        if (normCirc(circP) !== normCirc(AppState.circunscripcionSeleccionada)) return;
                     }
 
                     if (p && !parList.includes(p)) parList.push(p);
@@ -1497,12 +1520,11 @@ document.addEventListener('DOMContentLoaded', () => {
             filtradas = filtradas.filter(e => obtenerCantonEncuesta(e) === AppState.cantonSeleccionado);
         }
 
-        // Filtro por Circunscripción (Quito y Rumiñahui)
+        // Filtro por Circunscripción (Quito)
         if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
-            const targetCirc = normTexto(AppState.circunscripcionSeleccionada);
+            const targetCirc = normCirc(AppState.circunscripcionSeleccionada);
             filtradas = filtradas.filter(e => {
-                const circ = normTexto(circunscripcionEncuesta(e));
-                return circ === targetCirc;
+                return normCirc(circunscripcionEncuesta(e)) === targetCirc;
             });
         }
 
@@ -2685,12 +2707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.setPaintProperty('parroquias-line', 'line-opacity', 1.0);
             } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
                 // Si hay circunscripción seleccionada: mostrar solo parroquias de esa circunscripción
-                const targetCirc = AppState.circunscripcionSeleccionada;
-                const filterCirc = [
-                    'any',
-                    ['==', ['get', 'circunscripcion'], targetCirc],
-                    ['==', ['upcase', ['get', 'circunscripcion']], targetCirc.toUpperCase()]
-                ];
+                const filterCirc = crearFiltroMapLibreCircunscripcion(AppState.circunscripcionSeleccionada);
                 map.setFilter('parroquias-line', filterCirc);
                 if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterCirc);
 
@@ -2846,12 +2863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     aplicarFiltroSectores(filterSectoresParroquia);
                 } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
                     // B1. Si hay Circunscripción específica: filtrar por los sectores de esa circunscripción
-                    const targetCirc = AppState.circunscripcionSeleccionada;
-                    const filterSecCirc = [
-                        'any',
-                        ['==', ['get', 'circunscripcion'], targetCirc],
-                        ['==', ['upcase', ['get', 'circunscripcion']], targetCirc.toUpperCase()]
-                    ];
+                    const filterSecCirc = crearFiltroMapLibreCircunscripcion(AppState.circunscripcionSeleccionada);
                     aplicarFiltroSectores(filterSecCirc);
                 } else if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
                     // B. Si hay Cantón específico: filtrar por los sectores del cantón
@@ -2914,13 +2926,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
                 // Nivel 2.5: Zoom a la Circunscripción seleccionada
-                const targetCirc = normTexto(AppState.circunscripcionSeleccionada);
+                const targetCirc = normCirc(AppState.circunscripcionSeleccionada);
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 let found = 0;
                 if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
                     AppState.sectoresGeojson.features.forEach(f => {
-                        const cNorm = normTexto(f.properties.circunscripcion || '');
-                        if (cNorm.includes(targetCirc) || targetCirc.includes(cNorm)) {
+                        if (normCirc(f.properties.circunscripcion || '') === targetCirc) {
                             const bbox = f.properties.bbox;
                             if (bbox) {
                                 if (bbox[0][0] < minX) minX = bbox[0][0];
