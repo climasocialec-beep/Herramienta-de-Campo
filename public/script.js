@@ -56,40 +56,35 @@ document.addEventListener('DOMContentLoaded', () => {
         encuestas: [],
         supervisorSeleccionado: 'Todos',
         cantonSeleccionado: 'Quito',
-        circunscripcionSeleccionada: 'Todas', // Compatibilidad
+        circunscripcionSeleccionada: 'Todas',
         sectorSeleccionado: 'Todos',
         parroquiaSeleccionada: 'Todas',
         fechaSeleccionada: 'Todas',
         encuestadorSeleccionado: null,
         mostrarEtiquetas: false,
         capasVisibles: {
-            cantones: true,
             sectores: true,
-            parroquias: true,
-            muestreo: true
+            parroquias: true
         },
-        filtroGPS: 'Todos', // 'Todos', 'ConGPS', 'SinGPS'
-        mostrarInconsistencias: false, // Flag maestro de auditoría espacial (oculto por defecto, activable bajo demanda)
+        filtroGPS: 'Todos',
+        mostrarInconsistencias: false,
         filtroSoloAlertas: false,
-        filtroSoloPendientes: false, // Flag para filtrar únicamente sectores con menos de 10 encuestas
-        conteoPorSector: new Map(), // Caché en memoria para conteos por sector O(1)
+        filtroSoloPendientes: false,
+        conteoPorSector: new Map(),
         totalAlertas: 0,
         filtroTabla: '',
-        modoVisualizacion: 'puntos', // 'puntos' | 'cluster'
-        modoAgrupacionTabla: 'canton', // 'canton' | 'supervisor'
+        modoVisualizacion: 'puntos',
+        modoAgrupacionTabla: 'supervisor',
         ordenTabla: { columna: 'encuestador', asc: true },
         supervisoresExpandidos: new Set(),
-        cantonesColapsados: new Set(),
         ubicacionSupervisor: null,
         markerSupervisor: null,
         mapLoaded: false,
-        cantonesGeojson: null,
-        cantonesMap: new Map(),
+        cantonBbox: [[-78.68, -0.42], [-78.25, 0.08]],
         parroquiasGeojson: null,
         parroquiasMap: new Map(),
-        puntosMuestreoGeojson: null,
-        puntosMuestreoMap: new Map(),
-        sectoresMap: new Map() // Mantiene compatibilidad hacia atrás para resolución de muestra (1 al 70)
+        sectoresGeojson: null,
+        sectoresMap: new Map()
     };
     window.AppState = AppState;
 
@@ -893,23 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-        if (UI.cantonFilter) {
-            const isAct = AppState.cantonSeleccionado !== 'Todos';
-            UI.cantonFilter.classList.toggle('is-active', isAct);
-            if (isAct) {
-                activeCount++;
-                chips.push({
-                    tipo: 'canton',
-                    label: `Cantón: ${AppState.cantonSeleccionado}`,
-                    onClear: () => {
-                        AppState.cantonSeleccionado = 'Todos';
-                        if (UI.cantonFilter) UI.cantonFilter.value = 'Todos';
-                        poblarFiltros();
-                        renderizarVista(true, true);
-                    }
-                });
-            }
-        }
+
         if (UI.circunscripcionFilter) {
             const isAct = AppState.circunscripcionSeleccionada !== 'Todas';
             UI.circunscripcionFilter.classList.toggle('is-active', isAct);
@@ -1255,20 +1234,6 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.circLegendBar.innerHTML = pillsHtml;
         }
 
-        // Sincronizar estado visual de las píldoras de cantón sobre el mapa
-        const cantonPills = document.querySelectorAll('.cs-canton-pill');
-        if (cantonPills && cantonPills.length > 0) {
-            cantonPills.forEach(pill => {
-                const can = pill.dataset.canton;
-                const isSelected = (AppState.cantonSeleccionado === can);
-                pill.classList.toggle('is-active', isSelected);
-                if (AppState.cantonSeleccionado === 'Todos') {
-                    pill.style.opacity = '1';
-                } else {
-                    pill.style.opacity = isSelected ? '1' : '0.45';
-                }
-            });
-        }
 
         // 2b. Selector Sectores Censales (160 sectores en Pichincha)
         if (UI.sectorFilter) {
@@ -1740,7 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=16.0.0';
+            const cacheBuster = '?v=16.2.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -1913,14 +1878,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        let mapCenter = [-78.4850, -0.1900]; // Coordenadas centrales de Pichincha
-        let initialBounds = null;
+        const BBOX_QUITO = [[-78.68, -0.42], [-78.25, 0.08]];
+        let mapCenter = [-78.4850, -0.1800]; // Coordenadas centrales de Quito
+        let initialBounds = BBOX_QUITO;
 
         if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
             mapCenter = [(globalMinX + globalMaxX) / 2, (globalMinY + globalMaxY) / 2];
             initialBounds = [[globalMinX, globalMinY], [globalMaxX, globalMaxY]];
-            AppState.cantonBbox = initialBounds;
         }
+        AppState.cantonBbox = initialBounds;
 
         // Prioridad si centro viene en AppState.config
         if (AppState.config && AppState.config.centroLng && AppState.config.centroLat) {
@@ -2492,7 +2458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=16.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=16.2.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -2647,7 +2613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function obtenerBboxCanton(nombreCanton) {
-        if (!nombreCanton || nombreCanton === 'Todos') return AppState.cantonBbox || [[-78.75, -0.45], [-78.20, 0.15]];
+        if (!nombreCanton || nombreCanton === 'Todos') return AppState.cantonBbox || [[-78.68, -0.42], [-78.25, 0.08]];
         const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
         const target = norm(nombreCanton);
         const parsPermitidas = (PARROQUIAS_POR_CANTON[nombreCanton] || []).map(norm);
@@ -2961,11 +2927,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else {
-                // Nivel 4: Vista global de las 62 parroquias de estudio en Pichincha
-                const globalBbox = AppState.cantonBbox || [[-78.75, -0.65], [-78.10, 0.25]];
+                // Nivel 4: Vista global de las 48 parroquias de estudio en Quito
+                const globalBbox = AppState.cantonBbox || [[-78.68, -0.42], [-78.25, 0.08]];
                 map.fitBounds(globalBbox, {
                     padding: { top: 40, bottom: 40, left: 40, right: 40 },
-                    maxZoom: 11.5,
+                    maxZoom: 12.0,
                     duration: 850
                 });
             }
@@ -3400,14 +3366,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.classList.add('selected');
         }
 
-        const can = grupo.cantonPrincipal || 'Quito';
-        const infoCan = COLORES_CANTON[can] || { badge: '📍', nombre: can };
         const supLabel = (grupo.supervisor && grupo.supervisor !== 'Sin asignar' && grupo.supervisor !== 'undefined' && grupo.supervisor !== 'null')
             ? `Sup #${grupo.supervisor}`
             : 'Sin Sup';
 
-        // Badge cantonal distintivo con su color de cantón
-        const badgeCantonHtml = `<span class="cs-canton-badge-tag cs-canton-badge-tag--${can}" title="Cantón: ${can}">${infoCan.badge} ${can}</span>`;
         // Badge de supervisor
         const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);">${supLabel}</span>`;
 
@@ -3418,9 +3380,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                     <div class="cs-enc-meta">
-                        <div class="cs-enc-name" title="Encuestador #${grupo.id} (${can} · ${supLabel})">
+                        <div class="cs-enc-name" title="Encuestador #${grupo.id} (${supLabel})">
                             <span>Encuestador #${grupo.id}</span>
-                            ${badgeCantonHtml}
                             ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
                         </div>
                         <div class="cs-enc-sub">
@@ -3479,90 +3440,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
 
         // ---------------------------------------------------------------------
-        // MODO A: AGRUPAR POR CANTÓN
+        // AGRUPAR POR SUPERVISOR
         // ---------------------------------------------------------------------
-        if (AppState.modoAgrupacionTabla === 'canton') {
-            const CANTONES_ORDEN = ['Quito', 'Cayambe', 'Mejía', 'Rumiñahui'];
-            const gruposCanton = new Map();
-
-            datos.forEach(encuestador => {
-                const canId = encuestador.cantonPrincipal || 'Quito';
-                if (!gruposCanton.has(canId)) {
-                    gruposCanton.set(canId, {
-                        id: canId,
-                        encuestadores: [],
-                        totalEncuestas: 0
-                    });
-                }
-                const gCan = gruposCanton.get(canId);
-                gCan.encuestadores.push(encuestador);
-                gCan.totalEncuestas += encuestador.encuestas.length;
-            });
-
-            // Ordenar cantones según el orden oficial
-            const canKeys = Array.from(gruposCanton.keys()).sort((a, b) => {
-                const idxA = CANTONES_ORDEN.indexOf(a);
-                const idxB = CANTONES_ORDEN.indexOf(b);
-                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                if (idxA !== -1) return -1;
-                if (idxB !== -1) return 1;
-                return a.localeCompare(b);
-            });
-
-            canKeys.forEach(canId => {
-                const gCan = gruposCanton.get(canId);
-                ordenarEncuestadoresLista(gCan.encuestadores);
-
-                const infoCanton = COLORES_CANTON[canId] || { hex: '#7c3aed', badge: '📍', nombre: canId };
-                const isExplicitlyCollapsed = AppState.cantonesColapsados && AppState.cantonesColapsados.has(canId);
-                const isFilteredCan = AppState.cantonSeleccionado !== 'Todos' && AppState.cantonSeleccionado === canId;
-                const hasSearch = Boolean(AppState.filtroTabla);
-                const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredCan;
-
-                const trHeader = document.createElement('tr');
-                trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
-                trHeader.dataset.cantonId = canId;
-
-                const pluralEnc = gCan.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
-                const pluralEncuestas = gCan.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
-
-                trHeader.innerHTML = `
-                    <td colspan="2">
-                        <div class="cs-table-group-title">
-                            <span class="cs-group-toggle-icon">
-                                <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </span>
-                            <span class="cs-group-color-dot" style="--sup-dot-color: ${infoCanton.hex};"></span>
-                            <span class="cs-group-name">${infoCanton.badge} ${canId}</span>
-                            <span class="cs-group-pill">${gCan.encuestadores.length} ${pluralEnc} · ${gCan.totalEncuestas} ${pluralEncuestas}</span>
-                        </div>
-                    </td>
-                `;
-
-                trHeader.addEventListener('click', () => {
-                    if (!AppState.cantonesColapsados) AppState.cantonesColapsados = new Set();
-                    if (AppState.cantonesColapsados.has(canId)) {
-                        AppState.cantonesColapsados.delete(canId);
-                    } else {
-                        AppState.cantonesColapsados.add(canId);
-                    }
-                    const encs = obtenerEncuestasFiltradas();
-                    actualizarTabla(encs);
-                });
-
-                fragment.appendChild(trHeader);
-
-                if (!isCollapsed) {
-                    gCan.encuestadores.forEach(grupo => {
-                        fragment.appendChild(crearFilaEncuestador(grupo));
-                    });
-                }
-            });
-        } 
-        // ---------------------------------------------------------------------
-        // MODO B: AGRUPAR POR SUPERVISOR
-        // ---------------------------------------------------------------------
-        else {
             const gruposSupervisor = new Map();
             datos.forEach(encuestador => {
                 const supId = (encuestador.supervisor && encuestador.supervisor !== 'undefined' && encuestador.supervisor !== 'null') 
@@ -3643,7 +3522,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-        }
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
     }
@@ -3925,42 +3803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 1.1 Filtro Cantón (Territorial)
-        if (UI.cantonFilter) {
-            UI.cantonFilter.addEventListener('change', (e) => {
-                AppState.cantonSeleccionado = e.target.value;
-                AppState.circunscripcionSeleccionada = 'Todas';
-                AppState.parroquiaSeleccionada = 'Todas';
-                AppState.sectorSeleccionado = 'Todos';
-                poblarFiltros();
-                renderizarVista(true, true);
-                const METAS_MAP = { 'Quito': 1200 };
-                const m = METAS_MAP[AppState.cantonSeleccionado] || 1200;
-                mostrarToast(`Quito (D.M.) · Meta: ${m.toLocaleString()} encuestas`, 'info');
-            });
-        }
 
-        // 1.1.1 Barra de Píldoras de Cantón (Mapa interactivo)
-        const cantonLegendBar = document.getElementById('cantonLegendBar');
-        if (cantonLegendBar) {
-            cantonLegendBar.addEventListener('click', (e) => {
-                const btn = e.target.closest('.cs-canton-pill');
-                if (!btn) return;
-                const targetCanton = btn.dataset.canton;
-                if (!targetCanton) return;
-
-                AppState.cantonSeleccionado = targetCanton;
-                AppState.circunscripcionSeleccionada = 'Todas';
-                AppState.parroquiaSeleccionada = 'Todas';
-                AppState.sectorSeleccionado = 'Todos';
-                if (UI.cantonFilter) UI.cantonFilter.value = AppState.cantonSeleccionado;
-                poblarFiltros();
-                renderizarVista(true, true);
-                const METAS_MAP = { 'Quito': 1200 };
-                const m = METAS_MAP[AppState.cantonSeleccionado] || 1200;
-                mostrarToast(`Quito (D.M.) · Meta: ${m.toLocaleString()} encuestas`, 'info');
-            });
-        }
 
         // Filtro Circunscripción (Select nativo)
         if (UI.circunscripcionFilter) {
@@ -4070,7 +3913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (UI.btnLimpiarFiltros) {
             UI.btnLimpiarFiltros.addEventListener('click', () => {
                 AppState.supervisorSeleccionado = 'Todos';
-                AppState.cantonSeleccionado = 'Todos';
+                AppState.cantonSeleccionado = 'Quito';
                 AppState.circunscripcionSeleccionada = 'Todas';
                 AppState.sectorSeleccionado = 'Todos';
                 AppState.parroquiaSeleccionada = 'Todas';
@@ -4080,7 +3923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.filtroSoloPendientes = false;
                 AppState.mostrarEtiquetas = false;
                 AppState.filtroTabla = '';
-                if (UI.cantonFilter) UI.cantonFilter.value = 'Todos';
+                if (UI.cantonFilter) UI.cantonFilter.value = 'Quito';
                 if (UI.circunscripcionFilter) UI.circunscripcionFilter.value = 'Todas';
                 if (UI.toggleSoloPendientes) UI.toggleSoloPendientes.classList.remove('active');
                 if (UI.btnEtiquetasOn) UI.btnEtiquetasOn.classList.remove('active');
@@ -4125,27 +3968,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 5.5 Selector de Agrupación de Tabla: Cantón vs Supervisor
-        if (UI.btnAgruparCanton) {
-            UI.btnAgruparCanton.addEventListener('click', () => {
-                if (AppState.modoAgrupacionTabla === 'canton') return;
-                AppState.modoAgrupacionTabla = 'canton';
-                UI.btnAgruparCanton.classList.add('is-active');
-                if (UI.btnAgruparSupervisor) UI.btnAgruparSupervisor.classList.remove('is-active');
-                const encuestas = obtenerEncuestasFiltradas();
-                actualizarTabla(encuestas);
-            });
-        }
-        if (UI.btnAgruparSupervisor) {
-            UI.btnAgruparSupervisor.addEventListener('click', () => {
-                if (AppState.modoAgrupacionTabla === 'supervisor') return;
-                AppState.modoAgrupacionTabla = 'supervisor';
-                UI.btnAgruparSupervisor.classList.add('is-active');
-                if (UI.btnAgruparCanton) UI.btnAgruparCanton.classList.remove('is-active');
-                const encuestas = obtenerEncuestasFiltradas();
-                actualizarTabla(encuestas);
-            });
-        }
+
 
         // 6. Búsqueda en tabla (con debounce de 100ms para móviles)
         if (UI.searchInput) {

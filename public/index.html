@@ -25,14 +25,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload Cartografía Clave (Caché optimizada para móviles) -->
-  <link rel="preload" href="assets/parroquias.geojson?v=16.0.0" as="fetch" crossorigin>
-  <link rel="preload" href="assets/sectores_censales.geojson?v=16.0.0" as="fetch" crossorigin>
+  <link rel="preload" href="assets/parroquias.geojson?v=16.2.0" as="fetch" crossorigin>
+  <link rel="preload" href="assets/sectores_censales.geojson?v=16.2.0" as="fetch" crossorigin>
 
   <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=16.1.0">
+  <link rel="stylesheet" href="style.css?v=16.2.0">
 </head>
 <body>
 
@@ -185,18 +185,6 @@
             </div>
           </div>
 
-          <!-- Cantón (4 Cantones del Proyecto) -->
-          <div class="cs-ribbon-field">
-            <label for="cantonFilter" class="cs-field-label">
-              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Cantón</span>
-            </label>
-            <div class="cs-select-wrap">
-              <select id="cantonFilter" class="cs-select">
-                <option value="Quito">Quito · D.M. (Meta: 1,200)</option>
-              </select>
-            </div>
-          </div>
 
           <!-- Circunscripción (Específico para Quito y Rumiñahui) -->
           <div class="cs-ribbon-field" id="wrapCircunscripcionFilter">
@@ -292,15 +280,8 @@
         <div class="cs-map-wrapper">
           <!-- Contenedor Superior Unificado de Controles del Mapa (Zero-Overlap) -->
           <div class="cs-map-top-overlay" id="mapTopOverlay">
-            <div class="cs-map-top-row">
-              <!-- Barra de Leyenda y Filtro Rápido de Cantones (Filtro 1-tap en Mapa) -->
-              <div class="cs-canton-legend-bar" id="cantonLegendBar" aria-label="Cantones del Proyecto">
-                <button type="button" class="cs-canton-pill is-active" data-canton="Quito" title="Quito (Meta: 1,200)">
-                  <span class="cs-canton-pill__dot" style="background:#2563eb;"></span>
-                  <span>Quito (1,200)</span>
-                </button>
-              </div>
 
+            <div class="cs-map-top-row">
               <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
               <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
                 <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (48)">
@@ -346,25 +327,40 @@
 
           <button type="button" class="cs-locate-btn" id="locateBtn" title="Centrar en mi ubicación GPS" aria-label="Centrar ubicación GPS">
             <svg class="cs-locate-pegman-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true">
-              <!-- Cabeza con visera -->
+              <!-- Cabeza con rostro y visera -->
               <circle cx="12" cy="5" r="3.2" fill="#fcd34d"/>
-              <path d="M9 4.2C9.5 2.5 10.6 1.8 12 1.8C13.4 1.8 14.5 2.5 15 4.2H9Z" fill="#0f172a"/>
-              <path d="M8.8 4.6H15.8C16.4 4.6 16.8 5.1 16 5.3L14.8 5.6H9.2L8.8 4.6Z" fill="#f26419"/>
-              <!-- Chaleco naranja Clima Social -->
-              <path d="M8 9.2C8 8.4 8.8 7.8 9.6 7.8H14.4C15.2 7.8 16 8.4 16 9.2V15.5H8V9.2Z" fill="#f26419"/>
-              <rect x="8" y="12" width="8" height="1.4" fill="#fef08a"/>
-              <!-- Brazos -->
-              <path d="M8 9.5L6 13C5.6 13.6 6 14.4 6.8 14.4L8 14.2" stroke="#f26419" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M16 9.5L18 13C18.4 13.6 18 14.4 17.2 14.4L16 14.2" stroke="#f26419" stroke-width="1.6" stroke-linecap="round"/>
-              <!-- Manos -->
-              <circle cx="6.4" cy="14" r="0.9" fill="#fcd34d"/>
-              <circle cx="17.6" cy="14" r="0.9" fill="#fcd34d"/>
-              <!-- Piernas y Pantalón -->
-              <rect x="9.2" y="15.5" width="2.4" height="6" rx="1.2" fill="#1e293b"/>
-              <rect x="12.4" y="15.5" width="2.4" height="6" rx="1.2" fill="#1e293b"/>
-              <!-- Zapatos -->
-              <ellipse cx="9.8" cy="21.8" rx="1.8" ry="1.1" fill="#0f172a"/>
-              <ellipse cx="14.2" cy="21.8" rx="1.8" ry="1.1" fill="#0f172a"/>
+              <path d="M9 4.2C9.5 2.5 10.6 1.8 12 1.8C13.4 1.8 14.5 2.5 15 4.2H9Z" fill="#334155"/>
+              <path d="M8.8 4.6H15.8C16.4 4.6 16.8 5.1 16 5.3L14.8 5.6H9.2L8.8 4.6Z" fill="#0f172a"/>
+              <circle cx="11" cy="5.2" r="0.45" fill="#0f172a"/>
+              <circle cx="13" cy="5.2" r="0.45" fill="#0f172a"/>
+              <path d="M11.2 6.5C11.5 6.9 12.5 6.9 12.8 6.5" stroke="#0f172a" stroke-width="0.5" stroke-linecap="round"/>
+              <!-- Chaleco gris técnico Clima Social -->
+              <path d="M8 8.8C8 8.2 8.6 7.6 9.4 7.6H14.6C15.4 7.6 16 8.2 16 8.8V15.5H8V8.8Z" fill="#64748b" stroke="#334155" stroke-width="0.5"/>
+              <line x1="12" y1="8" x2="12" y2="15.5" stroke="#cbd5e1" stroke-width="0.6" stroke-dasharray="0.8 0.5"/>
+              <rect x="8.5" y="12.2" width="2.8" height="2.6" rx="0.4" fill="#475569"/>
+              <rect x="12.7" y="12.2" width="2.8" height="2.6" rx="0.4" fill="#475569"/>
+              <!-- Isotipo oficial Clima Social en el pecho -->
+              <circle cx="13.8" cy="9.8" r="1.8" fill="#ffffff"/>
+              <circle cx="13.8" cy="8.9" r="0.6" fill="#C23B49"/>
+              <circle cx="14.7" cy="9.8" r="0.6" fill="#4F7E90"/>
+              <circle cx="13.8" cy="10.7" r="0.6" fill="#F0A200"/>
+              <circle cx="12.9" cy="9.8" r="0.6" fill="#40004F"/>
+              <circle cx="13.8" cy="9.8" r="0.35" fill="#ffffff"/>
+              <!-- Brazos y Portapapeles -->
+              <path d="M8 9.5L6 13C5.6 13.6 6 14.4 6.8 14.4L8 14.2" stroke="#64748b" stroke-width="1.6" stroke-linecap="round"/>
+              <rect x="4.5" y="11.8" width="3" height="4" rx="0.5" fill="#ffffff" stroke="#0f172a" stroke-width="0.4"/>
+              <line x1="5.2" y1="13" x2="6.8" y2="13" stroke="#64748b" stroke-width="0.4"/>
+              <line x1="5.2" y1="14.2" x2="6.5" y2="14.2" stroke="#64748b" stroke-width="0.4"/>
+              <path d="M16 9.5L18 13C18.4 13.6 18 14.4 17.2 14.4L16 14.2" stroke="#64748b" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="6.4" cy="14" r="0.8" fill="#fcd34d"/>
+              <circle cx="17.6" cy="14" r="0.8" fill="#fcd34d"/>
+              <!-- Piernas (Jeans) y Zapatos -->
+              <rect x="9.2" y="15.5" width="2.4" height="5.5" rx="0.8" fill="#2563eb"/>
+              <rect x="12.4" y="15.5" width="2.4" height="5.5" rx="0.8" fill="#2563eb"/>
+              <ellipse cx="9.8" cy="21.5" rx="1.8" ry="1.1" fill="#ffffff" stroke="#0f172a" stroke-width="0.5"/>
+              <ellipse cx="9.8" cy="22" rx="1.5" ry="0.4" fill="#0f172a"/>
+              <ellipse cx="14.2" cy="21.5" rx="1.8" ry="1.1" fill="#ffffff" stroke="#0f172a" stroke-width="0.5"/>
+              <ellipse cx="14.2" cy="22" rx="1.5" ry="0.4" fill="#0f172a"/>
             </svg>
           </button>
         </div>
@@ -421,19 +417,10 @@
                 <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Equipo de Encuestadores
               </h3>
-              <!-- Selector de Agrupación de la Tabla: Cantón / Supervisor -->
-              <div class="cs-table-group-switch" id="tableGroupSwitch" role="group" aria-label="Agrupar encuestadores por">
-                <button type="button" class="cs-group-tab-btn is-active" id="btnAgruparCanton" data-modo="canton" title="Agrupar por Cantón">
-                  <span>Por Cantón</span>
-                </button>
-                <button type="button" class="cs-group-tab-btn" id="btnAgruparSupervisor" data-modo="supervisor" title="Agrupar por Supervisor">
-                  <span>Por Supervisor</span>
-                </button>
-              </div>
             </div>
             <div class="cs-search-bar">
               <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" id="searchInput" placeholder="Buscar encuestador, cantón o supervisor…" autocomplete="off">
+              <input type="search" id="searchInput" placeholder="Buscar encuestador o supervisor…" autocomplete="off">
             </div>
           </div>
 
@@ -489,11 +476,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=16.1.0"></script>
+  <script src="script.js?v=16.2.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=16.1.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=16.2.0').then(reg => {
           reg.update();
         }).catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
