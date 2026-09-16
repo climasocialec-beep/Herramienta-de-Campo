@@ -3,6 +3,8 @@ services:
     name: herramienta-de-campo
     env: node
     plan: free
+    branch: main
+    autoDeploy: true
     buildCommand: npm install
     startCommand: npm start
     envVars:
