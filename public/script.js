@@ -40,6 +40,19 @@
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
+    if ('caches' in window) {
+        const CACHE_VALIDA = 'clima-social-quito-2026-v17';
+        caches.keys().then(keys => {
+            keys.forEach(k => {
+                if (k !== CACHE_VALIDA) {
+                    console.log('[Cache] Purgando caché obsoleta o de cantón previo:', k);
+                    caches.delete(k);
+                }
+            });
+        }).catch(() => {});
+    }
+
     // Normalizador universal de texto (remueve tildes, diacríticos y espacios)
     const normTexto = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 
@@ -715,7 +728,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Limpieza de caché previa y Boot Instantáneo Quito 2026
         try {
-            ['cs_encuestas_cache', 'cs_encuestas_machala_v1', 'cs_encuestas_pichincha_v1', 'cs_encuestas_pichincha_v2'].forEach(k => {
+            [
+                'cs_encuestas_cache',
+                'cs_encuestas_machala_v1',
+                'cs_encuestas_cuenca_v1',
+                'cs_encuestas_cuenca',
+                'cs_encuestas_pichincha_v1',
+                'cs_encuestas_pichincha_v2',
+                'cs_proyecto_version'
+            ].forEach(k => {
                 if (localStorage.getItem(k)) localStorage.removeItem(k);
             });
             const cached = localStorage.getItem('cs_encuestas_quito_2026');
@@ -774,22 +795,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarConfiguracion() {
+        const TITULO_OFICIAL = 'Encuesta Quito - Septiembre - 2026';
         try {
-            const res = await fetch('/api/config', { cache: 'no-store' });
+            const res = await fetch('/api/config', { 
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            });
             if (res.ok) {
                 const configData = await res.json();
                 AppState.config = { ...AppState.config, ...configData };
             }
-            if (UI.tituloProyecto) {
-                let nom = AppState.config.nombreProyecto || 'Encuesta Quito - Septiembre - 2026';
-                UI.tituloProyecto.textContent = nom;
-                document.title = 'Clima Social · ' + nom;
-            }
-            if (UI.kpiMeta) {
-                UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 0).toLocaleString()}`;
-            }
         } catch (e) {
             console.warn('Usando configuración por defecto');
+        }
+
+        // Blindaje estricto: Purgar cualquier residuo heredado de Cuenca, Machala o cantones previos
+        let nom = AppState.config.nombreProyecto || TITULO_OFICIAL;
+        if (!nom || nom.toLowerCase().includes('cuenca') || !nom.toLowerCase().includes('quito')) {
+            nom = TITULO_OFICIAL;
+            AppState.config.nombreProyecto = TITULO_OFICIAL;
+        }
+
+        if (UI.tituloProyecto) {
+            UI.tituloProyecto.textContent = nom;
+        }
+        document.title = 'Clima Social · ' + nom;
+
+        if (UI.kpiMeta) {
+            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 1200).toLocaleString()} (Quito)`;
         }
     }
 
@@ -1719,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=16.2.0';
+            const cacheBuster = '?v=17.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2472,7 +2508,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=16.2.0');
+            const res = await fetch('assets/parroquias.geojson?v=17.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 

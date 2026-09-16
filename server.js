@@ -68,25 +68,39 @@ app.use((req, res, next) => {
     next();
 });
 
-// Sirve la carpeta pública (frontend) con caché óptima
+// Sirve la carpeta pública (frontend) con caché óptima y control anti-stale estricto
 app.use(express.static(path.join(__dirname, "public"), {
     dotfiles: "deny",
     etag: true,
     setHeaders: (res, filePath) => {
-        if (/\.(?:svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
-            // Fuentes e imágenes estáticas
-            res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+        if (/service-worker\.js$/i.test(filePath)) {
+            // Service Worker: NUNCA almacenar en caché, siempre validar con el servidor
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+        } else if (/\.(?:html)$/i.test(filePath)) {
+            // HTML: nunca almacenar en caché bajo ninguna circunstancia (evita títulos y cantones obsoletos)
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+        } else if (/\.(?:json|webmanifest)$/i.test(filePath)) {
+            // Manifiesto y configuraciones
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
         } else if (/\.geojson$/i.test(filePath)) {
             // GeoJSON: revalidación inmediata (permite actualizar capas sin caché residual)
-            res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
-        } else if (/\.html$/i.test(filePath)) {
-            // HTML: nunca almacenar en caché bajo ninguna circunstancia (evita cache residual en móviles)
             res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");
         } else if (/\.(?:css|js)$/i.test(filePath)) {
-            // Archivos de código: revalidación rápida con ETag
-            res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+            // Código CSS y JS de la aplicación: sin caché para forzar la versión actual en móviles/Brave
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+        } else if (/\.(?:svg|png|jpg|webp|woff2|woff|ttf|pbf)$/i.test(filePath)) {
+            // Fuentes e imágenes estáticas
+            res.setHeader("Cache-Control", "public, max-age=604800, immutable");
         }
     }
 }));
@@ -423,15 +437,33 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/config", (req, res) => {
-    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
-    let nombre = process.env.NOMBRE_PROYECTO || "Encuesta Quito - Septiembre - 2026";
+    res.set({
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    });
+    const TITULO_OFICIAL = "Encuesta Quito - Septiembre - 2026";
+    let nombre = process.env.NOMBRE_PROYECTO || TITULO_OFICIAL;
+    // Blindaje riguroso contra variables de entorno heredadas de otros cantones (ej. Cuenca, Machala, etc.)
+    if (!nombre || nombre.toLowerCase().includes("cuenca") || !nombre.toLowerCase().includes("quito")) {
+        nombre = TITULO_OFICIAL;
+    }
+
+    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.4678;
+    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -0.1807;
+    // Si coordenadas heredadas apuntan fuera de Pichincha/Quito (ej. Cuenca -79, -2.9), forzar Quito
+    if (centroLat < -1.0 || centroLng < -79.2) {
+        centroLng = -78.4678;
+        centroLat = -0.1807;
+    }
+
     res.json({
         nombreProyecto: nombre,
         metaEncuestas: Number(process.env.META_ENCUESTAS) || 1200,
         campoEncuestador: CAMPO_ENCUESTADOR,
         campoSupervisor: CAMPO_SUPERVISOR,
-        centroLng: process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.4678,
-        centroLat: process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -0.1807,
+        centroLng: centroLng,
+        centroLat: centroLat,
         zoomInicial: process.env.MAPA_ZOOM_INICIAL ? Number(process.env.MAPA_ZOOM_INICIAL) : 11
     });
 });
@@ -443,7 +475,7 @@ app.get("/api/encuestas", async (req, res) => {
                 total: 0,
                 resultados: [],
                 obtenidoEn: Date.now(),
-                mensaje: "Esperando configuración de formulario para Encuesta Pichincha 2026"
+                mensaje: "Esperando configuración de formulario para Encuesta Quito - Septiembre - 2026"
             });
         }
         res.set({

@@ -1,17 +1,17 @@
-/* Modo de contingencia: conserva solo la aplicación y cartografía pública.
+/* Modo de contingencia: conserva solo la aplicación y cartografía pública de Quito 2026.
  * No almacena respuestas de Kobo ni coordenadas de encuestas en el teléfono. */
-const CACHE_NAME = 'clima-social-campo-v16.2-quito-sep2026';
+const CACHE_NAME = 'clima-social-quito-2026-v17';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/style.css',
-  '/script.js',
+  '/style.css?v=17.0.0',
+  '/script.js?v=17.0.0',
   '/libs/maplibre-gl.js',
   '/libs/maplibre-gl.css',
   '/assets/icono.png',
   '/assets/01_ClimaSocial_Horizontal_Transparente.png',
-  '/assets/parroquias.geojson',
-  '/assets/sectores_censales.geojson'
+  '/assets/parroquias.geojson?v=17.0.0',
+  '/assets/sectores_censales.geojson?v=17.0.0'
 ];
 
 self.addEventListener('install', event => {
@@ -27,7 +27,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.map(key => {
         if (key !== CACHE_NAME) {
-          console.log('[SW] Purgando caché obsoleta:', key);
+          console.log('[SW] Purgando caché obsoleta o heredada:', key);
           return caches.delete(key);
         }
       })))
@@ -40,22 +40,8 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
-  // Navegación HTML: Network-first, fallback a caché
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
-
-  // Cartografía y código de la app (.geojson, script.js, style.css): Network-First
-  if (url.pathname.endsWith('.geojson') || url.pathname === '/script.js' || url.pathname === '/style.css') {
+  // 1. Navegación HTML: Network-first estricto, fallback EXCLUSIVO al shell de Quito v17
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
     event.respondWith(
       fetch(request)
         .then(response => {
@@ -65,21 +51,39 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.open(CACHE_NAME).then(cache => cache.match('/index.html')))
     );
     return;
   }
 
-  // Assets estáticos (imágenes, fuentes, librerías): Cache-first
+  // 2. Cartografía y código (.geojson, .js, .css): Network-First
+  if (url.pathname.endsWith('.geojson') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.open(CACHE_NAME).then(cache => cache.match(request)))
+    );
+    return;
+  }
+
+  // 3. Assets estáticos (imágenes, fuentes, librerías): Cache-first dentro de CACHE_NAME
   event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(response => {
-        if (response.ok && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/libs/'))) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-        }
-        return response;
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(request).then(cached => {
+        if (cached) return cached;
+        return fetch(request).then(response => {
+          if (response.ok && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/libs/') || url.pathname.startsWith('/fonts/'))) {
+            const copy = response.clone();
+            cache.put(request, copy);
+          }
+          return response;
+        });
       });
     })
   );
