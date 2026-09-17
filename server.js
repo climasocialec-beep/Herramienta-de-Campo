@@ -157,46 +157,77 @@ function normalizarCoordenadas(valores, validarEcuador = false) {
     return [lat, lng];
 }
 
-// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Pichincha 2026)
+// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Quito Septiembre 2026 - XLSForm aKiQPHjXNTHgvsb5d8ur7n)
 const PARROQUIAS_FORMULARIO = {
-    // Quito (1..50)
-    "1": "CARCELEN", "2": "COCHAPAMBA", "3": "COTOCOLLAO", "4": "EL CONDADO", "5": "IÑAQUITO",
-    "6": "JIPIJAPA", "7": "KENNEDY", "8": "RUMIPAMBA", "9": "SAN ISIDRO DEL INCA", "10": "BELISARIO QUEVEDO",
-    "11": "CENTRO HISTORICO", "12": "CHIMBACALLE", "13": "ITCHIMBIA", "14": "LA MAGDALENA", "15": "LA FERROVIARIA",
-    "16": "SAN JUAN", "17": "SAN BARTOLO", "26": "CHILLOGALLO", "27": "GUAMANI", "28": "LA ARGELIA",
-    "29": "LA ECUATORIANA", "30": "QUITUMBE", "31": "SOLANDA", "32": "TURUBAMBA", "33": "ALANGASI",
-    "34": "AMAGUAÑA", "35": "CALDERON", "36": "CHECA", "37": "CONOCOTO", "38": "CUMBAYA",
-    "39": "GUAYLLABAMBA", "40": "LA MERCED", "41": "LLANO CHICO", "42": "NAYON", "43": "PIFO",
-    "44": "PINTAG", "45": "POMASQUI", "46": "PUEMBO", "47": "QUINCHE", "48": "SAN ANTONIO",
-    "49": "TUMBACO", "50": "YARUQUI",
-    // Rumiñahui (110..114)
-    "110": "FAJARDO", "111": "SAN PEDRO DE TABOADA", "112": "SAN RAFAEL", "113": "SANGOLQUI", "114": "COTOGCHOA",
-    // Cayambe (210..217)
-    "210": "ASCAZUBI", "211": "CANGAHUA", "212": "CAYAMBE", "213": "JUAN MONTALVO", "214": "OLMEDO/PESILLO",
-    "215": "OTON", "216": "SAN JOSE DE AYORA", "217": "SANTA ROSA DE CUSUBAMBA",
-    // Mejía (310..316)
-    "310": "ALOAG", "311": "ALOASI", "312": "CORNEJO ASTORGA /TANDAPI", "313": "CUTUGLAGUA", "314": "MACHACHI",
-    "315": "TAMBILLO", "316": "UYUMBICHO"
+    "1": "CARCELEN",
+    "2": "COCHAPAMBA",
+    "3": "COMITE DEL PUEBLO",
+    "4": "COTOCOLLAO",
+    "5": "EL CONDADO",
+    "6": "IÑAQUITO",
+    "7": "JIPIJAPA",
+    "8": "KENNEDY",
+    "9": "LA CONCEPCION",
+    "10": "PONCEANO",
+    "11": "RUMIPAMBA",
+    "12": "SAN ISIDRO DEL INCA",
+    "13": "BELISARIO QUEVEDO",
+    "14": "CENTRO HISTORICO",
+    "15": "CHILIBULO",
+    "16": "CHIMBACALLE",
+    "17": "ITCHIMBIA",
+    "18": "LA FERROVIARIA",
+    "19": "LA LIBERTAD",
+    "20": "LA MAGDALENA",
+    "21": "MARISCAL SUCRE",
+    "22": "PUENGASI",
+    "23": "SAN BARTOLO",
+    "24": "SAN JUAN",
+    "25": "CHILLOGALLO",
+    "26": "GUAMANI",
+    "27": "LA ARGELIA",
+    "28": "LA ECUATORIANA",
+    "29": "LA MENA",
+    "30": "QUITUMBE",
+    "31": "SOLANDA",
+    "32": "TURUBAMBA",
+    "33": "ALANGASI",
+    "34": "AMAGUAÑA",
+    "35": "CALDERON",
+    "36": "CONOCOTO",
+    "37": "CUMBAYA",
+    "38": "GUAYLLABAMBA",
+    "39": "LLANO CHICO",
+    "40": "NAYON",
+    "41": "PIFO",
+    "42": "PINTAG",
+    "43": "POMASQUI",
+    "44": "PUEMBO",
+    "45": "QUINCHE",
+    "46": "SAN ANTONIO",
+    "47": "TUMBACO",
+    "48": "YARUQUI"
 };
 
 const CIRCUNSCRIPCIONES_FORMULARIO = {
-    "1q": "C1 (Urbana Norte)",
-    "2q": "C2 (Urbana Centro)",
-    "3q": "C3 (Urbana Sur)",
-    "4q": "C4 (Rural)",
-    "1r": "Urbana 1",
-    "2r": "Urbana 2",
-    "3r": "Rural"
+    "1": "CIRCUNSCRIPCION URBANA 1",
+    "2": "CIRCUNSCRIPCION URBANA 2",
+    "3": "CIRCUNSCRIPCION URBANA 3",
+    "4": "CIRCUNSCRIPCION RURAL",
+    "1q": "CIRCUNSCRIPCION URBANA 1",
+    "2q": "CIRCUNSCRIPCION URBANA 2",
+    "3q": "CIRCUNSCRIPCION URBANA 3",
+    "4q": "CIRCUNSCRIPCION RURAL"
 };
 
 const CANTONES_FORMULARIO = {
-    "1": "Quito", "2": "Rumiñahui", "3": "Cayambe", "4": "Mejía",
-    "60": "Quito", "80": "Rumiñahui", "90": "Cayambe", "100": "Mejía"
+    "1": "Quito",
+    "60": "Quito"
 };
 
 const TIPOLOGIAS_FORMULARIO = {
-    "a": "A", "b": "B", "c": "C", "d": "D", "e": "E", "f": "F", "g": "G", "h": "H",
-    "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H"
+    "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H",
+    "a": "A", "b": "B", "c": "C", "d": "D", "e": "E", "f": "F", "g": "G", "h": "H"
 };
 
 function normalizarEncuesta(raw) {
@@ -258,39 +289,29 @@ function normalizarEncuesta(raw) {
     }
 
     // Consentimiento: 1 = SÍ, 2 = NO / Rechazo
-    const rawConsen = extraerValor(raw, ["consen", "consentimiento", "acepta", "consent"]);
+    const rawConsen = extraerValor(raw, ["consent", "consen", "consentimiento", "acepta"]);
     const noConsent = rawConsen === "2" || String(rawConsen).trim().toLowerCase() === "no" || String(rawConsen).trim().toLowerCase() === "rechaza";
     const consentimiento = noConsent ? "NO" : "SI";
 
     const sc = extraerValor(raw, ["sc", "sectorcen", "p_ref", "codigo_sc", "sector_censal"]);
     const rawTipol = String(extraerValor(raw, ["tipol", "tipologia", "TIPOLOGIA", "tipo_sc"]) || "").trim().toLowerCase();
     const tipologia = TIPOLOGIAS_FORMULARIO[rawTipol] || rawTipol.toUpperCase();
-    const barrio = extraerValor(raw, ["barr", "barrio", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
+    const barrio = extraerValor(raw, ["barrio", "barr", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
     
-    // Parroquia: extracción tolerante (parroquiasI para Quito/Rumiñahui, parroquiasII para Cayambe/Mejía)
-    const rawParroquia = extraerValor(raw, ["parroquiasI", "parroquiasII", "parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
+    // Parroquia: decodificación por choices del XLSForm Quito
+    const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
     const parroquia = PARROQUIAS_FORMULARIO[rawParroquia] || String(rawParroquia).trim().toUpperCase();
 
-    // Cantón: extracción tolerante (60: Quito, 80: Rumiñahui, 90: Cayambe, 100: Mejía)
-    const rawCanton = extraerValor(raw, ["canton", "CANTON", "cant", "nom_canton", "cod_canton", "can"]) || "";
-    let canton = CANTONES_FORMULARIO[rawCanton] || String(rawCanton).trim();
-    if (!canton && rawParroquia) {
-        const numP = parseInt(rawParroquia, 10);
-        if (!isNaN(numP)) {
-            if (numP >= 1 && numP <= 50) canton = "Quito";
-            else if (numP >= 110 && numP <= 114) canton = "Rumiñahui";
-            else if (numP >= 210 && numP <= 217) canton = "Cayambe";
-            else if (numP >= 310 && numP <= 316) canton = "Mejía";
-        }
-    }
+    // Cantón: Encuesta cantonal Quito
+    const canton = "Quito";
 
     // Circunscripción
     const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]) || "";
     const circunscripcion = CIRCUNSCRIPCIONES_FORMULARIO[rawCircuns] || String(rawCircuns).trim();
 
-    // Extracción tolerante de Género (p1: 1=Masculino, 2=Femenino, 3=LGBTIQ+, 4=Otro)
+    // Extracción tolerante de Género (p1: 1=Masculino, 2=Femenino, 3=LGBTIQ+, 0=Otro; p1_1: 1=Hombre, 2=Mujer)
     const rawGen = extraerValor(raw, [
-        "p1", "genero", "p_genero", "sexo", "gender",
+        "p1", "p1_1", "genero", "p_genero", "sexo", "gender",
         "1. ¿CUÁL ES SU GÉNERO?", "1._CU_L_ES_SU_G_NERO",
         "genero_resp", "p1_genero"
     ]) || "";
@@ -300,6 +321,10 @@ function normalizarEncuesta(raw) {
         genero = "Hombre";
     } else if (rawGen === "2" || rawGen.toLowerCase().includes("fem") || rawGen.toLowerCase().includes("mujer")) {
         genero = "Mujer";
+    } else if (rawGen === "3") {
+        genero = "LGBTIQ+";
+    } else if (rawGen === "0") {
+        genero = "Otro";
     }
 
     // Edad (p2: edad cumplida en años)
@@ -321,6 +346,10 @@ function normalizarEncuesta(raw) {
         _geolocation: geo,
         [campoEnc]: encuestador,
         [campoSup]: supervisor,
+        cod_enc: encuestador,
+        cod_sup: supervisor,
+        cenc: encuestador,
+        csup: supervisor,
         encuestador,
         supervisor,
         sc,
