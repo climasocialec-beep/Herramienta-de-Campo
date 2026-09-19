@@ -3341,6 +3341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const frag = document.createDocumentFragment();
         encIds.forEach(encId => {
+            const color = obtenerColorEncuestador(encId);
             const encTitulo = obtenerEtiquetaEncuestador(encId, 'completo');
             const total = conteoEncuestadores.get(encId);
             const item = document.createElement('div');
@@ -3587,11 +3588,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ordenarEncuestadoresLista(gSup.encuestadores);
 
                 const colorSupervisor = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
-                const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
+                const isExplicitlyCollapsed = AppState.supervisoresColapsados && AppState.supervisoresColapsados.has(supId);
                 const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
                 const hasSearch = Boolean(AppState.filtroTabla);
-                const isExpanded = isExplicitlyExpanded || isFilteredSup || hasSearch;
-                const isCollapsed = !isExpanded;
+                const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredSup;
 
                 // Fila de encabezado de grupo (Supervisor)
                 const trHeader = document.createElement('tr');
@@ -3616,11 +3616,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
 
                 trHeader.addEventListener('click', () => {
-                    if (!AppState.supervisoresExpandidos) AppState.supervisoresExpandidos = new Set();
-                    if (AppState.supervisoresExpandidos.has(supId)) {
-                        AppState.supervisoresExpandidos.delete(supId);
+                    if (!AppState.supervisoresColapsados) AppState.supervisoresColapsados = new Set();
+                    if (AppState.supervisoresColapsados.has(supId)) {
+                        AppState.supervisoresColapsados.delete(supId);
                     } else {
-                        AppState.supervisoresExpandidos.add(supId);
+                        AppState.supervisoresColapsados.add(supId);
                     }
                     const encs = obtenerEncuestasFiltradas();
                     actualizarTabla(encs);
