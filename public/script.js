@@ -80,11 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
             parroquias: true
         },
         filtroGPS: 'Todos',
-        mostrarInconsistencias: false,
         filtroSoloAlertas: false,
         filtroSoloPendientes: false,
         conteoPorSector: new Map(),
         totalAlertas: 0,
+        erroresColapsados: true,
         filtroTabla: '',
         modoVisualizacion: 'puntos',
         modoAgrupacionTabla: 'supervisor',
@@ -307,8 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         txtLimpiarFiltros: document.getElementById('txtLimpiarFiltros'),
         activeFilterChipsWrap: document.getElementById('activeFilterChipsWrap'),
         activeFilterChips: document.getElementById('activeFilterChips'),
-        btnFiltroAlertas: document.getElementById('btnFiltroAlertas'),
-        txtFiltroAlertas: document.getElementById('txtFiltroAlertas'),
         
         // Mapa, Capas y Modos
         mapContainer: document.getElementById('map'),
@@ -1087,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeCount++;
             chips.push({
                 tipo: 'alerta',
-                label: `⚠️ Inconsistencias (${AppState.totalAlertas})`,
+                label: `⚠️ Errores de Código (${AppState.totalAlertas})`,
                 onClear: () => {
                     AppState.filtroSoloAlertas = false;
                     renderizarVista();
@@ -1119,18 +1117,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     actualizarFiltrosUI();
                 }
             });
-        }
-
-        if (UI.btnFiltroAlertas) {
-            if (AppState.totalAlertas > 0) {
-                UI.btnFiltroAlertas.style.display = 'inline-flex';
-                UI.btnFiltroAlertas.classList.toggle('active', AppState.filtroSoloAlertas);
-                if (UI.txtFiltroAlertas) {
-                    UI.txtFiltroAlertas.textContent = `${AppState.totalAlertas} ${AppState.totalAlertas === 1 ? 'Inconsistencia' : 'Inconsistencias'}`;
-                }
-            } else {
-                UI.btnFiltroAlertas.style.display = 'none';
-            }
         }
 
         if (UI.btnLimpiarFiltros) {
@@ -1630,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Inconsistencias / Alertas
+        // Filtro por Errores de Código
         if (AppState.filtroSoloAlertas) {
             filtradas = filtradas.filter(e => e._tieneAlerta);
         }
@@ -2406,8 +2392,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tieneAlerta) {
                 bannerAlerta = `
                     <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:7px 9px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.35;">
-                        <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Inconsistencia Detectada:</strong>
-                        <span>${p.alertaMensaje || 'Discrepancia espacial de parroquia o punto de muestreo.'}</span>
+                        <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Error de Código:</strong>
+                        <span>${p.alertaMensaje || 'Error en código de encuestador o supervisor.'}</span>
                     </div>
                 `;
             }
@@ -3484,7 +3470,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="cs-enc-meta">
                         <div class="cs-enc-name" title="${encTituloCompleto} (${supTitle})">
                             <span>${encTituloCorto}</span>
-                            ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
                         </div>
                         <div class="cs-enc-sub">
                             ${badgeSupHtml}
@@ -3641,6 +3626,166 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+
+        // ---------------------------------------------------------------------
+        // SECCIÓN DE ERRORES DE CÓDIGO (Al final de los supervisores)
+        // ---------------------------------------------------------------------
+        const encuestadoresNoOficiales = datos.filter(g => !EQUIPO_CAMPO[g.id]);
+        ordenarEncuestadoresLista(encuestadoresNoOficiales);
+
+        const encuestasBase = AppState.encuestas || [];
+        const encuestasSupMismatch = encuestasBase.filter(e => {
+            const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+            const supOrig = String(e._supervisorOriginal || '').trim();
+            const supEsp = ENCUESTADOR_A_SUPERVISOR[encCod];
+            return Boolean(EQUIPO_CAMPO[encCod] && supOrig && supEsp && supOrig !== supEsp);
+        });
+
+        let mismatchesFiltrados = encuestasSupMismatch;
+        if (AppState.supervisorSeleccionado !== 'Todos') {
+            mismatchesFiltrados = mismatchesFiltrados.filter(e => {
+                const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+                return ENCUESTADOR_A_SUPERVISOR[encCod] === AppState.supervisorSeleccionado;
+            });
+        }
+        if (AppState.filtroTabla) {
+            const term = AppState.filtroTabla.toLowerCase();
+            mismatchesFiltrados = mismatchesFiltrados.filter(e => {
+                const encCod = String(e.encuestador || '').toLowerCase();
+                const nom = (EQUIPO_CAMPO[encCod]?.nombre || '').toLowerCase();
+                return encCod.includes(term) || nom.includes(term);
+            });
+        }
+
+        const totalErroresNoOficiales = (AppState.supervisorSeleccionado === 'Todos') ? encuestadoresNoOficiales.reduce((acc, g) => acc + g.encuestas.length, 0) : 0;
+        const totalErroresSupMismatch = mismatchesFiltrados.length;
+        const totalErrores = totalErroresNoOficiales + totalErroresSupMismatch;
+
+        if (totalErrores > 0) {
+            const isErrorsCollapsed = AppState.erroresColapsados !== false;
+
+            const trErrorsHeader = document.createElement('tr');
+            trErrorsHeader.className = `cs-table-group-header cs-table-group-header--errors ${isErrorsCollapsed ? 'is-collapsed' : ''}`;
+            trErrorsHeader.innerHTML = `
+                <td colspan="2">
+                    <div class="cs-table-group-title">
+                        <span class="cs-group-toggle-icon">
+                            <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                        <span class="cs-group-color-dot" style="--sup-dot-color: #ef4444; background: #ef4444;"></span>
+                        <span class="cs-group-name" style="color: #ef4444; font-weight: 800;">⚠️ Errores de Código</span>
+                        <span class="cs-group-pill cs-group-pill--danger">${totalErrores} enc.</span>
+                    </div>
+                </td>
+            `;
+
+            trErrorsHeader.addEventListener('click', () => {
+                AppState.erroresColapsados = !AppState.erroresColapsados;
+                const encs = obtenerEncuestasFiltradas();
+                actualizarTabla(encs);
+            });
+
+            fragment.appendChild(trErrorsHeader);
+
+            if (!isErrorsCollapsed) {
+                // A. Encuestadores no oficiales
+                if (AppState.supervisorSeleccionado === 'Todos') {
+                    encuestadoresNoOficiales.forEach(g => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'cs-enc-row cs-error-row';
+                        if (AppState.encuestadorSeleccionado === g.id) {
+                            tr.classList.add('selected');
+                        }
+                        tr.innerHTML = `
+                            <td>
+                                <div class="cs-enc-card">
+                                    <div class="cs-enc-avatar" style="--enc-color:#ef4444; background:#fee2e2; color:#b91c1c; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">
+                                        ⚠️
+                                    </div>
+                                    <div class="cs-enc-meta">
+                                        <div class="cs-enc-name">
+                                            <span style="font-weight:700; color:#b91c1c;">Enc. ${g.id}</span>
+                                            <span class="cs-badge" style="background:#fee2e2; color:#b91c1c; font-size:0.6rem; padding:0.06rem 0.35rem; border:1px solid #fca5a5;">No oficial</span>
+                                        </div>
+                                        <div class="cs-enc-sub" style="font-size:0.7rem; color:var(--text-muted);">
+                                            <span>Código no registrado en nómina</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="text-align:right;">
+                                <span class="cs-enc-total-pill cs-enc-total-pill--danger" title="Total de encuestas con este código no oficial">${g.encuestas.length}</span>
+                            </td>
+                        `;
+                        tr.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            seleccionarEncuestador(g.id);
+                        });
+                        fragment.appendChild(tr);
+                    });
+                }
+
+                // B. Errores de supervisor ingresado
+                const mismatchesPorEnc = new Map();
+                mismatchesFiltrados.forEach(e => {
+                    const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+                    if (!mismatchesPorEnc.has(encCod)) {
+                        mismatchesPorEnc.set(encCod, []);
+                    }
+                    mismatchesPorEnc.get(encCod).push(e);
+                });
+
+                mismatchesPorEnc.forEach((encsList, encCod) => {
+                    const nombreEnc = EQUIPO_CAMPO[encCod]?.nombre || encCod;
+                    const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCod];
+                    const supsIngresados = [...new Set(encsList.map(e => e._supervisorOriginal))].join(', ');
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'cs-enc-row cs-error-row';
+                    tr.innerHTML = `
+                        <td>
+                            <div class="cs-enc-card">
+                                <div class="cs-enc-avatar" style="--enc-color:#f59e0b; background:#fef3c7; color:#b45309; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">
+                                    ⚠️
+                                </div>
+                                <div class="cs-enc-meta">
+                                    <div class="cs-enc-name">
+                                        <span style="font-weight:700;">Enc. ${encCod} · ${nombreEnc}</span>
+                                        <span class="cs-badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; padding:0.06rem 0.35rem; border:1px solid #fde68a;">Sup. Erróneo</span>
+                                    </div>
+                                    <div class="cs-enc-sub" style="font-size:0.7rem; color:var(--text-muted);">
+                                        <span>Ingresó Sup. ${supsIngresados} (esperado Sup. ${supEsperado})</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="cs-enc-total-pill cs-enc-total-pill--warning" title="Encuestas donde se ingresó supervisor incorrecto">${encsList.length}</span>
+                        </td>
+                    `;
+                    tr.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const coords = encsList.map(e => extraerCoordenadas(e)).filter(Boolean);
+                        if (coords.length > 0 && map) {
+                            if (coords.length === 1) {
+                                map.flyTo({ center: [coords[0][1], coords[0][0]], zoom: 16, duration: 700 });
+                            } else {
+                                let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+                                coords.forEach(([lat, lng]) => {
+                                    if (lng < minLng) minLng = lng;
+                                    if (lat < minLat) minLat = lat;
+                                    if (lng > maxLng) maxLng = lng;
+                                    if (lat > maxLat) maxLat = lat;
+                                });
+                                map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 16, duration: 700 });
+                            }
+                        }
+                        mostrarToast(`Enc. ${encCod} (${nombreEnc}): ${encsList.length} enc. con Sup. erróneo (${supsIngresados})`, 'warning');
+                    });
+                    fragment.appendChild(tr);
+                });
+            }
+        }
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
     }
@@ -3868,7 +4013,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (c) coords.push(c);
         });
 
-        if (supId && UI.supervisorFilter) {
+        if (supId && ['1', '2', '3', '4'].includes(String(supId)) && UI.supervisorFilter) {
             AppState.supervisorSeleccionado = supId;
             UI.supervisorFilter.value = supId;
         }
@@ -4057,16 +4202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-        // 5.1 Filtro Directo de Inconsistencias
-        if (UI.btnFiltroAlertas) {
-            UI.btnFiltroAlertas.addEventListener('click', () => {
-                AppState.filtroSoloAlertas = !AppState.filtroSoloAlertas;
-                renderizarVista();
-                if (AppState.filtroSoloAlertas) {
-                    mostrarToast(`Mostrando ${AppState.totalAlertas} encuestas con inconsistencias`, 'info');
-                }
-            });
-        }
+
 
         // 5. Conmutador de Etiquetas: Mostrar vs Ocultar
         if (UI.btnEtiquetasOn && UI.btnEtiquetasOff) {
@@ -4225,13 +4361,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.filtrarPorParroquia = seleccionarParroquia;
-    window.toggleAuditoria = function(activar) {
-        AppState.mostrarInconsistencias = (typeof activar === 'boolean') ? activar : !AppState.mostrarInconsistencias;
-        auditarEncuestas();
-        renderizarVista();
-        console.log(`[Auditoría Espacial] Estado: ${AppState.mostrarInconsistencias ? 'ACTIVADO' : 'OCULTO'}`);
-        return AppState.mostrarInconsistencias;
-    };
 
     // Iniciar aplicación
     inicializar();
