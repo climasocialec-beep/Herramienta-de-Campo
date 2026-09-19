@@ -1,17 +1,17 @@
 /* Modo de contingencia: conserva solo la aplicación y cartografía pública de Quito 2026.
  * No almacena respuestas de Kobo ni coordenadas de encuestas en el teléfono. */
-const CACHE_NAME = 'clima-social-quito-2026-v21';
+const CACHE_NAME = 'clima-social-quito-2026-v22';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/style.css?v=21.0.0',
-  '/script.js?v=21.0.0',
+  '/style.css?v=22.0.0',
+  '/script.js?v=22.0.0',
   '/libs/maplibre-gl.js',
   '/libs/maplibre-gl.css',
   '/assets/icono.png',
   '/assets/01_ClimaSocial_Horizontal_Transparente.png',
-  '/assets/parroquias.geojson?v=21.0.0',
-  '/assets/sectores_censales.geojson?v=21.0.0'
+  '/assets/parroquias.geojson?v=22.0.0',
+  '/assets/sectores_censales.geojson?v=22.0.0'
 ];
 
 self.addEventListener('install', event => {
