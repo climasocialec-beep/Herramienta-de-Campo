@@ -3471,4 +3471,235 @@ body.modo-oscuro .cs-alert-badge {
   }
 }
 
+/* =========================================================================
+   SUBTABS / VIÑETAS DEL PANEL DERECHO (Encuestadores vs Errores)
+   ========================================================================= */
+.cs-panel-subtabs {
+  display: flex;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.25rem 0.5rem 0;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.cs-panel-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  border-radius: 4px 4px 0 0;
+}
+
+.cs-panel-subtab:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cs-panel-subtab.active {
+  color: var(--cs-primary);
+  background: var(--bg-surface);
+  border-bottom-color: var(--cs-primary);
+  font-weight: 700;
+}
+
+.cs-subtab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  min-width: 1.2rem;
+  line-height: 1;
+}
+
+.cs-panel-subtab.active .cs-subtab-badge {
+  background: rgba(2, 128, 144, 0.12);
+  color: var(--cs-primary);
+}
+
+.cs-subtab-badge--danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.cs-subtab-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.cs-panel-header--danger {
+  background-color: #881337;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.modo-oscuro .cs-panel-header--danger {
+  background-color: #4c0519;
+}
+
+/* Filtros rápidos de errores */
+.cs-error-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.cs-error-pill-btn {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-error-pill-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cs-error-pill-btn.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+/* Lista scrollable de errores */
+.cs-error-scroll-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+/* Tarjeta individual de inconsistencia */
+.cs-error-card {
+  background: var(--bg-surface);
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: var(--cs-radius-sm);
+  padding: 0.55rem 0.65rem;
+  transition: all var(--cs-transition);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cs-error-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+.cs-error-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cs-error-type-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.cs-error-type-tag--parroquia {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.cs-error-type-tag--sector {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.cs-error-type-tag--codigo {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.cs-error-meta-top {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.cs-error-team-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+}
+
+.cs-error-msg {
+  font-size: 0.7rem;
+  color: #b91c1c;
+  line-height: 1.35;
+  background: rgba(239, 68, 68, 0.06);
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+}
+
+.cs-error-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.cs-error-fly-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #028090;
+  background: transparent;
+  border: 1px solid rgba(2, 128, 144, 0.3);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-error-fly-btn:hover {
+  background: #028090;
+  color: #ffffff;
+}
+
+
 

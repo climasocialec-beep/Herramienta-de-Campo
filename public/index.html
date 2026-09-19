@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=28.0.0">
+  <link rel="stylesheet" href="style.css?v=29.0.0">
 </head>
 <body>
 
@@ -411,36 +411,96 @@
       <!-- COLUMNA DERECHA: TABLA DE ENCUESTADORES -->
       <section class="cs-right-panel" data-mobile-panel="equipo" aria-label="Panel de Encuestadores">
         <div class="cs-table-card">
-          <div class="cs-panel-header cs-panel-header--navy">
-            <div class="cs-panel-header__main">
-              <h3>
-                <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Equipo de Encuestadores
-              </h3>
+          <!-- VIÑETAS / SUBTABS DEL PANEL DERECHO -->
+          <div class="cs-panel-subtabs" role="tablist">
+            <button type="button" class="cs-panel-subtab active" id="btnSubtabEncuestadores" role="tab" aria-selected="true">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Encuestadores</span>
+              <span class="cs-subtab-badge" id="badgeSubtabEncuestadores">--</span>
+            </button>
+            <button type="button" class="cs-panel-subtab" id="btnSubtabErrores" role="tab" aria-selected="false">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Errores</span>
+              <span class="cs-subtab-badge cs-subtab-badge--danger" id="badgeSubtabErrores" style="display:none;">0</span>
+            </button>
+          </div>
+
+          <!-- VISTA 1: ENCUESTADORES -->
+          <div class="cs-subtab-view active" id="viewEncuestadores">
+            <div class="cs-panel-header cs-panel-header--navy">
+              <div class="cs-panel-header__main">
+                <h3>
+                  <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Equipo de Encuestadores
+                </h3>
+              </div>
+              <div class="cs-search-bar">
+                <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="searchInput" placeholder="Buscar encuestador o supervisor…" autocomplete="off">
+              </div>
             </div>
-            <div class="cs-search-bar">
-              <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" id="searchInput" placeholder="Buscar encuestador o supervisor…" autocomplete="off">
+
+            <div class="cs-table-responsive cs-table-scroll-container">
+              <table class="cs-data-table" id="tablaEncuestadores">
+                <thead>
+                  <tr>
+                    <th data-sort="encuestador" style="width:70%;">Encuestador <span class="cs-sort-icon">↕</span></th>
+                    <th data-sort="encuestas" style="width:30%;text-align:right;">Total <span class="cs-sort-icon">↕</span></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="cs-empty-state" id="emptyState" style="display:none;">
+              <div class="cs-empty-state__icon">
+                <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <p>No se encontraron encuestadores con ese filtro</p>
             </div>
           </div>
 
-          <div class="cs-table-responsive cs-table-scroll-container">
-            <table class="cs-data-table" id="tablaEncuestadores">
-              <thead>
-                <tr>
-                  <th data-sort="encuestador" style="width:70%;">Encuestador <span class="cs-sort-icon">↕</span></th>
-                  <th data-sort="encuestas" style="width:30%;text-align:right;">Total <span class="cs-sort-icon">↕</span></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <div class="cs-empty-state" id="emptyState" style="display:none;">
-            <div class="cs-empty-state__icon">
-              <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <!-- VISTA 2: ERRORES E INCONSISTENCIAS -->
+          <div class="cs-subtab-view" id="viewErrores" style="display:none;">
+            <div class="cs-panel-header cs-panel-header--danger">
+              <div class="cs-panel-header__main">
+                <h3>
+                  <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Inconsistencias de Campo
+                </h3>
+              </div>
+              <div class="cs-search-bar">
+                <svg class="cs-icon cs-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="searchErroresInput" placeholder="Buscar por encuestador, supervisor, error…" autocomplete="off">
+              </div>
             </div>
-            <p>No se encontraron encuestadores con ese filtro</p>
+
+            <!-- FILTROS RÁPIDOS DE ERRORES -->
+            <div class="cs-error-filters-bar" id="errorFiltersBar">
+              <button type="button" class="cs-error-pill-btn active" data-err-tipo="todos">
+                Todos (<span id="countErrTodos">0</span>)
+              </button>
+              <button type="button" class="cs-error-pill-btn" data-err-tipo="parroquia">
+                🔴 Parroquia (<span id="countErrParroquia">0</span>)
+              </button>
+              <button type="button" class="cs-error-pill-btn" data-err-tipo="sector">
+                🟠 Fuera de Sector (<span id="countErrSector">0</span>)
+              </button>
+              <button type="button" class="cs-error-pill-btn" data-err-tipo="codigo">
+                🟣 Códigos (<span id="countErrCodigo">0</span>)
+              </button>
+            </div>
+
+            <div class="cs-error-scroll-container" id="scrollErrores">
+              <div id="listaErrores" style="display:flex;flex-direction:column;gap:0.55rem;"></div>
+            </div>
+
+            <div class="cs-empty-state" id="emptyStateErrores" style="display:none;">
+              <div class="cs-empty-state__icon">
+                <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <p>No se encontraron inconsistencias en este filtro</p>
+            </div>
           </div>
         </div>
       </section>
@@ -476,11 +536,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=28.0.0"></script>
+  <script src="script.js?v=29.0.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=28.0.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=29.0.0').then(reg => {
           if (reg && reg.update) reg.update();
         }).catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
