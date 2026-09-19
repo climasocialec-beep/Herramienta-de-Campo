@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=29.0.0">
+  <link rel="stylesheet" href="style.css?v=30.0.0">
 </head>
 <body>
 
@@ -475,19 +475,16 @@
               </div>
             </div>
 
-            <!-- FILTROS RÁPIDOS DE ERRORES -->
+            <!-- FILTROS RÁPIDOS DE ERRORES DE CÓDIGO -->
             <div class="cs-error-filters-bar" id="errorFiltersBar">
               <button type="button" class="cs-error-pill-btn active" data-err-tipo="todos">
                 Todos (<span id="countErrTodos">0</span>)
               </button>
-              <button type="button" class="cs-error-pill-btn" data-err-tipo="parroquia">
-                🔴 Parroquia (<span id="countErrParroquia">0</span>)
+              <button type="button" class="cs-error-pill-btn" data-err-tipo="encuestador">
+                🟣 Encuestador No Oficial (<span id="countErrEncuestador">0</span>)
               </button>
-              <button type="button" class="cs-error-pill-btn" data-err-tipo="sector">
-                🟠 Fuera de Sector (<span id="countErrSector">0</span>)
-              </button>
-              <button type="button" class="cs-error-pill-btn" data-err-tipo="codigo">
-                🟣 Códigos (<span id="countErrCodigo">0</span>)
+              <button type="button" class="cs-error-pill-btn" data-err-tipo="supervisor">
+                🟠 Supervisor Incorrecto (<span id="countErrSupervisor">0</span>)
               </button>
             </div>
 
@@ -536,11 +533,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=29.0.0"></script>
+  <script src="script.js?v=30.0.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=29.0.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=30.0.0').then(reg => {
           if (reg && reg.update) reg.update();
         }).catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);

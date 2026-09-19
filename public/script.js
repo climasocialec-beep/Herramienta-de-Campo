@@ -42,7 +42,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
     if ('caches' in window) {
-        const CACHE_VALIDA = 'clima-social-quito-2026-v17';
+        const CACHE_VALIDA = 'clima-social-quito-2026-v30';
         caches.keys().then(keys => {
             keys.forEach(k => {
                 if (k !== CACHE_VALIDA) {
@@ -713,93 +713,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function auditarEncuestas() {
         if (!AppState.encuestas) return;
 
-        // Si la auditoría está oculta por configuración, limpiar alertas y salir
-        if (!AppState.mostrarInconsistencias) {
-            AppState.totalAlertas = 0;
-            AppState.encuestas.forEach(enc => {
-                enc._tieneAlerta = false;
-                enc._alertas = [];
-                enc._alertaMensaje = '';
-            });
-            return;
-        }
-
-        if (!AppState.parroquiasGeojson || !AppState.parroquiasGeojson.features) return;
-
         let totalAlertas = 0;
         AppState.encuestas.forEach(enc => {
-            const coords = extraerCoordenadas(enc);
-            if (!coords) {
-                enc._tieneAlerta = false;
-                enc._alertas = [];
-                enc._alertaMensaje = '';
-                return;
-            }
-
-            const [lat, lng] = coords;
             const alertas = [];
 
-            // 1. Verificación Parroquial (Point in Polygon)
-            const parroquiaDeclarada = obtenerParroquiaEncuesta(enc);
-            const parroquiaReal = detectarParroquiaGPS(lng, lat);
-
-            if (parroquiaReal && parroquiaDeclarada) {
-                const nReal = normStr(parroquiaReal);
-                const nDecl = normStr(parroquiaDeclarada);
-                if (nReal !== nDecl && !nReal.includes(nDecl) && !nDecl.includes(nReal)) {
-                    alertas.push({
-                        tipo: 'parroquia',
-                        mensaje: `Parroquia registrada: "${parroquiaDeclarada}", pero el GPS cayó en "${parroquiaReal}".`
-                    });
-                }
-            }
-
-            // 2. Verificar el polígono del sector identificado dentro de su cantón.
-            const scDeclarado = String(enc.sc || campo(enc, 'sc') || '').trim();
-            if (scDeclarado && AppState.sectoresMap) {
-                const sectorMeta = resolverSectorEncuesta(enc);
-                if (sectorMeta && sectorMeta.centroid) {
-                    const [hLng, hLat] = sectorMeta.centroid;
-                    const distKm = calcularDistancia(lat, lng, hLat, hLng);
-                    if (!puntoEnGeometria(lng, lat, sectorMeta.feature.geometry)) {
-                        const cercano = encontrarHitoMasCercano(lng, lat);
-                        const cercanoP = cercano && cercano.feature ? cercano.feature.properties : null;
-                        const distM = Math.round(distKm * 1000);
-                        let msgHito = `GPS fuera del polígono del Sector #${scDeclarado} de ${sectorMeta.canton} (a ${distKm >= 1 ? distKm.toFixed(1) + ' km' : distM + 'm'} del centro).`;
-                        if (cercanoP && String(cercanoP.sc || cercanoP.codigo_muestra) !== scDeclarado) {
-                            const dCercanoM = Math.round(cercano.distanciaKm * 1000);
-                            msgHito += ` GPS más cercano a Sector #${cercanoP.sc || cercanoP.codigo_muestra} (a ${dCercanoM}m).`;
-                        }
-                        alertas.push({
-                            tipo: 'sector',
-                            mensaje: msgHito
-                        });
-                    }
-                }
-            }
-
-            // 3. Verificación de Códigos Oficiales de Encuestador y Supervisor
+            // ÚNICAMENTE VERIFICACIÓN DE CÓDIGOS DE ENCUESTADOR Y SUPERVISOR
             const encCodStr = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
             const supCodOriginal = String(enc._supervisorOriginal || enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
 
-            if (!ENCUESTADOR_A_SUPERVISOR[encCodStr]) {
+            if (!EQUIPO_CAMPO[encCodStr]) {
                 alertas.push({
-                    tipo: 'codigo',
-                    mensaje: `Código de encuestador no oficial: "${encCodStr}". No está en la nómina oficial de Quito.`
+                    tipo: 'encuestador',
+                    titulo: 'Encuestador No Oficial',
+                    mensaje: `Código de encuestador no oficial: "${encCodStr}". No pertenece a la nómina de 12 encuestadores oficiales.`
                 });
             } else {
                 const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCodStr];
                 if (supCodOriginal && supCodOriginal !== supEsperado) {
+                    const nomEsperado = obtenerEtiquetaSupervisor(supEsperado, 'nombre');
                     alertas.push({
-                        tipo: 'codigo',
-                        mensaje: `Supervisor registrado como "${supCodOriginal}", pero según nómina debe ser Sup. ${supEsperado}.`
+                        tipo: 'supervisor',
+                        titulo: 'Supervisor Incorrecto',
+                        mensaje: `Supervisor erróneo: ingresó Sup. ${supCodOriginal}, pero le corresponde Sup. ${supEsperado} · ${nomEsperado}.`
                     });
                 }
             }
 
             enc._tieneAlerta = alertas.length > 0;
             enc._alertas = alertas;
-            enc._alertaMensaje = alertas.map(a => a.mensaje).join(' ');
+            enc._alertaMensaje = alertas.map(a => a.mensaje).join(' · ');
             if (enc._tieneAlerta) totalAlertas++;
         });
 
@@ -1307,19 +1249,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const hayFiltroActivo = (selSup !== 'Todos' || !!selEnc || !!targetPar || selFec !== 'Todas');
 
-        // 1. Selector Supervisores: `csup` es un entero libre en el XLSForm.
+        // 1. Selector Supervisores: Estrictamente los 4 supervisores oficiales (1 al 4)
         if (UI.supervisorFilter) {
             const actualSup = AppState.supervisorSeleccionado || 'Todos';
             UI.supervisorFilter.innerHTML = '<option value="Todos">Todos los supervisores</option>';
-            Array.from(supervisores.keys()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-                .forEach(id => {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = `${obtenerEtiquetaSupervisor(id, 'corto')} (${supervisores.get(id)} enc.)`;
-                    UI.supervisorFilter.appendChild(option);
-                });
-            UI.supervisorFilter.value = supervisores.has(actualSup) ? actualSup : 'Todos';
-            if (!supervisores.has(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
+            ['1', '2', '3', '4'].forEach(id => {
+                const totalEnc = supervisores.get(id) || 0;
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${obtenerEtiquetaSupervisor(id, 'corto')} (${totalEnc} enc.)`;
+                UI.supervisorFilter.appendChild(option);
+            });
+            UI.supervisorFilter.value = ['1', '2', '3', '4'].includes(actualSup) ? actualSup : 'Todos';
+            if (!['1', '2', '3', '4'].includes(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
         // 1.1 Selector Cantón (Encuesta Quito - Septiembre - 2026)
@@ -3583,10 +3525,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let datos = agruparPorEncuestador(encuestas);
 
-        // Actualizar badge de la subtab Encuestadores
-        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
-        if (badgeEnc) badgeEnc.textContent = datos.length;
-
         // Búsqueda en vivo (por id, supervisor o cantón)
         if (AppState.filtroTabla) {
             const term = AppState.filtroTabla.toLowerCase();
@@ -3613,11 +3551,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
 
         // ---------------------------------------------------------------------
-        // AGRUPAR POR SUPERVISOR (A cada supervisor SOLO le corresponden sus 3 encuestadores oficiales)
+        // AGRUPAR POR SUPERVISOR (Panel limpio: estrictamente los 4 supervisores y sus 3 encuestadores)
         // ---------------------------------------------------------------------
         const gruposSupervisor = new Map();
 
-        // 1. Inicializar estrictamente los 4 supervisores oficiales
         ['1', '2', '3', '4'].forEach(supId => {
             gruposSupervisor.set(supId, {
                 id: supId,
@@ -3626,43 +3563,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        const noOficiales = [];
+        let totalOficialesActivos = 0;
 
         datos.forEach(encuestador => {
             const supOficial = ENCUESTADOR_A_SUPERVISOR[encuestador.id];
-            if (supOficial && gruposSupervisor.has(supOficial)) {
+            // Solo se admiten encuestadores pertenecientes a la nómina oficial (5 al 16)
+            if (supOficial && gruposSupervisor.has(supOficial) && EQUIPO_CAMPO[encuestador.id]) {
                 const gSup = gruposSupervisor.get(supOficial);
                 gSup.encuestadores.push(encuestador);
                 gSup.totalEncuestas += encuestador.encuestas.length;
-            } else {
-                noOficiales.push(encuestador);
+                totalOficialesActivos++;
             }
+            // Los códigos de prueba o números raros (100, 103, 115, etc.) quedan EXCLUIDOS de esta tabla
+            // y se muestran exclusivamente en la viñeta de "Errores".
         });
 
-        // Si hay encuestadores no oficiales o de prueba, se muestran en grupo 'Sin asignar'
-        if (noOficiales.length > 0) {
-            gruposSupervisor.set('Sin asignar', {
-                id: 'Sin asignar',
-                encuestadores: noOficiales,
-                totalEncuestas: noOficiales.reduce((acc, e) => acc + e.encuestas.length, 0)
-            });
-        }
+        // Actualizar badge de la subtab Encuestadores con el número real de oficiales
+        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
+        if (badgeEnc) badgeEnc.textContent = totalOficialesActivos;
 
         // Determinar qué supervisores mostrar
-        let supKeys = Array.from(gruposSupervisor.keys());
+        let supKeys = ['1', '2', '3', '4'];
         if (AppState.supervisorSeleccionado !== 'Todos') {
             supKeys = supKeys.filter(id => id === AppState.supervisorSeleccionado);
-        } else {
-            // Si hay búsqueda activa en tabla, ocultar grupos sin coincidencias
-            if (AppState.filtroTabla) {
-                supKeys = supKeys.filter(id => gruposSupervisor.get(id).encuestadores.length > 0);
-            }
-            // Ordenar: 1, 2, 3, 4 y 'Sin asignar' al final
-            supKeys.sort((a, b) => {
-                if (a === 'Sin asignar') return 1;
-                if (b === 'Sin asignar') return -1;
-                return parseInt(a, 10) - parseInt(b, 10);
-            });
+        } else if (AppState.filtroTabla) {
+            supKeys = supKeys.filter(id => gruposSupervisor.get(id).encuestadores.length > 0);
         }
 
         supKeys.forEach(supId => {
@@ -3680,8 +3605,8 @@ document.addEventListener('DOMContentLoaded', () => {
             trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
             trHeader.dataset.supId = supId;
 
-            const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : obtenerEtiquetaSupervisor(supId, 'corto');
-            const supTitle = supId === 'Sin asignar' ? 'Sin Supervisor' : obtenerEtiquetaSupervisor(supId, 'completo');
+            const supLabel = obtenerEtiquetaSupervisor(supId, 'corto');
+            const supTitle = obtenerEtiquetaSupervisor(supId, 'completo');
             const pluralEnc = gSup.encuestadores.length === 1 ? 'enc.' : 'enc.';
             const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
@@ -3727,35 +3652,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // VISTA DE ERRORES E INCONSISTENCIAS DE CAMPO (SUBTAB ERRORES)
+    // VISTA DE ERRORES E INCONSISTENCIAS DE CÓDIGO (SUBTAB ERRORES)
     // =========================================================================
     function actualizarVistaErrores(encuestas) {
         const contenedor = document.getElementById('listaErrores');
         const emptyState = document.getElementById('emptyStateErrores');
         const badgeTab = document.getElementById('badgeSubtabErrores');
         const countTodos = document.getElementById('countErrTodos');
-        const countParr = document.getElementById('countErrParroquia');
-        const countSec = document.getElementById('countErrSector');
-        const countCod = document.getElementById('countErrCodigo');
+        const countEnc = document.getElementById('countErrEncuestador');
+        const countSup = document.getElementById('countErrSupervisor');
 
         if (!contenedor) return;
 
-        // Extraer todas las encuestas que tienen alertas
+        // Extraer todas las encuestas que tienen alertas de código
         const encuestasConError = (encuestas || []).filter(e => e._tieneAlerta && Array.isArray(e._alertas) && e._alertas.length > 0);
 
         // Conteos por tipo para las pills
-        let cParr = 0, cSec = 0, cCod = 0;
+        let cEnc = 0, cSup = 0;
         encuestasConError.forEach(e => {
             const tipos = new Set(e._alertas.map(a => a.tipo));
-            if (tipos.has('parroquia')) cParr++;
-            if (tipos.has('sector')) cSec++;
-            if (tipos.has('codigo') || tipos.has('supervisor')) cCod++;
+            if (tipos.has('encuestador')) cEnc++;
+            if (tipos.has('supervisor')) cSup++;
         });
 
         if (countTodos) countTodos.textContent = encuestasConError.length;
-        if (countParr) countParr.textContent = cParr;
-        if (countSec) countSec.textContent = cSec;
-        if (countCod) countCod.textContent = cCod;
+        if (countEnc) countEnc.textContent = cEnc;
+        if (countSup) countSup.textContent = cSup;
 
         if (badgeTab) {
             badgeTab.textContent = encuestasConError.length;
@@ -3765,12 +3687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtrar por tipo seleccionado en las pills
         let filtradas = encuestasConError;
         if (AppState.filtroTipoError && AppState.filtroTipoError !== 'todos') {
-            const targetTipo = AppState.filtroTipoError;
-            if (targetTipo === 'codigo') {
-                filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === 'codigo' || a.tipo === 'supervisor'));
-            } else {
-                filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === targetTipo));
-            }
+            filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === AppState.filtroTipoError));
         }
 
         // Filtrar por texto de búsqueda en la viñeta de errores
@@ -3801,28 +3718,24 @@ document.addEventListener('DOMContentLoaded', () => {
         filtradas.forEach((enc, idx) => {
             const coords = extraerCoordenadas(enc);
             const encCod = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
-            const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
-            const supCod = supOficial || String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
+            const supOriginal = String(enc._supervisorOriginal || enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
             const parr = obtenerParroquiaEncuesta(enc);
             const fec = obtenerFechaEncuesta(enc);
             const scMeta = resolverSectorEncuesta(enc);
             const ptoSC = scMeta && scMeta.props ? scMeta.props.sc : (enc.sc || '');
 
             // Determinar tipo principal de alerta
-            const alertaPrincipal = enc._alertas[0] || { tipo: 'parroquia', mensaje: enc._alertaMensaje };
-            let tagClase = 'cs-error-type-tag--parroquia';
-            let tagTexto = '🔴 Parroquia';
-            if (alertaPrincipal.tipo === 'sector') {
+            const alertaPrincipal = enc._alertas[0] || { tipo: 'encuestador', mensaje: enc._alertaMensaje };
+            let tagClase = 'cs-error-type-tag--codigo';
+            let tagTexto = '🟣 Enc. No Oficial';
+            if (alertaPrincipal.tipo === 'supervisor') {
                 tagClase = 'cs-error-type-tag--sector';
-                tagTexto = '🟠 Fuera de Sector';
-            } else if (alertaPrincipal.tipo === 'codigo' || alertaPrincipal.tipo === 'supervisor') {
-                tagClase = 'cs-error-type-tag--codigo';
-                tagTexto = '🟣 Código No Oficial';
+                tagTexto = '🟠 Sup. Erróneo';
             }
 
             const card = document.createElement('div');
             card.className = 'cs-error-card';
-            card.title = 'Haz clic para ubicar esta encuesta en el mapa';
+            card.title = coords ? 'Haz clic para ubicar esta encuesta en el mapa' : 'Sin coordenadas GPS';
 
             card.innerHTML = `
                 <div class="cs-error-card__top">
@@ -3830,23 +3743,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="cs-error-meta-top">#${idx + 1} · ${fec || 'Sin fecha'}</span>
                 </div>
                 <div class="cs-error-team-info">
-                    <strong>${obtenerEtiquetaEncuestador(encCod, 'corto')}</strong>
-                    <span class="cs-badge" style="font-size:0.62rem;padding:0.05rem 0.35rem;background:var(--bg-subtle);">${obtenerEtiquetaSupervisor(supCod, 'micro')}</span>
+                    <strong>Código ingresado: Enc. ${encCod}</strong>
+                    <span class="cs-badge" style="font-size:0.62rem;padding:0.05rem 0.35rem;background:var(--bg-subtle);">Sup. ingresado: ${supOriginal || 'Ninguno'}</span>
                 </div>
                 <div class="cs-error-msg">⚠️ ${enc._alertaMensaje}</div>
                 <div class="cs-error-foot">
                     <span>📍 ${parr || 'Sin parroquia'}${ptoSC ? ` · Pto. #${ptoSC}` : ''}</span>
+                    ${coords ? `
                     <button type="button" class="cs-error-fly-btn">
                         <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
                         Ubicar
-                    </button>
+                    </button>` : '<span style="font-size:0.65rem;color:var(--text-muted);">Sin GPS</span>'}
                 </div>
             `;
 
-            card.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                enfocarEncuestaEnMapa(enc, coords);
-            });
+            if (coords) {
+                card.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    enfocarEncuestaEnMapa(enc, coords);
+                });
+            }
 
             frag.appendChild(card);
         });
