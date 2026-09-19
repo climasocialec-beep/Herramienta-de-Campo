@@ -80,10 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             parroquias: true
         },
         filtroGPS: 'Todos',
-        mostrarInconsistencias: true,
-        subtabActiva: 'encuestadores',
-        filtroTipoError: 'todos',
-        filtroTextoError: '',
+        mostrarInconsistencias: false,
         filtroSoloAlertas: false,
         filtroSoloPendientes: false,
         conteoPorSector: new Map(),
@@ -137,29 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         '2': { nombre: 'Cristian Portilla', primerNombre: 'Cristian' },
         '3': { nombre: 'Alejandro Yanascual', primerNombre: 'Alejandro' },
         '4': { nombre: 'Santiago Suárez', primerNombre: 'Santiago' }
-    };
-
-    // Asignación estricta oficial: 3 encuestadores exactos por supervisor (Quito 2026)
-    const SUPERVISOR_ENCUESTADORES = {
-        '1': ['5', '6', '7'],
-        '2': ['8', '9', '10'],
-        '3': ['11', '12', '13'],
-        '4': ['14', '15', '16']
-    };
-
-    const ENCUESTADOR_A_SUPERVISOR = {
-        '5': '1',
-        '6': '1',
-        '7': '1',
-        '8': '2',
-        '9': '2',
-        '10': '2',
-        '11': '3',
-        '12': '3',
-        '13': '3',
-        '14': '4',
-        '15': '4',
-        '16': '4'
     };
 
     function obtenerEtiquetaEncuestador(id, formato = 'corto') {
@@ -784,25 +758,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. Verificación de Códigos Oficiales de Encuestador y Supervisor
-            const encCodStr = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
-            const supCodStr = String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
-
-            if (!ENCUESTADOR_A_SUPERVISOR[encCodStr]) {
-                alertas.push({
-                    tipo: 'codigo',
-                    mensaje: `Código de encuestador no oficial: "${encCodStr}". No está en la nómina oficial de Quito.`
-                });
-            } else {
-                const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCodStr];
-                if (supCodStr && supCodStr !== supEsperado) {
-                    alertas.push({
-                        tipo: 'codigo',
-                        mensaje: `Supervisor registrado como "${supCodStr}", pero según nómina debe ser Sup. ${supEsperado}.`
-                    });
-                }
-            }
-
             enc._tieneAlerta = alertas.length > 0;
             enc._alertas = alertas;
             enc._alertaMensaje = alertas.map(a => a.mensaje).join(' ');
@@ -834,7 +789,6 @@ document.addEventListener('DOMContentLoaded', () => {
         iniciarReloj();
         configurarModoOscuro();
         configurarNavegacionMovil();
-        configurarSubtabsPanel();
         configurarEventos();
 
         // 1. Limpieza de caché previa y Boot Instantáneo Quito 2026
@@ -1265,13 +1219,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < total; i++) {
             const e = encuestas[i];
-            const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
-            const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
-            const sup = supOficial || String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+            const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
             const sector = resolverSectorEncuesta(e);
             const etiq = sector ? sector.props.sc_key : '';
             const parr = obtenerParroquiaEncuesta(e);
             const fec = obtenerFechaEncuesta(e);
+            const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '');
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
             const matchSec = (selSec === 'Todos' || etiq === selSec);
@@ -1291,9 +1244,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 matchPar = normTexto(uParr) === normTexto(targetPar);
             }
 
-            // 1. Supervisores disponibles (estrictamente los 4 supervisores oficiales con sus 3 encuestadores)
-            if (supOficial && matchSec && matchPar && matchFec && matchEnc) {
-                supervisores.set(supOficial, (supervisores.get(supOficial) || 0) + 1);
+            // 1. Supervisores disponibles según los códigos capturados por el XLSForm.
+            if (sup && sup !== '98' && matchSec && matchPar && matchFec && matchEnc) {
+                supervisores.set(sup, (supervisores.get(sup) || 0) + 1);
             }
 
             // 2. Puntos de Muestreo disponibles (Número + Tipología)
@@ -1634,25 +1587,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function obtenerEncuestasFiltradas() {
         let filtradas = AppState.encuestas || [];
         
-        // Filtro por Supervisor (A cada supervisor SOLO le corresponden sus 3 encuestadores oficiales)
+        // Filtro por Supervisor
         if (AppState.supervisorSeleccionado !== 'Todos') {
-            const encsOficiales = SUPERVISOR_ENCUESTADORES[AppState.supervisorSeleccionado];
-            if (encsOficiales) {
-                filtradas = filtradas.filter(e => {
-                    const codEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
-                    return encsOficiales.includes(codEnc);
-                });
-            } else if (AppState.supervisorSeleccionado === 'Sin asignar') {
-                filtradas = filtradas.filter(e => {
-                    const codEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
-                    return !ENCUESTADOR_A_SUPERVISOR[codEnc];
-                });
-            } else {
-                filtradas = filtradas.filter(e => {
-                    const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
-                    return sup === AppState.supervisorSeleccionado;
-                });
-            }
+            filtradas = filtradas.filter(e => {
+                const sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '');
+                return sup === AppState.supervisorSeleccionado;
+            });
         }
 
         // Filtro por Cantón
@@ -1747,7 +1687,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarMapa(encuestas, ajustarCamara && !hayFiltroTerritorial);
         actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
-        actualizarVistaErrores(encuestas);
         actualizarPiramidePoblacional(encuestas);
         actualizarClaseZoom();
     }
@@ -3446,32 +3385,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < total; i++) {
             const enc = encuestas[i];
-            const codEnc = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || 'Sin asignar').trim();
+            const codEnc = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || 'Sin asignar');
             const codSup = String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
             if (codEnc === '98' || codSup === '98') continue;
 
             let g = grupos.get(codEnc);
             if (!g) {
-                // Asignar estrictamente el supervisor oficial si es parte de la plantilla
-                const supOficial = ENCUESTADOR_A_SUPERVISOR[codEnc];
-                const supVal = supOficial || 'Sin asignar';
+                const supVal = enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '';
                 g = {
                     id: codEnc,
                     encuestas: [],
                     duraciones: [],
                     totalMins: 0,
-                    numAlertas: 0,
-                    supervisor: supVal,
+                    supervisor: String(supVal).trim(),
                     cantonesConteo: {},
                     promStr: 'Sin datos',
                     minStr: '-',
                     maxStr: '-'
                 };
                 grupos.set(codEnc, g);
-            }
-
-            if (enc._tieneAlerta) {
-                g.numAlertas = (g.numAlertas || 0) + 1;
+            } else if (!g.supervisor) {
+                const supVal = enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '';
+                if (supVal) g.supervisor = String(supVal).trim();
             }
 
             g.encuestas.push(enc);
@@ -3590,9 +3525,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarTabla(encuestas) {
-        if (!UI.tablaEncuestadoresBody) {
-            UI.tablaEncuestadoresBody = document.querySelector('#tablaEncuestadores tbody');
-        }
         if (!UI.tablaEncuestadoresBody) return;
 
         // Sincronizar estado visual de los botones de agrupación
@@ -3603,9 +3535,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let datos = agruparPorEncuestador(encuestas);
-
-        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
-        if (badgeEnc) badgeEnc.textContent = datos.length;
 
         // Búsqueda en vivo (por id, supervisor o cantón)
         if (AppState.filtroTabla) {
@@ -3633,57 +3562,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
 
         // ---------------------------------------------------------------------
-        // AGRUPAR POR SUPERVISOR (A cada supervisor SOLO le corresponden sus 3 encuestadores oficiales)
+        // AGRUPAR POR SUPERVISOR
         // ---------------------------------------------------------------------
-        const gruposSupervisor = new Map();
-
-        // 1. Inicializar estrictamente los 4 supervisores oficiales
-        ['1', '2', '3', '4'].forEach(supId => {
-            gruposSupervisor.set(supId, {
-                id: supId,
-                encuestadores: [],
-                totalEncuestas: 0
-            });
-        });
-
-        const noOficiales = [];
-
-        datos.forEach(encuestador => {
-            const supOficial = ENCUESTADOR_A_SUPERVISOR[encuestador.id];
-            if (supOficial && gruposSupervisor.has(supOficial)) {
-                const gSup = gruposSupervisor.get(supOficial);
+            const gruposSupervisor = new Map();
+            datos.forEach(encuestador => {
+                const supId = (encuestador.supervisor && encuestador.supervisor !== 'undefined' && encuestador.supervisor !== 'null') 
+                    ? encuestador.supervisor 
+                    : 'Sin asignar';
+                if (!gruposSupervisor.has(supId)) {
+                    gruposSupervisor.set(supId, {
+                        id: supId,
+                        encuestadores: [],
+                        totalEncuestas: 0
+                    });
+                }
+                const gSup = gruposSupervisor.get(supId);
                 gSup.encuestadores.push(encuestador);
                 gSup.totalEncuestas += encuestador.encuestas.length;
-            } else {
-                noOficiales.push(encuestador);
-            }
-        });
-
-        // Si hay encuestadores no oficiales o de prueba, se muestran en grupo 'Sin asignar'
-        if (noOficiales.length > 0) {
-            gruposSupervisor.set('Sin asignar', {
-                id: 'Sin asignar',
-                encuestadores: noOficiales,
-                totalEncuestas: noOficiales.reduce((acc, e) => acc + e.encuestas.length, 0)
             });
-        }
 
-        // Determinar qué supervisores mostrar
-        let supKeys = Array.from(gruposSupervisor.keys());
-        if (AppState.supervisorSeleccionado !== 'Todos') {
-            supKeys = supKeys.filter(id => id === AppState.supervisorSeleccionado);
-        } else {
-            // Si hay búsqueda activa en tabla, ocultar grupos sin coincidencias
-            if (AppState.filtroTabla) {
-                supKeys = supKeys.filter(id => gruposSupervisor.get(id).encuestadores.length > 0);
-            }
-            // Ordenar: 1, 2, 3, 4 y 'Sin asignar' al final
-            supKeys.sort((a, b) => {
+            // Ordenar Supervisores numéricamente (1, 2, 3... y 'Sin asignar' al final)
+            const supKeys = Array.from(gruposSupervisor.keys()).sort((a, b) => {
                 if (a === 'Sin asignar') return 1;
                 if (b === 'Sin asignar') return -1;
-                return parseInt(a, 10) - parseInt(b, 10);
+                const numA = parseInt(a, 10);
+                const numB = parseInt(b, 10);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
-        }
 
             supKeys.forEach(supId => {
                 const gSup = gruposSupervisor.get(supId);
@@ -3734,273 +3640,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Filas de encuestadores del supervisor (si no está colapsado)
                 if (!isCollapsed) {
                     gSup.encuestadores.forEach(grupo => {
-                        try {
-                            fragment.appendChild(crearFilaEncuestador(grupo));
-                        } catch (errFila) {
-                            console.error('Error al crear fila de encuestador:', errFila);
-                        }
+                        fragment.appendChild(crearFilaEncuestador(grupo));
                     });
                 }
             });
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
-
-        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
-        if (badgeEnc) badgeEnc.textContent = datos.length;
-    }
-
-    // =========================================================================
-    // VISTA DE ERRORES E INCONSISTENCIAS DE CAMPO (SUBTAB ERRORES)
-    // =========================================================================
-    function actualizarVistaErrores(encuestas) {
-        const contenedor = document.getElementById('listaErrores');
-        const emptyState = document.getElementById('emptyStateErrores');
-        const badgeTab = document.getElementById('badgeSubtabErrores');
-        const countTodos = document.getElementById('countErrTodos');
-        const countParr = document.getElementById('countErrParroquia');
-        const countSec = document.getElementById('countErrSector');
-        const countCod = document.getElementById('countErrCodigo');
-
-        if (!contenedor) return;
-
-        // Extraer todas las encuestas que tienen alertas
-        const encuestasConError = (encuestas || []).filter(e => e._tieneAlerta && Array.isArray(e._alertas) && e._alertas.length > 0);
-
-        // Conteos por tipo para las pills
-        let cParr = 0, cSec = 0, cCod = 0;
-        encuestasConError.forEach(e => {
-            const tipos = new Set(e._alertas.map(a => a.tipo));
-            if (tipos.has('parroquia')) cParr++;
-            if (tipos.has('sector')) cSec++;
-            if (tipos.has('codigo') || tipos.has('supervisor')) cCod++;
-        });
-
-        if (countTodos) countTodos.textContent = encuestasConError.length;
-        if (countParr) countParr.textContent = cParr;
-        if (countSec) countSec.textContent = cSec;
-        if (countCod) countCod.textContent = cCod;
-
-        if (badgeTab) {
-            badgeTab.textContent = encuestasConError.length;
-            badgeTab.style.display = encuestasConError.length > 0 ? 'inline-flex' : 'none';
-        }
-
-        // Filtrar por tipo seleccionado en las pills
-        let filtradas = encuestasConError;
-        if (AppState.filtroTipoError && AppState.filtroTipoError !== 'todos') {
-            const targetTipo = AppState.filtroTipoError;
-            if (targetTipo === 'codigo') {
-                filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === 'codigo' || a.tipo === 'supervisor'));
-            } else {
-                filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === targetTipo));
-            }
-        }
-
-        // Filtrar por texto de búsqueda en la viñeta de errores
-        if (AppState.filtroTextoError) {
-            const term = AppState.filtroTextoError.toLowerCase();
-            filtradas = filtradas.filter(e => {
-                const encCod = String(e.encuestador || e.C_digo_encuestador || '').toLowerCase();
-                const supCod = String(e.supervisor || e.C_digo_Supervisor || '').toLowerCase();
-                const encNombre = obtenerEtiquetaEncuestador(encCod, 'completo').toLowerCase();
-                const supNombre = obtenerEtiquetaSupervisor(supCod, 'completo').toLowerCase();
-                const parr = String(obtenerParroquiaEncuesta(e) || '').toLowerCase();
-                const msg = String(e._alertaMensaje || '').toLowerCase();
-                return encCod.includes(term) || supCod.includes(term) || encNombre.includes(term) || supNombre.includes(term) || parr.includes(term) || msg.includes(term);
-            });
-        }
-
-        contenedor.innerHTML = '';
-
-        if (filtradas.length === 0) {
-            if (emptyState) emptyState.style.display = 'flex';
-            return;
-        }
-
-        if (emptyState) emptyState.style.display = 'none';
-
-        const frag = document.createDocumentFragment();
-
-        filtradas.forEach((enc, idx) => {
-            const coords = extraerCoordenadas(enc);
-            const encCod = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
-            const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
-            const supCod = supOficial || String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
-            const parr = obtenerParroquiaEncuesta(enc);
-            const fec = obtenerFechaEncuesta(enc);
-            const scMeta = resolverSectorEncuesta(enc);
-            const ptoSC = scMeta && scMeta.props ? scMeta.props.sc : (enc.sc || '');
-
-            // Determinar tipo principal de alerta
-            const alertaPrincipal = enc._alertas[0] || { tipo: 'parroquia', mensaje: enc._alertaMensaje };
-            let tagClase = 'cs-error-type-tag--parroquia';
-            let tagTexto = '🔴 Parroquia';
-            if (alertaPrincipal.tipo === 'sector') {
-                tagClase = 'cs-error-type-tag--sector';
-                tagTexto = '🟠 Fuera de Sector';
-            } else if (alertaPrincipal.tipo === 'codigo' || alertaPrincipal.tipo === 'supervisor') {
-                tagClase = 'cs-error-type-tag--codigo';
-                tagTexto = '🟣 Código No Oficial';
-            }
-
-            const card = document.createElement('div');
-            card.className = 'cs-error-card';
-            card.title = 'Haz clic para ubicar esta encuesta en el mapa';
-
-            card.innerHTML = `
-                <div class="cs-error-card__top">
-                    <span class="cs-error-type-tag ${tagClase}">${tagTexto}</span>
-                    <span class="cs-error-meta-top">#${idx + 1} · ${fec || 'Sin fecha'}</span>
-                </div>
-                <div class="cs-error-team-info">
-                    <strong>${obtenerEtiquetaEncuestador(encCod, 'corto')}</strong>
-                    <span class="cs-badge" style="font-size:0.62rem;padding:0.05rem 0.35rem;background:var(--bg-subtle);">${obtenerEtiquetaSupervisor(supCod, 'micro')}</span>
-                </div>
-                <div class="cs-error-msg">⚠️ ${enc._alertaMensaje}</div>
-                <div class="cs-error-foot">
-                    <span>📍 ${parr || 'Sin parroquia'}${ptoSC ? ` · Pto. #${ptoSC}` : ''}</span>
-                    <button type="button" class="cs-error-fly-btn">
-                        <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-                        Ubicar
-                    </button>
-                </div>
-            `;
-
-            card.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                enfocarEncuestaEnMapa(enc, coords);
-            });
-
-            frag.appendChild(card);
-        });
-
-        contenedor.appendChild(frag);
-    }
-
-    function enfocarEncuestaEnMapa(enc, coords) {
-        if (!coords || !coords.length) {
-            mostrarToast('Esta encuesta no cuenta con coordenadas GPS válidas', 'warning');
-            return;
-        }
-
-        // Si está en móvil, cambiar de pestaña a "Mapa"
-        const navBtnMapa = document.querySelector('.cs-mobile-nav-btn[data-tab="mapa"]');
-        if (navBtnMapa && window.innerWidth <= 768) {
-            navBtnMapa.click();
-        }
-
-        const [lat, lng] = coords;
-        if (map) {
-            map.flyTo({
-                center: [lng, lat],
-                zoom: 16.5,
-                essential: true,
-                duration: 900
-            });
-
-            setTimeout(() => {
-                abrirPopupEncuestaDirecto(enc, [lat, lng]);
-            }, 600);
-        }
-    }
-
-    function abrirPopupEncuestaDirecto(enc, coords) {
-        if (!map || !coords) return;
-        const [lat, lng] = coords;
-        const encCod = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '');
-        const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
-        const supCod = supOficial || String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '');
-
-        const tieneAlerta = enc._tieneAlerta === true || enc._tieneAlerta === 'true';
-        const colorPunto = tieneAlerta ? '#dc2626' : obtenerColorEncuestador(encCod);
-
-        let distInfo = '';
-        if (AppState.ubicacionSupervisor) {
-            const d = calcularDistancia(AppState.ubicacionSupervisor.lat, AppState.ubicacionSupervisor.lng, lat, lng);
-            distInfo = `<p style="margin:4px 0;font-size:0.8rem;color:#028090;"><strong>A ${d.toFixed(2)} km de tu ubicación</strong></p>`;
-        }
-
-        let bannerAlerta = '';
-        if (tieneAlerta) {
-            bannerAlerta = `
-                <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:7px 9px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.35;">
-                    <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Inconsistencia Detectada:</strong>
-                    <span>${enc._alertaMensaje || 'Discrepancia espacial de parroquia o punto de muestreo.'}</span>
-                </div>
-            `;
-        }
-
-        const sc = enc.sc || (resolverSectorEncuesta(enc)?.props?.sc || '');
-        const tipologia = enc.tipologia || '';
-        const barrio = enc.barrio || enc.Barrio || '';
-        const fecha = obtenerFechaEncuesta(enc);
-        const parroquia = obtenerParroquiaEncuesta(enc);
-
-        new maplibregl.Popup({ offset: [0, -10], closeButton: true })
-            .setLngLat([lng, lat])
-            .setHTML(`
-                <div style="font-family:'Inter',sans-serif;min-width:210px;padding:2px;">
-                    <div style="background:${colorPunto};color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;margin:-14px -14px 8px -14px;font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;">
-                        <span title="${obtenerEtiquetaEncuestador(encCod, 'completo')}">${tieneAlerta ? '⚠️ ' : ''}${obtenerEtiquetaEncuestador(encCod, 'corto')}</span>
-                        <span title="${obtenerEtiquetaSupervisor(supCod, 'completo')}">${obtenerEtiquetaSupervisor(supCod, 'corto')}</span>
-                    </div>
-                    ${bannerAlerta}
-                    <p style="margin:4px 0;font-size:0.8rem;"><strong>Parroquia:</strong> ${parroquia}</p>
-                    ${sc ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Punto de Muestreo:</strong> #${sc}${tipologia ? ` (Tipología ${tipologia})` : ''}</p>` : ''}
-                    ${barrio ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Barrio:</strong> ${barrio}</p>` : ''}
-                    <p style="margin:4px 0;font-size:0.75rem;color:#64748b;">Fecha: ${fecha}</p>
-                    ${distInfo}
-                </div>
-            `)
-            .addTo(map);
-    }
-
-    function configurarSubtabsPanel() {
-        const btnEnc = document.getElementById('btnSubtabEncuestadores');
-        const btnErr = document.getElementById('btnSubtabErrores');
-        const viewEnc = document.getElementById('viewEncuestadores');
-        const viewErr = document.getElementById('viewErrores');
-
-        if (btnEnc && btnErr && viewEnc && viewErr) {
-            btnEnc.addEventListener('click', () => {
-                AppState.subtabActiva = 'encuestadores';
-                btnEnc.classList.add('active');
-                btnEnc.setAttribute('aria-selected', 'true');
-                btnErr.classList.remove('active');
-                btnErr.setAttribute('aria-selected', 'false');
-                viewEnc.style.display = 'flex';
-                viewErr.style.display = 'none';
-            });
-
-            btnErr.addEventListener('click', () => {
-                AppState.subtabActiva = 'errores';
-                btnErr.classList.add('active');
-                btnErr.setAttribute('aria-selected', 'true');
-                btnEnc.classList.remove('active');
-                btnEnc.setAttribute('aria-selected', 'false');
-                viewErr.style.display = 'flex';
-                viewEnc.style.display = 'none';
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        }
-
-        const searchErr = document.getElementById('searchErroresInput');
-        if (searchErr) {
-            searchErr.addEventListener('input', (e) => {
-                AppState.filtroTextoError = e.target.value.trim().toLowerCase();
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        }
-
-        const errorPills = document.querySelectorAll('#errorFiltersBar .cs-error-pill-btn');
-        errorPills.forEach(pill => {
-            pill.addEventListener('click', () => {
-                errorPills.forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                AppState.filtroTipoError = pill.dataset.errTipo || 'todos';
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        });
     }
 
     // =========================================================================
