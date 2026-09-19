@@ -1470,6 +1470,245 @@ body.modo-oscuro .cs-select.is-active {
   min-height: 0;
 }
 
+/* Viñetas / Subtabs del Panel de Encuestadores */
+.cs-panel-subtabs {
+  display: flex;
+  background-color: #0b1120;
+  padding: 5px;
+  gap: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cs-panel-subtab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--cs-transition);
+  font-family: inherit;
+}
+
+.cs-panel-subtab:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cs-panel-subtab.active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.cs-subtab-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 0.08rem 0.38rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  min-width: 18px;
+  text-align: center;
+}
+
+.cs-subtab-badge--danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.cs-subtab-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.cs-panel-header--danger {
+  background-color: #881337;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.modo-oscuro .cs-panel-header--danger {
+  background-color: #4c0519;
+}
+
+/* Filtros rápidos de errores */
+.cs-error-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.cs-error-pill-btn {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--cs-transition);
+}
+
+.cs-error-pill-btn:hover {
+  border-color: var(--border-medium);
+  color: var(--text-main);
+}
+
+.cs-error-pill-btn.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+/* Tarjetas de Errores */
+.cs-errores-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+}
+
+.cs-error-card {
+  background: var(--bg-surface);
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body.modo-oscuro .cs-error-card {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(239, 68, 68, 0.25);
+  border-left-color: #ef4444;
+}
+
+.cs-error-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.12);
+  border-color: #f87171;
+}
+
+.cs-error-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cs-error-type-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.cs-error-type-tag--parroquia {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.cs-error-type-tag--sector {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.cs-error-type-tag--codigo {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.cs-error-meta-top {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.cs-error-team-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+}
+
+.cs-error-team-info strong {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.cs-error-msg {
+  font-size: 0.73rem;
+  color: #991b1b;
+  line-height: 1.35;
+  background: #fef2f2;
+  border: 1px dashed #fca5a5;
+  padding: 0.35rem 0.5rem;
+  border-radius: 5px;
+}
+
+body.modo-oscuro .cs-error-msg {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.25);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.cs-error-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.cs-error-fly-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cs-error-fly-btn:hover {
+  background: #b91c1c;
+}
+
 .cs-search-bar {
   display: flex;
   align-items: center;
