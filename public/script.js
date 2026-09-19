@@ -113,6 +113,65 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': '#f26419'
     };
 
+    // Directorio oficial del Equipo de Campo (Quito 2026)
+    const EQUIPO_CAMPO = {
+        '5': { nombre: 'Karina Guadalupe', etiqueta: 'Encuestadora 5 · Karina Guadalupe', corta: 'Encuestadora 5' },
+        '6': { nombre: 'Aida Campos', etiqueta: 'Encuestadora 6 · Aida Campos', corta: 'Encuestadora 6' },
+        '7': { nombre: 'Verónica Montesdeoca', etiqueta: 'Encuestadora 7 · Verónica Montesdeoca', corta: 'Encuestadora 7' },
+        '8': { nombre: 'Dilan Hernández', etiqueta: 'Encuestador 8 · Dilan Hernández', corta: 'Encuestador 8' },
+        '9': { nombre: 'Stalin Paredes', etiqueta: 'Encuestador 9 · Stalin Paredes', corta: 'Encuestador 9' },
+        '10': { nombre: 'Benjamín González', etiqueta: 'Encuestador 10 · Benjamín González', corta: 'Encuestador 10' },
+        '11': { nombre: 'Mateo Mosquera', etiqueta: 'Encuestador 11 · Mateo Mosquera', corta: 'Encuestador 11' },
+        '12': { nombre: 'Victoria Congo', etiqueta: 'Encuestadora 12 · Victoria Congo', corta: 'Encuestadora 12' },
+        '13': { nombre: 'Geidy Riofrio', etiqueta: 'Encuestadora 13 · Geidy Riofrio', corta: 'Encuestadora 13' },
+        '14': { nombre: 'María González', etiqueta: 'Encuestadora 14 · María González', corta: 'Encuestadora 14' },
+        '15': { nombre: 'Melina Toaquiza', etiqueta: 'Encuestadora 15 · Melina Toaquiza', corta: 'Encuestadora 15' },
+        '16': { nombre: 'David Vega', etiqueta: 'Encuestador 16 · David Vega', corta: 'Encuestador 16' }
+    };
+
+    const SUPERVISORES_CAMPO = {
+        '1': 'Tatiana Pasquel',
+        '2': 'Cristian Portilla',
+        '3': 'Alejandro Yanascual',
+        '4': 'Santiago Suárez'
+    };
+
+    function obtenerEtiquetaEncuestador(id, formato = 'completo') {
+        const raw = String(id || '').trim();
+        if (!raw || raw === 'Sin asignar' || raw === 'undefined' || raw === 'null') return 'Sin Asignar';
+        const numOnly = parseInt(raw, 10);
+        const sid = !isNaN(numOnly) ? String(numOnly) : raw;
+        const miembro = EQUIPO_CAMPO[sid] || EQUIPO_CAMPO[raw];
+        if (miembro) {
+            if (formato === 'corta') return miembro.corta;
+            if (formato === 'nombre') return miembro.nombre;
+            return miembro.etiqueta;
+        }
+        // Si no está registrado en el equipo oficial, conservar el identificador tal cual ("ese nombre raro")
+        if (!isNaN(numOnly)) {
+            return `Encuestador ${sid}`;
+        }
+        return raw;
+    }
+
+    function obtenerEtiquetaSupervisor(id, formato = 'corto') {
+        const raw = String(id || '').trim();
+        if (!raw || raw === 'Sin asignar' || raw === 'undefined' || raw === 'null' || raw === '0') return 'Sin Supervisor';
+        const numOnly = parseInt(raw, 10);
+        const sid = !isNaN(numOnly) ? String(numOnly) : raw;
+        const nombre = SUPERVISORES_CAMPO[sid] || SUPERVISORES_CAMPO[raw];
+        if (nombre) {
+            const esMujer = sid === '1'; // Tatiana Pasquel
+            const prefijo = esMujer ? 'Supervisora' : 'Supervisor';
+            const prefijoCorto = 'Sup.';
+            return formato === 'completo' ? `${prefijo} ${sid} · ${nombre}` : `${prefijoCorto} ${sid}`;
+        }
+        if (!isNaN(numOnly)) {
+            return `Supervisor ${sid}`;
+        }
+        return raw;
+    }
+
     // Paleta cromática distintiva de alto contraste para Encuestadores (excluye Teal #0d9488 de Muestreo)
     const PALETA_ENCUESTADORES = [
         '#e11d48', // 1: Carmesí / Rojo Vivo
@@ -928,7 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeCount++;
                 chips.push({
                     tipo: 'supervisor',
-                    label: `Supervisor #${AppState.supervisorSeleccionado}`,
+                    label: obtenerEtiquetaSupervisor(AppState.supervisorSeleccionado, 'completo'),
                     onClear: () => {
                         AppState.supervisorSeleccionado = 'Todos';
                         if (UI.supervisorFilter) UI.supervisorFilter.value = 'Todos';
@@ -1031,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeCount++;
             chips.push({
                 tipo: 'encuestador',
-                label: `Encuestador #${AppState.encuestadorSeleccionado}`,
+                label: obtenerEtiquetaEncuestador(AppState.encuestadorSeleccionado, 'completo'),
                 onClear: () => {
                     seleccionarEncuestador(AppState.encuestadorSeleccionado);
                 }
@@ -1210,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .forEach(id => {
                     const option = document.createElement('option');
                     option.value = id;
-                    option.textContent = `Supervisor #${id} (${supervisores.get(id)} enc.)`;
+                    option.textContent = `${obtenerEtiquetaSupervisor(id, 'completo')} (${supervisores.get(id)} enc.)`;
                     UI.supervisorFilter.appendChild(option);
                 });
             UI.supervisorFilter.value = supervisores.has(actualSup) ? actualSup : 'Todos';
@@ -2369,10 +2428,10 @@ document.addEventListener('DOMContentLoaded', () => {
             new maplibregl.Popup({ offset: [0, -10], closeButton: true })
                 .setLngLat(coords)
                 .setHTML(`
-                    <div style="font-family:'Inter',sans-serif;min-width:190px;padding:2px;">
+                    <div style="font-family:'Inter',sans-serif;min-width:240px;padding:2px;">
                         <div style="background:${colorPunto};color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;margin:-14px -14px 8px -14px;font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;">
-                            <span>${tieneAlerta ? '⚠️ ' : ''}Encuestador #${p.encuestador}</span>
-                            <span>Sup #${p.supervisor}</span>
+                            <span>${tieneAlerta ? '⚠️ ' : ''}${obtenerEtiquetaEncuestador(p.encuestador, 'completo')}</span>
+                            <span>${obtenerEtiquetaSupervisor(p.supervisor, 'corto')}</span>
                         </div>
                         ${bannerAlerta}
                         <p style="margin:4px 0;font-size:0.8rem;"><strong>Parroquia:</strong> ${p.parroquia}</p>
@@ -3282,14 +3341,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const frag = document.createDocumentFragment();
         encIds.forEach(encId => {
-            const color = obtenerColorEncuestador(encId);
+            const encTitulo = obtenerEtiquetaEncuestador(encId, 'completo');
             const total = conteoEncuestadores.get(encId);
             const item = document.createElement('div');
             item.className = 'cs-map-legend__item';
-            item.title = `Encuestador #${encId}: ${total} encuestas`;
+            item.title = `${encTitulo}: ${total} encuestas`;
             item.innerHTML = `
                 <span class="cs-legend-color-dot" style="background-color:${color};"></span>
-                <span>Enc #${encId}</span>
+                <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${encTitulo}">${encTitulo}</span>
                 <span class="cs-legend-count">${total}</span>
             `;
             frag.appendChild(item);
@@ -3416,12 +3475,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.classList.add('selected');
         }
 
-        const supLabel = (grupo.supervisor && grupo.supervisor !== 'Sin asignar' && grupo.supervisor !== 'undefined' && grupo.supervisor !== 'null')
-            ? `Sup #${grupo.supervisor}`
-            : 'Sin Sup';
+        const supLabel = obtenerEtiquetaSupervisor(grupo.supervisor, 'corto');
+        const supTitle = obtenerEtiquetaSupervisor(grupo.supervisor, 'completo');
+        const encTituloCompleto = obtenerEtiquetaEncuestador(grupo.id, 'completo');
 
         // Badge de supervisor
-        const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);">${supLabel}</span>`;
+        const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="${supTitle}">${supLabel}</span>`;
 
         tr.innerHTML = `
             <td>
@@ -3430,8 +3489,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                     <div class="cs-enc-meta">
-                        <div class="cs-enc-name" title="Encuestador #${grupo.id} (${supLabel})">
-                            <span>Encuestador #${grupo.id}</span>
+                        <div class="cs-enc-name" title="${encTituloCompleto} (${supTitle})">
+                            <span>${encTituloCompleto}</span>
                             ${grupo.numAlertas > 0 ? `<span class="cs-alert-badge" title="${grupo.numAlertas} encuestas con inconsistencias">⚠️ ${grupo.numAlertas}</span>` : ''}
                         </div>
                         <div class="cs-enc-sub">
@@ -3471,11 +3530,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Búsqueda en vivo (por id, supervisor o cantón)
         if (AppState.filtroTabla) {
             const term = AppState.filtroTabla.toLowerCase();
-            datos = datos.filter(g => 
-                g.id.toLowerCase().includes(term) || 
-                (g.supervisor && g.supervisor.toLowerCase().includes(term)) ||
-                (g.cantonPrincipal && g.cantonPrincipal.toLowerCase().includes(term))
-            );
+            datos = datos.filter(g => {
+                const nombreEnc = obtenerEtiquetaEncuestador(g.id, 'completo').toLowerCase();
+                const nombreSup = obtenerEtiquetaSupervisor(g.supervisor, 'completo').toLowerCase();
+                return g.id.toLowerCase().includes(term) || 
+                    nombreEnc.includes(term) ||
+                    nombreSup.includes(term) ||
+                    (g.supervisor && g.supervisor.toLowerCase().includes(term)) ||
+                    (g.cantonPrincipal && g.cantonPrincipal.toLowerCase().includes(term));
+            });
         }
 
         UI.tablaEncuestadoresBody.innerHTML = '';
@@ -3535,7 +3598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
                 trHeader.dataset.supId = supId;
 
-                const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : `Supervisor #${supId}`;
+                const supLabel = supId === 'Sin asignar' ? 'Sin Supervisor' : obtenerEtiquetaSupervisor(supId, 'completo');
                 const pluralEnc = gSup.encuestadores.length === 1 ? 'encuestador' : 'encuestadores';
                 const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
@@ -3804,7 +3867,7 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.supervisorFilter.value = supId;
         }
 
-        mostrarToast(`Encuestador #${id} (Sup #${supId || 'S/N'}) · ${encuestasDelEnc.length} encuestas`, 'info');
+        mostrarToast(`${obtenerEtiquetaEncuestador(id, 'completo')} (${obtenerEtiquetaSupervisor(supId, 'corto')}) · ${encuestasDelEnc.length} encuestas`, 'info');
         renderizarVista(true, false);
 
         // Enfocar mapa a sus puntos

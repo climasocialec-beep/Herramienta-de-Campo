@@ -948,7 +948,7 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   border-radius: 8px;
   padding: 0.35rem 0.55rem;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-  max-width: 220px;
+  max-width: 280px;
   pointer-events: auto;
   transition: all var(--cs-transition);
 }
