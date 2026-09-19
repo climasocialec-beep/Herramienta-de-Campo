@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=26.0.0">
+  <link rel="stylesheet" href="style.css?v=27.0.0">
 </head>
 <body>
 
@@ -416,12 +416,12 @@
             <button type="button" class="cs-panel-subtab active" id="btnSubtabEncuestadores" role="tab" aria-selected="true">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>Encuestadores</span>
-              <span class="cs-subtab-badge" id="badgeSubtabEncuestadores">12</span>
+              <span class="cs-subtab-badge" id="badgeSubtabEncuestadores">--</span>
             </button>
             <button type="button" class="cs-panel-subtab" id="btnSubtabErrores" role="tab" aria-selected="false">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span>Errores</span>
-              <span class="cs-subtab-badge cs-subtab-badge--danger" id="badgeSubtabErrores">0</span>
+              <span class="cs-subtab-badge cs-subtab-badge--danger" id="badgeSubtabErrores" style="display:none;">0</span>
             </button>
           </div>
 
@@ -529,11 +529,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=26.0.0"></script>
+  <script src="script.js?v=27.0.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=26.0.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=27.0.0').then(reg => {
           if (reg && reg.update) reg.update();
         }).catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);

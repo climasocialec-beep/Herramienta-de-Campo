@@ -1264,6 +1264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ayerFiltroStr = obtenerFechaLocalEcuador(new Date(ahoraHoy.getTime() - 86400000));
 
         for (let i = 0; i < total; i++) {
+            const e = encuestas[i];
             const encCod = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
             const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
             const sup = supOficial || String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
@@ -3444,6 +3445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = encuestas.length;
 
         for (let i = 0; i < total; i++) {
+            const enc = encuestas[i];
             const codEnc = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || 'Sin asignar').trim();
             const codSup = String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
             if (codEnc === '98' || codSup === '98') continue;
@@ -3588,6 +3590,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarTabla(encuestas) {
+        if (!UI.tablaEncuestadoresBody) {
+            UI.tablaEncuestadoresBody = document.querySelector('#tablaEncuestadores tbody');
+        }
         if (!UI.tablaEncuestadoresBody) return;
 
         // Sincronizar estado visual de los botones de agrupación
@@ -3598,6 +3603,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let datos = agruparPorEncuestador(encuestas);
+
+        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
+        if (badgeEnc) badgeEnc.textContent = datos.length;
 
         // Búsqueda en vivo (por id, supervisor o cantón)
         if (AppState.filtroTabla) {
@@ -3726,7 +3734,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Filas de encuestadores del supervisor (si no está colapsado)
                 if (!isCollapsed) {
                     gSup.encuestadores.forEach(grupo => {
-                        fragment.appendChild(crearFilaEncuestador(grupo));
+                        try {
+                            fragment.appendChild(crearFilaEncuestador(grupo));
+                        } catch (errFila) {
+                            console.error('Error al crear fila de encuestador:', errFila);
+                        }
                     });
                 }
             });
