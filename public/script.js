@@ -42,7 +42,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
     if ('caches' in window) {
-        const CACHE_VALIDA = 'clima-social-quito-2026-v30';
+        const CACHE_VALIDA = 'clima-social-quito-2026-v31';
         caches.keys().then(keys => {
             keys.forEach(k => {
                 if (k !== CACHE_VALIDA) {
@@ -770,7 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
         iniciarReloj();
         configurarModoOscuro();
         configurarNavegacionMovil();
-        configurarSubtabsPanel();
         configurarEventos();
 
         // 1. Limpieza de caché previa y Boot Instantáneo Quito 2026
@@ -1669,7 +1668,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarMapa(encuestas, ajustarCamara && !hayFiltroTerritorial);
         actualizarLeyendaMapa(encuestas);
         actualizarTabla(encuestas);
-        actualizarVistaErrores(encuestas);
         actualizarPiramidePoblacional(encuestas);
         actualizarClaseZoom();
     }
@@ -3578,10 +3576,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // y se muestran exclusivamente en la viñeta de "Errores".
         });
 
-        // Actualizar badge de la subtab Encuestadores con el número real de oficiales
-        const badgeEnc = document.getElementById('badgeSubtabEncuestadores');
-        if (badgeEnc) badgeEnc.textContent = totalOficialesActivos;
-
         // Determinar qué supervisores mostrar
         let supKeys = ['1', '2', '3', '4'];
         if (AppState.supervisorSeleccionado !== 'Todos') {
@@ -3649,251 +3643,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         UI.tablaEncuestadoresBody.appendChild(fragment);
-    }
-
-    // =========================================================================
-    // VISTA DE ERRORES E INCONSISTENCIAS DE CÓDIGO (SUBTAB ERRORES)
-    // =========================================================================
-    function actualizarVistaErrores(encuestas) {
-        const contenedor = document.getElementById('listaErrores');
-        const emptyState = document.getElementById('emptyStateErrores');
-        const badgeTab = document.getElementById('badgeSubtabErrores');
-        const countTodos = document.getElementById('countErrTodos');
-        const countEnc = document.getElementById('countErrEncuestador');
-        const countSup = document.getElementById('countErrSupervisor');
-
-        if (!contenedor) return;
-
-        // Extraer todas las encuestas que tienen alertas de código
-        const encuestasConError = (encuestas || []).filter(e => e._tieneAlerta && Array.isArray(e._alertas) && e._alertas.length > 0);
-
-        // Conteos por tipo para las pills
-        let cEnc = 0, cSup = 0;
-        encuestasConError.forEach(e => {
-            const tipos = new Set(e._alertas.map(a => a.tipo));
-            if (tipos.has('encuestador')) cEnc++;
-            if (tipos.has('supervisor')) cSup++;
-        });
-
-        if (countTodos) countTodos.textContent = encuestasConError.length;
-        if (countEnc) countEnc.textContent = cEnc;
-        if (countSup) countSup.textContent = cSup;
-
-        if (badgeTab) {
-            badgeTab.textContent = encuestasConError.length;
-            badgeTab.style.display = encuestasConError.length > 0 ? 'inline-flex' : 'none';
-        }
-
-        // Filtrar por tipo seleccionado en las pills
-        let filtradas = encuestasConError;
-        if (AppState.filtroTipoError && AppState.filtroTipoError !== 'todos') {
-            filtradas = filtradas.filter(e => e._alertas.some(a => a.tipo === AppState.filtroTipoError));
-        }
-
-        // Filtrar por texto de búsqueda en la viñeta de errores
-        if (AppState.filtroTextoError) {
-            const term = AppState.filtroTextoError.toLowerCase();
-            filtradas = filtradas.filter(e => {
-                const encCod = String(e.encuestador || e.C_digo_encuestador || '').toLowerCase();
-                const supCod = String(e.supervisor || e.C_digo_Supervisor || '').toLowerCase();
-                const encNombre = obtenerEtiquetaEncuestador(encCod, 'completo').toLowerCase();
-                const supNombre = obtenerEtiquetaSupervisor(supCod, 'completo').toLowerCase();
-                const parr = String(obtenerParroquiaEncuesta(e) || '').toLowerCase();
-                const msg = String(e._alertaMensaje || '').toLowerCase();
-                return encCod.includes(term) || supCod.includes(term) || encNombre.includes(term) || supNombre.includes(term) || parr.includes(term) || msg.includes(term);
-            });
-        }
-
-        contenedor.innerHTML = '';
-
-        if (filtradas.length === 0) {
-            if (emptyState) emptyState.style.display = 'flex';
-            return;
-        }
-
-        if (emptyState) emptyState.style.display = 'none';
-
-        const frag = document.createDocumentFragment();
-
-        filtradas.forEach((enc, idx) => {
-            const coords = extraerCoordenadas(enc);
-            const encCod = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
-            const supOriginal = String(enc._supervisorOriginal || enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
-            const parr = obtenerParroquiaEncuesta(enc);
-            const fec = obtenerFechaEncuesta(enc);
-            const scMeta = resolverSectorEncuesta(enc);
-            const ptoSC = scMeta && scMeta.props ? scMeta.props.sc : (enc.sc || '');
-
-            // Determinar tipo principal de alerta
-            const alertaPrincipal = enc._alertas[0] || { tipo: 'encuestador', mensaje: enc._alertaMensaje };
-            let tagClase = 'cs-error-type-tag--codigo';
-            let tagTexto = '🟣 Enc. No Oficial';
-            if (alertaPrincipal.tipo === 'supervisor') {
-                tagClase = 'cs-error-type-tag--sector';
-                tagTexto = '🟠 Sup. Erróneo';
-            }
-
-            const card = document.createElement('div');
-            card.className = 'cs-error-card';
-            card.title = coords ? 'Haz clic para ubicar esta encuesta en el mapa' : 'Sin coordenadas GPS';
-
-            card.innerHTML = `
-                <div class="cs-error-card__top">
-                    <span class="cs-error-type-tag ${tagClase}">${tagTexto}</span>
-                    <span class="cs-error-meta-top">#${idx + 1} · ${fec || 'Sin fecha'}</span>
-                </div>
-                <div class="cs-error-team-info">
-                    <strong>Código ingresado: Enc. ${encCod}</strong>
-                    <span class="cs-badge" style="font-size:0.62rem;padding:0.05rem 0.35rem;background:var(--bg-subtle);">Sup. ingresado: ${supOriginal || 'Ninguno'}</span>
-                </div>
-                <div class="cs-error-msg">⚠️ ${enc._alertaMensaje}</div>
-                <div class="cs-error-foot">
-                    <span>📍 ${parr || 'Sin parroquia'}${ptoSC ? ` · Pto. #${ptoSC}` : ''}</span>
-                    ${coords ? `
-                    <button type="button" class="cs-error-fly-btn">
-                        <svg style="width:11px;height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-                        Ubicar
-                    </button>` : '<span style="font-size:0.65rem;color:var(--text-muted);">Sin GPS</span>'}
-                </div>
-            `;
-
-            if (coords) {
-                card.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    enfocarEncuestaEnMapa(enc, coords);
-                });
-            }
-
-            frag.appendChild(card);
-        });
-
-        contenedor.appendChild(frag);
-    }
-
-    function enfocarEncuestaEnMapa(enc, coords) {
-        if (!coords || !coords.length) {
-            mostrarToast('Esta encuesta no cuenta con coordenadas GPS válidas', 'warning');
-            return;
-        }
-
-        // Si está en móvil, cambiar de pestaña a "Mapa"
-        const navBtnMapa = document.querySelector('.cs-mobile-nav-btn[data-tab="mapa"]');
-        if (navBtnMapa && window.innerWidth <= 768) {
-            navBtnMapa.click();
-        }
-
-        const [lat, lng] = coords;
-        if (map) {
-            map.flyTo({
-                center: [lng, lat],
-                zoom: 16.5,
-                essential: true,
-                duration: 900
-            });
-
-            setTimeout(() => {
-                abrirPopupEncuestaDirecto(enc, [lat, lng]);
-            }, 600);
-        }
-    }
-
-    function abrirPopupEncuestaDirecto(enc, coords) {
-        if (!map || !coords) return;
-        const [lat, lng] = coords;
-        const encCod = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '');
-        const supOficial = ENCUESTADOR_A_SUPERVISOR[encCod];
-        const supCod = supOficial || String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '');
-
-        const tieneAlerta = enc._tieneAlerta === true || enc._tieneAlerta === 'true';
-        const colorPunto = tieneAlerta ? '#dc2626' : obtenerColorEncuestador(encCod);
-
-        let distInfo = '';
-        if (AppState.ubicacionSupervisor) {
-            const d = calcularDistancia(AppState.ubicacionSupervisor.lat, AppState.ubicacionSupervisor.lng, lat, lng);
-            distInfo = `<p style="margin:4px 0;font-size:0.8rem;color:#028090;"><strong>A ${d.toFixed(2)} km de tu ubicación</strong></p>`;
-        }
-
-        let bannerAlerta = '';
-        if (tieneAlerta) {
-            bannerAlerta = `
-                <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:7px 9px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.35;">
-                    <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Inconsistencia Detectada:</strong>
-                    <span>${enc._alertaMensaje || 'Discrepancia espacial de parroquia o punto de muestreo.'}</span>
-                </div>
-            `;
-        }
-
-        const sc = enc.sc || (resolverSectorEncuesta(enc)?.props?.sc || '');
-        const tipologia = enc.tipologia || '';
-        const barrio = enc.barrio || enc.Barrio || '';
-        const fecha = obtenerFechaEncuesta(enc);
-        const parroquia = obtenerParroquiaEncuesta(enc);
-
-        new maplibregl.Popup({ offset: [0, -10], closeButton: true })
-            .setLngLat([lng, lat])
-            .setHTML(`
-                <div style="font-family:'Inter',sans-serif;min-width:210px;padding:2px;">
-                    <div style="background:${colorPunto};color:#fff;padding:6px 10px;border-radius:6px 6px 0 0;margin:-14px -14px 8px -14px;font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;">
-                        <span title="${obtenerEtiquetaEncuestador(encCod, 'completo')}">${tieneAlerta ? '⚠️ ' : ''}${obtenerEtiquetaEncuestador(encCod, 'corto')}</span>
-                        <span title="${obtenerEtiquetaSupervisor(supCod, 'completo')}">${obtenerEtiquetaSupervisor(supCod, 'corto')}</span>
-                    </div>
-                    ${bannerAlerta}
-                    <p style="margin:4px 0;font-size:0.8rem;"><strong>Parroquia:</strong> ${parroquia}</p>
-                    ${sc ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Punto de Muestreo:</strong> #${sc}${tipologia ? ` (Tipología ${tipologia})` : ''}</p>` : ''}
-                    ${barrio ? `<p style="margin:4px 0;font-size:0.8rem;"><strong>Barrio:</strong> ${barrio}</p>` : ''}
-                    <p style="margin:4px 0;font-size:0.75rem;color:#64748b;">Fecha: ${fecha}</p>
-                    ${distInfo}
-                </div>
-            `)
-            .addTo(map);
-    }
-
-    function configurarSubtabsPanel() {
-        const btnEnc = document.getElementById('btnSubtabEncuestadores');
-        const btnErr = document.getElementById('btnSubtabErrores');
-        const viewEnc = document.getElementById('viewEncuestadores');
-        const viewErr = document.getElementById('viewErrores');
-
-        if (btnEnc && btnErr && viewEnc && viewErr) {
-            btnEnc.addEventListener('click', () => {
-                AppState.subtabActiva = 'encuestadores';
-                btnEnc.classList.add('active');
-                btnEnc.setAttribute('aria-selected', 'true');
-                btnErr.classList.remove('active');
-                btnErr.setAttribute('aria-selected', 'false');
-                viewEnc.style.display = 'flex';
-                viewErr.style.display = 'none';
-            });
-
-            btnErr.addEventListener('click', () => {
-                AppState.subtabActiva = 'errores';
-                btnErr.classList.add('active');
-                btnErr.setAttribute('aria-selected', 'true');
-                btnEnc.classList.remove('active');
-                btnEnc.setAttribute('aria-selected', 'false');
-                viewErr.style.display = 'flex';
-                viewEnc.style.display = 'none';
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        }
-
-        const searchErr = document.getElementById('searchErroresInput');
-        if (searchErr) {
-            searchErr.addEventListener('input', (e) => {
-                AppState.filtroTextoError = e.target.value.trim().toLowerCase();
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        }
-
-        const errorPills = document.querySelectorAll('#errorFiltersBar .cs-error-pill-btn');
-        errorPills.forEach(pill => {
-            pill.addEventListener('click', () => {
-                errorPills.forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                AppState.filtroTipoError = pill.dataset.errTipo || 'todos';
-                actualizarVistaErrores(obtenerEncuestasFiltradas());
-            });
-        });
     }
 
     // =========================================================================
