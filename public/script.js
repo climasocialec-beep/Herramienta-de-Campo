@@ -722,17 +722,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!EQUIPO_CAMPO[encCodStr]) {
                 alertas.push({
                     tipo: 'encuestador',
-                    titulo: 'Encuestador No Oficial',
-                    mensaje: `Código de encuestador no oficial: "${encCodStr}". No pertenece a la nómina de 12 encuestadores oficiales.`
+                    titulo: 'No oficial',
+                    mensaje: `Encuestador no oficial (${encCodStr})`
                 });
             } else {
                 const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCodStr];
                 if (supCodOriginal && supCodOriginal !== supEsperado) {
-                    const nomEsperado = obtenerEtiquetaSupervisor(supEsperado, 'nombre');
                     alertas.push({
                         tipo: 'supervisor',
-                        titulo: 'Supervisor Incorrecto',
-                        mensaje: `Supervisor erróneo: ingresó Sup. ${supCodOriginal}, pero le corresponde Sup. ${supEsperado} · ${nomEsperado}.`
+                        titulo: 'Supervisor erróneo',
+                        mensaje: `Sup. ${supCodOriginal} en vez de ${supEsperado}`
                     });
                 }
             }
@@ -1085,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeCount++;
             chips.push({
                 tipo: 'alerta',
-                label: `⚠️ Errores de Código (${AppState.totalAlertas})`,
+                label: `⚠️ Errores (${AppState.totalAlertas})`,
                 onClear: () => {
                     AppState.filtroSoloAlertas = false;
                     renderizarVista();
@@ -2391,9 +2390,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let bannerAlerta = '';
             if (tieneAlerta) {
                 bannerAlerta = `
-                    <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:7px 9px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.35;">
-                        <strong style="display:block;margin-bottom:2px;font-size:0.78rem;color:#b91c1c;">⚠️ Error de Código:</strong>
-                        <span>${p.alertaMensaje || 'Error en código de encuestador o supervisor.'}</span>
+                    <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:6px 8px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.3;">
+                        <strong style="display:block;margin-bottom:2px;font-size:0.76rem;color:#b91c1c;">⚠️ Error:</strong>
+                        <span>${p.alertaMensaje || 'Código no válido'}</span>
                     </div>
                 `;
             }
@@ -3673,8 +3672,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                         </span>
                         <span class="cs-group-color-dot" style="--sup-dot-color: #ef4444; background: #ef4444;"></span>
-                        <span class="cs-group-name" style="color: #ef4444; font-weight: 800;">⚠️ Errores de Código</span>
-                        <span class="cs-group-pill cs-group-pill--danger">${totalErrores} enc.</span>
+                        <span class="cs-group-name" style="color: #ef4444; font-weight: 800;">⚠️ Errores</span>
+                        <span class="cs-group-pill cs-group-pill--danger">${totalErrores}</span>
                     </div>
                 </td>
             `;
@@ -3705,16 +3704,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div class="cs-enc-meta">
                                         <div class="cs-enc-name">
                                             <span style="font-weight:700; color:#b91c1c;">Enc. ${g.id}</span>
-                                            <span class="cs-badge" style="background:#fee2e2; color:#b91c1c; font-size:0.6rem; padding:0.06rem 0.35rem; border:1px solid #fca5a5;">No oficial</span>
                                         </div>
                                         <div class="cs-enc-sub" style="font-size:0.7rem; color:var(--text-muted);">
-                                            <span>Código no registrado en nómina</span>
+                                            <span>No oficial</span>
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td style="text-align:right;">
-                                <span class="cs-enc-total-pill cs-enc-total-pill--danger" title="Total de encuestas con este código no oficial">${g.encuestas.length}</span>
+                                <span class="cs-enc-total-pill cs-enc-total-pill--danger" title="Encuestas no oficiales">${g.encuestas.length}</span>
                             </td>
                         `;
                         tr.addEventListener('click', (e) => {
@@ -3750,17 +3748,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div class="cs-enc-meta">
                                     <div class="cs-enc-name">
-                                        <span style="font-weight:700;">Enc. ${encCod} · ${nombreEnc}</span>
-                                        <span class="cs-badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; padding:0.06rem 0.35rem; border:1px solid #fde68a;">Sup. Erróneo</span>
+                                        <span style="font-weight:700;">Enc. ${encCod} (${nombreEnc})</span>
                                     </div>
                                     <div class="cs-enc-sub" style="font-size:0.7rem; color:var(--text-muted);">
-                                        <span>Ingresó Sup. ${supsIngresados} (esperado Sup. ${supEsperado})</span>
+                                        <span>Sup. ${supsIngresados} en vez de ${supEsperado}</span>
                                     </div>
                                 </div>
                             </div>
                         </td>
                         <td style="text-align:right;">
-                            <span class="cs-enc-total-pill cs-enc-total-pill--warning" title="Encuestas donde se ingresó supervisor incorrecto">${encsList.length}</span>
+                            <span class="cs-enc-total-pill cs-enc-total-pill--warning" title="Supervisor incorrecto">${encsList.length}</span>
                         </td>
                     `;
                     tr.addEventListener('click', (e) => {
@@ -3780,7 +3777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 16, duration: 700 });
                             }
                         }
-                        mostrarToast(`Enc. ${encCod} (${nombreEnc}): ${encsList.length} enc. con Sup. erróneo (${supsIngresados})`, 'warning');
+                        mostrarToast(`Enc. ${encCod}: Sup. ${supsIngresados} en vez de ${supEsperado}`, 'warning');
                     });
                     fragment.appendChild(tr);
                 });
