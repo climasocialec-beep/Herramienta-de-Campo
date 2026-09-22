@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     const AppState = {
         config: {
-            nombreProyecto: 'Encuesta Quito PM - Septiembre - 2026',
+            nombreProyecto: 'Encuesta DMQ - Septiembre - 2026',
             metaEncuestas: 2000,
             campoEncuestador: 'encuestador',
             campoSupervisor: 'supervisor'
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarConfiguracion() {
-        const TITULO_OFICIAL = 'Encuesta Quito PM - Septiembre - 2026';
+        const TITULO_OFICIAL = 'Encuesta DMQ - Septiembre - 2026';
         try {
             const res = await fetch('/api/config', { 
                 cache: 'no-store',
@@ -1787,7 +1787,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=27.0.0';
+            const cacheBuster = '?v=28.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2548,7 +2548,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=27.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=28.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
