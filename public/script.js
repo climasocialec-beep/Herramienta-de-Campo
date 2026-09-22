@@ -476,11 +476,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const cShort = cNorm.replace('CIRCUNSCRIPCION ', '');
         return [
             'any',
-            ['==', ['get', 'circunscripcion'], circVal],
-            ['==', ['get', 'circunscripcion'], cNorm],
-            ['==', ['upcase', ['get', 'circunscripcion']], cNorm],
-            ['==', ['get', 'circunscripcion'], cShort],
-            ['==', ['upcase', ['get', 'circunscripcion']], cShort]
+            ['==', ['coalesce', ['get', 'circunscripcion'], ''], circVal],
+            ['==', ['coalesce', ['get', 'circunscripcion'], ''], cNorm],
+            ['==', ['upcase', ['coalesce', ['get', 'circunscripcion'], '']], cNorm],
+            ['==', ['coalesce', ['get', 'circunscripcion'], ''], cShort],
+            ['==', ['upcase', ['coalesce', ['get', 'circunscripcion'], '']], cShort]
         ];
     }
 
@@ -1787,7 +1787,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=25.0.0';
+            const cacheBuster = '?v=26.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2050,7 +2050,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         minzoom: 10.0,
                         maxzoom: 14.5,
                         layout: {
-                            'text-field': ['get', 'nombre'],
+                            'text-field': ['coalesce', ['get', 'nombre'], ['get', 'parroquia'], ['get', 'PARROQUIA'], ''],
                             'text-font': ['Open Sans Bold'],
                             'text-size': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -2067,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-halo-width': 3.0
                         }
                     },
-                    // 2. Sectores Censales Sorteados (160 polígonos de Pichincha con color por cantón)
+                    // 2. Sectores Censales Sorteados (200 polígonos de Quito PM 2026)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
@@ -2098,7 +2098,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         source: 'sectores-centroides-source',
                         minzoom: 10.0,
                         layout: {
-                            'text-field': ['get', 'etiquetaSC'],
+                            'text-field': ['coalesce', ['get', 'etiquetaSC'], ['get', 'etiqueta'], ''],
                             'text-font': ['Open Sans Bold'],
                             'text-size': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -2281,6 +2281,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (AppState.circunscripcionesLabelsGeojson && map.getSource('circunscripciones-labels-source')) {
             map.getSource('circunscripciones-labels-source').setData(AppState.circunscripcionesLabelsGeojson);
         }
+
+        // Asegurar que las capas cartográficas estén explícitamente visibles
+        const capasBase = ['parroquias-line', 'parroquias-label', 'sectores-fill', 'sectores-line', 'sectores-label'];
+        capasBase.forEach(ly => {
+            if (map.getLayer(ly)) {
+                map.setLayoutProperty(ly, 'visibility', 'visible');
+            }
+        });
 
         // 3. Capas de Encuestas: Puntos Individuales y Etiquetas
         if (!map.getSource('encuestas-puntos-source')) {
@@ -2540,7 +2548,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=25.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=26.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -2744,8 +2752,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
                 const filterSoloParroquia = [
                     'any',
-                    ['==', ['upcase', ['get', 'nombre']], targetPar],
-                    ['==', ['upcase', ['get', 'PARROQUIA']], targetPar]
+                    ['==', ['upcase', ['coalesce', ['get', 'nombre'], ['get', 'parroquia'], ['get', 'PARROQUIA'], '']], targetPar]
                 ];
                 map.setFilter('parroquias-line', filterSoloParroquia);
                 if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterSoloParroquia);
@@ -2773,10 +2780,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsPermitidas = (PARROQUIAS_POR_CANTON[targetCanton] || []).map(p => p.toUpperCase().trim());
                 const filterParCanton = [
                     'any',
-                    ['==', ['get', 'canton'], targetCanton],
-                    ['==', ['upcase', ['get', 'CANTON']], targetCanton.toUpperCase()],
-                    ['in', ['upcase', ['get', 'nombre']], ['literal', parsPermitidas]],
-                    ['in', ['upcase', ['get', 'PARROQUIA']], ['literal', parsPermitidas]]
+                    ['==', ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], '']], targetCanton.toUpperCase()],
+                    ['in', ['upcase', ['coalesce', ['get', 'nombre'], ['get', 'parroquia'], ['get', 'PARROQUIA'], '']], ['literal', parsPermitidas]]
                 ];
                 map.setFilter('parroquias-line', filterParCanton);
                 if (map.getLayer('parroquias-label')) map.setFilter('parroquias-label', filterParCanton);
@@ -2821,19 +2826,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const matchSC = [
                     'any',
-                    ['==', ['to-string', ['get', 'sc_key']], targetSC],
-                    ['==', ['to-string', ['get', 'sc']], targetSC],
-                    ['==', ['to-string', ['get', 'codigo_muestra']], targetSC],
-                    ['==', ['to-string', ['get', 'num_muestra']], targetSC],
-                    ['==', ['to-string', ['get', 'etiquetaSC']], targetSC]
+                    ['==', ['to-string', ['coalesce', ['get', 'sc_key'], '']], targetSC],
+                    ['==', ['to-string', ['coalesce', ['get', 'sc'], '']], targetSC],
+                    ['==', ['to-string', ['coalesce', ['get', 'codigo_muestra'], '']], targetSC],
+                    ['==', ['to-string', ['coalesce', ['get', 'num_muestra'], '']], targetSC],
+                    ['==', ['to-string', ['coalesce', ['get', 'etiquetaSC'], '']], targetSC]
                 ];
 
                 const filterSC = targetCanton ? [
                     'all',
                     matchSC,
                     ['any',
-                        ['==', ['get', 'canton'], targetCanton],
-                        ['==', ['upcase', ['get', 'CANTON']], targetCanton.toUpperCase()]
+                        ['==', ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], '']], targetCanton.toUpperCase()]
                     ]
                 ] : matchSC;
 
@@ -2888,7 +2892,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         });
                     }
-                    filterPendientes = ['in', ['to-string', ['get', 'sc_key']], ['literal', keysPendientes]];
+                    filterPendientes = ['in', ['to-string', ['coalesce', ['get', 'sc_key'], '']], ['literal', keysPendientes]];
                 }
 
                 const aplicarFiltroSectores = (baseFilter) => {
@@ -2905,8 +2909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const targetPar = String(AppState.parroquiaSeleccionada).trim().toUpperCase();
                     const filterSectoresParroquia = [
                         'any',
-                        ['==', ['upcase', ['get', 'parroquia']], targetPar],
-                        ['==', ['upcase', ['get', 'PARROQUIA']], targetPar]
+                        ['==', ['upcase', ['coalesce', ['get', 'parroquia'], ['get', 'PARROQUIA'], '']], targetPar]
                     ];
                     aplicarFiltroSectores(filterSectoresParroquia);
                 } else if (AppState.circunscripcionSeleccionada && AppState.circunscripcionSeleccionada !== 'Todas') {
@@ -2919,9 +2922,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parsPermitidas = (PARROQUIAS_POR_CANTON[targetCan] || []).map(p => p.toUpperCase().trim());
                     const filterSecCanton = [
                         'any',
-                        ['==', ['get', 'canton'], targetCan],
-                        ['==', ['upcase', ['get', 'CANTON']], targetCan.toUpperCase()],
-                        ['in', ['upcase', ['get', 'parroquia']], ['literal', parsPermitidas]]
+                        ['==', ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], '']], targetCan.toUpperCase()],
+                        ['in', ['upcase', ['coalesce', ['get', 'parroquia'], ['get', 'PARROQUIA'], '']], ['literal', parsPermitidas]]
                     ];
                     aplicarFiltroSectores(filterSecCanton);
                 } else {
