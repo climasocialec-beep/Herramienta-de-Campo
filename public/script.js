@@ -858,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Blindaje estricto: Purgar cualquier residuo heredado de Cuenca, Machala o cantones previos
         let nom = AppState.config.nombreProyecto || TITULO_OFICIAL;
-        if (!nom || nom.toLowerCase().includes('cuenca') || !nom.toLowerCase().includes('quito')) {
+        if (!nom || nom.toLowerCase().includes('cuenca') || (!nom.toLowerCase().includes('quito') && !nom.toLowerCase().includes('dmq'))) {
             nom = TITULO_OFICIAL;
             AppState.config.nombreProyecto = TITULO_OFICIAL;
         }

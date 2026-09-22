@@ -471,10 +471,10 @@ app.get("/api/config", (req, res) => {
         "Pragma": "no-cache",
         "Expires": "0"
     });
-    const TITULO_OFICIAL = "Encuesta Quito PM - Septiembre - 2026";
+    const TITULO_OFICIAL = "Encuesta DMQ - Septiembre - 2026";
     let nombre = process.env.NOMBRE_PROYECTO || TITULO_OFICIAL;
     // Blindaje riguroso contra variables de entorno heredadas de otros cantones (ej. Cuenca, Machala, etc.)
-    if (!nombre || nombre.toLowerCase().includes("cuenca") || !nombre.toLowerCase().includes("quito")) {
+    if (!nombre || nombre.toLowerCase().includes("cuenca") || (!nombre.toLowerCase().includes("quito") && !nombre.toLowerCase().includes("dmq"))) {
         nombre = TITULO_OFICIAL;
     }
 
@@ -504,7 +504,7 @@ app.get("/api/encuestas", async (req, res) => {
                 total: 0,
                 resultados: [],
                 obtenidoEn: Date.now(),
-                mensaje: "Esperando configuración de formulario para Encuesta Quito PM - Septiembre - 2026"
+                mensaje: "Esperando configuración de formulario para Encuesta DMQ - Septiembre - 2026"
             });
         }
         res.set({
