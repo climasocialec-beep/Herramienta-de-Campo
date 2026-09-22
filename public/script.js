@@ -42,7 +42,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
     if ('caches' in window) {
-        const CACHE_VALIDA = 'clima-social-quito-2026-v31';
+        const CACHE_VALIDA = 'clima-social-quito-pm-2026-v25';
         caches.keys().then(keys => {
             keys.forEach(k => {
                 if (k !== CACHE_VALIDA) {
@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     const AppState = {
         config: {
-            nombreProyecto: 'Encuesta Quito - Septiembre - 2026',
-            metaEncuestas: 1200,
+            nombreProyecto: 'Encuesta Quito PM - Septiembre - 2026',
+            metaEncuestas: 2000,
             campoEncuestador: 'encuestador',
             campoSupervisor: 'supervisor'
         },
@@ -221,23 +221,24 @@ document.addEventListener('DOMContentLoaded', () => {
         '#15803d'  // 24: Verde Pino
     ];
 
-    // Parroquias oficiales en estudio (Encuesta Quito - Septiembre - 2026 - 48 parroquias)
+    // Parroquias oficiales en estudio (Encuesta Quito PM - Septiembre - 2026 - 51 parroquias)
     const PARROQUIAS_POR_CANTON = {
         'Quito': [
             'ALANGASI', 'AMAGUAÑA', 'BELISARIO QUEVEDO', 'CALDERON', 'CARCELEN',
-            'CENTRO HISTORICO', 'CHILIBULO', 'CHILLOGALLO', 'CHIMBACALLE', 'COCHAPAMBA',
-            'COMITE DEL PUEBLO', 'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA', 'EL CONDADO',
-            'GUAMANI', 'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO', 'JIPIJAPA',
-            'KENNEDY', 'LA ARGELIA', 'LA CONCEPCION', 'LA ECUATORIANA', 'LA FERROVIARIA',
-            'LA LIBERTAD', 'LA MAGDALENA', 'LA MENA', 'LLANO CHICO', 'MARISCAL SUCRE',
-            'NAYON', 'PIFO', 'PINTAG', 'POMASQUI', 'PONCEANO',
-            'PUEMBO', 'PUENGASI', 'QUINCHE', 'QUITUMBE', 'RUMIPAMBA',
-            'SAN ANTONIO', 'SAN BARTOLO', 'SAN ISIDRO DEL INCA', 'SAN JUAN', 'SOLANDA',
-            'TUMBACO', 'TURUBAMBA', 'YARUQUI'
+            'CENTRO HISTORICO', 'CHECA', 'CHILIBULO', 'CHILLOGALLO', 'CHIMBACALLE',
+            'COCHAPAMBA', 'COMITE DEL PUEBLO', 'CONOCOTO', 'COTOCOLLAO', 'CUMBAYA',
+            'EL CONDADO', 'GUAMANI', 'GUAYLLABAMBA', 'ITCHIMBIA', 'IÑAQUITO',
+            'JIPIJAPA', 'KENNEDY', 'LA ARGELIA', 'LA CONCEPCION', 'LA ECUATORIANA',
+            'LA FERROVIARIA', 'LA LIBERTAD', 'LA MAGDALENA', 'LA MENA', 'LA MERCED',
+            'LLANO CHICO', 'MARISCAL SUCRE', 'NAYON', 'PIFO', 'PINTAG',
+            'POMASQUI', 'PONCEANO', 'PUEMBO', 'PUENGASI', 'QUINCHE',
+            'QUITUMBE', 'RUMIPAMBA', 'SAN ANTONIO', 'SAN BARTOLO', 'SAN ISIDRO DEL INCA',
+            'SAN JUAN', 'SOLANDA', 'TUMBACO', 'TURUBAMBA', 'YARUQUI',
+            'ZAMBIZA'
         ]
     };
 
-    // Paleta cromática oficial por Cantón (Encuesta Quito - Septiembre - 2026)
+    // Paleta cromática oficial por Cantón (Encuesta Quito PM - Septiembre - 2026)
     const COLORES_CANTON = {
         'Quito': {
             nombre: 'Quito (D.M.)',
@@ -838,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarConfiguracion() {
-        const TITULO_OFICIAL = 'Encuesta Quito - Septiembre - 2026';
+        const TITULO_OFICIAL = 'Encuesta Quito PM - Septiembre - 2026';
         try {
             const res = await fetch('/api/config', { 
                 cache: 'no-store',
@@ -868,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = 'Clima Social · ' + nom;
 
         if (UI.kpiMeta) {
-            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 1200).toLocaleString()} (Quito)`;
+            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 2000).toLocaleString()} (Quito)`;
         }
     }
 
@@ -1248,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!['1', '2', '3', '4'].includes(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        // 1.1 Selector Cantón (Encuesta Quito - Septiembre - 2026)
+        // 1.1 Selector Cantón (Encuesta Quito PM - Septiembre - 2026)
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Quito';
             const cantonesList = [
@@ -1662,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function obtenerMetaActiva() {
         const METAS_CANTON = {
-            'QUITO': 1200
+            'QUITO': 2000
         };
 
         // 1. Filtro por Sector Censal Sorteado (cuota: 10 encuestas)
@@ -1697,10 +1698,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 3. Filtro por Cantón (Quito: 1200)
+        // 3. Filtro por Cantón (Quito: 2000)
         if (AppState.cantonSeleccionado && AppState.cantonSeleccionado !== 'Todos') {
             const cNorm = normTexto(AppState.cantonSeleccionado);
-            let metaCanton = METAS_CANTON[cNorm] || 1200;
+            let metaCanton = METAS_CANTON[cNorm] || 2000;
             return {
                 meta: metaCanton,
                 etiquetaMeta: `Meta: ${metaCanton.toLocaleString()} (${AppState.cantonSeleccionado})`,
@@ -1711,7 +1712,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 4. Ámbito General (Quito)
-        const metaGeneral = AppState.config.metaEncuestas || 1200;
+        const metaGeneral = AppState.config.metaEncuestas || 2000;
         return {
             meta: metaGeneral,
             etiquetaMeta: `Meta: ${metaGeneral.toLocaleString()} (Quito)`,
@@ -1786,7 +1787,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=24.0.0';
+            const cacheBuster = '?v=25.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -1807,7 +1808,7 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.sectoresMap = new Map();
         AppState.sectoresCandidatos = new Map();
 
-        // Indexar Sectores Censales (160 polígonos de Pichincha: Quito, Cayambe, Mejía, Rumiñahui)
+        // Indexar Sectores Censales (200 polígonos sorteados de Quito PM 2026)
         if (sectoresData.features) {
             sectoresData.features.forEach(f => {
                 const p = f.properties || {};
@@ -2539,7 +2540,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=24.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=25.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 

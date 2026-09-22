@@ -15,12 +15,12 @@ services:
       - key: API_TOKEN
         sync: false
       - key: NOMBRE_PROYECTO
-        value: Encuesta Quito - Septiembre - 2026
+        value: Encuesta Quito PM - Septiembre - 2026
       - key: CAMPO_ENCUESTADOR
         value: encuestador
       - key: CAMPO_SUPERVISOR
         value: supervisor
       - key: META_ENCUESTAS
-        value: 1200
+        value: 2000
       - key: CACHE_TTL_SEGUNDOS
         value: 90
