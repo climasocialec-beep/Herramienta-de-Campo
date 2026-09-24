@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=30.0.0';
+            const cacheBuster = '?v=31.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2715,7 +2715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=30.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=31.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -3539,6 +3539,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function agruparPorEncuestador(encuestas) {
         const grupos = new Map();
+
+        // Pre-poblar los encuestadores oficiales de la nómina para que aparezcan siempre en la tabla lateral
+        Object.keys(EQUIPO_CAMPO).forEach(codEnc => {
+            const supOficial = ENCUESTADOR_A_SUPERVISOR[codEnc] || 'Sin asignar';
+            grupos.set(codEnc, {
+                id: codEnc,
+                encuestas: [],
+                duraciones: [],
+                totalMins: 0,
+                numAlertas: 0,
+                supervisor: String(supOficial).trim(),
+                cantonesConteo: {},
+                promStr: 'Sin datos',
+                minStr: '-',
+                maxStr: '-'
+            });
+        });
+
         const total = encuestas.length;
 
         for (let i = 0; i < total; i++) {
@@ -3660,7 +3678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="cs-enc-meta">
                         <div class="cs-enc-name" title="${encTituloCompleto} (${supTitle})">
-                            <span>${encTituloCorto}</span>
+                            <span>${encTituloCompleto}</span>
                         </div>
                         <div class="cs-enc-sub">
                             ${badgeSupHtml}
@@ -3775,7 +3793,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trHeader.className = `cs-table-group-header ${isCollapsed ? 'is-collapsed' : ''}`;
             trHeader.dataset.supId = supId;
 
-            const supLabel = obtenerEtiquetaSupervisor(supId, 'corto');
+            const supLabel = obtenerEtiquetaSupervisor(supId, 'completo');
             const supTitle = obtenerEtiquetaSupervisor(supId, 'completo');
             const pluralEnc = gSup.encuestadores.length === 1 ? 'enc.' : 'enc.';
             const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
