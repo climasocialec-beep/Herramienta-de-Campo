@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=31.0.0';
+            const cacheBuster = '?v=32.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2715,7 +2715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=31.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=32.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -3783,10 +3783,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ordenarEncuestadoresLista(gSup.encuestadores);
 
             const colorSupervisor = PALETA_SUPERVISORES[supId] || PALETA_SUPERVISORES.default;
-            const isExplicitlyCollapsed = AppState.supervisoresColapsados && AppState.supervisoresColapsados.has(supId);
+            const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
             const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
             const hasSearch = Boolean(AppState.filtroTabla);
-            const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredSup;
+            // Comprimidas por defecto: solo se abren al hacer clic, al buscar o al filtrar ese supervisor
+            const isCollapsed = !isExplicitlyExpanded && !hasSearch && !isFilteredSup;
 
             // Fila de encabezado de grupo (Supervisor)
             const trHeader = document.createElement('tr');
@@ -3812,11 +3813,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             trHeader.addEventListener('click', () => {
-                if (!AppState.supervisoresColapsados) AppState.supervisoresColapsados = new Set();
-                if (AppState.supervisoresColapsados.has(supId)) {
-                    AppState.supervisoresColapsados.delete(supId);
+                if (!AppState.supervisoresExpandidos) AppState.supervisoresExpandidos = new Set();
+                if (AppState.supervisoresExpandidos.has(supId)) {
+                    AppState.supervisoresExpandidos.delete(supId);
                 } else {
-                    AppState.supervisoresColapsados.add(supId);
+                    AppState.supervisoresExpandidos.add(supId);
                 }
                 const encs = obtenerEncuestasFiltradas();
                 actualizarTabla(encs);
