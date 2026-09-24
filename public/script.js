@@ -113,42 +113,56 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': '#f26419'
     };
 
-    // Directorio oficial del Equipo de Campo (Quito 2026)
+    // Directorio oficial del Equipo de Campo (Encuesta DMQ - Septiembre - 2026)
     const EQUIPO_CAMPO = {
-        '5': { nombre: 'Karina Guadalupe', primerNombre: 'Karina' },
-        '6': { nombre: 'Aida Campos', primerNombre: 'Aida' },
-        '7': { nombre: 'Verónica Montesdeoca', primerNombre: 'Verónica' },
-        '8': { nombre: 'Dilan Hernández', primerNombre: 'Dilan' },
-        '9': { nombre: 'Stalin Paredes', primerNombre: 'Stalin' },
-        '10': { nombre: 'Benjamín González', primerNombre: 'Benjamín' },
-        '11': { nombre: 'Mateo Mosquera', primerNombre: 'Mateo' },
-        '12': { nombre: 'Victoria Congo', primerNombre: 'Victoria' },
-        '13': { nombre: 'Geidy Riofrio', primerNombre: 'Geidy' },
-        '14': { nombre: 'María González', primerNombre: 'María' },
-        '15': { nombre: 'Melina Toaquiza', primerNombre: 'Melina' },
-        '16': { nombre: 'David Vega', primerNombre: 'David' }
+        '7': { nombre: 'Cinthya Peralta', primerNombre: 'Cinthya' },
+        '8': { nombre: 'Erika Hernández', primerNombre: 'Erika' },
+        '9': { nombre: 'Gabriela Cabascango', primerNombre: 'Gabriela' },
+        '10': { nombre: 'Stalin Paredes', primerNombre: 'Stalin' },
+        '11': { nombre: 'Sebastián Herrera', primerNombre: 'Sebastián' },
+        '12': { nombre: 'Jeymi Hernández', primerNombre: 'Jeymi' },
+        '13': { nombre: 'María Arias', primerNombre: 'María' },
+        '14': { nombre: 'Antony Unurraga', primerNombre: 'Antony' },
+        '15': { nombre: 'Tatiana Pasquel', primerNombre: 'Tatiana' },
+        '16': { nombre: 'Nicolas Téran', primerNombre: 'Nicolas' },
+        '17': { nombre: 'Benjamín González', primerNombre: 'Benjamín' },
+        '18': { nombre: 'Pablo Salazar', primerNombre: 'Pablo' },
+        '19': { nombre: 'Ligia Silva', primerNombre: 'Ligia' },
+        '20': { nombre: 'Sebastián Escobar', primerNombre: 'Sebastián' },
+        '21': { nombre: 'Ana Terán', primerNombre: 'Ana' },
+        '22': { nombre: 'Elian Simancas', primerNombre: 'Elian' },
+        '23': { nombre: 'Estefania Pineda', primerNombre: 'Estefania' },
+        '24': { nombre: 'Fabiana López', primerNombre: 'Fabiana' },
+        '25': { nombre: 'David Schwarz', primerNombre: 'David' },
+        '26': { nombre: 'Jessica Guayasamin', primerNombre: 'Jessica' }
     };
 
     const SUPERVISORES_CAMPO = {
-        '1': { nombre: 'Tatiana Pasquel', primerNombre: 'Tatiana' },
-        '2': { nombre: 'Cristian Portilla', primerNombre: 'Cristian' },
-        '3': { nombre: 'Alejandro Yanascual', primerNombre: 'Alejandro' },
-        '4': { nombre: 'Santiago Suárez', primerNombre: 'Santiago' }
+        '1': { nombre: 'Melina Toaquiza', primerNombre: 'Melina' },
+        '2': { nombre: 'David Vega', primerNombre: 'David' },
+        '3': { nombre: 'Nervo Flores', primerNombre: 'Nervo' },
+        '4': { nombre: 'Joselyn Carvajal', primerNombre: 'Joselyn' },
+        '5': { nombre: 'Diana Molina', primerNombre: 'Diana' },
+        '6': { nombre: 'Darwin Olivo', primerNombre: 'Darwin' }
     };
 
-    // Asignación estricta de 3 encuestadores por supervisor (Quito 2026)
+    // Asignación de encuestadores por supervisor (DMQ 2026)
     const SUPERVISOR_ENCUESTADORES = {
-        '1': ['5', '6', '7'],
-        '2': ['8', '9', '10'],
-        '3': ['11', '12', '13'],
-        '4': ['14', '15', '16']
+        '1': ['7', '8', '9'],
+        '2': ['10', '11', '12'],
+        '3': ['13', '14', '15', '16'],
+        '4': ['17', '18', '19'],
+        '5': ['20', '21', '22', '23'],
+        '6': ['24', '25', '26']
     };
 
     const ENCUESTADOR_A_SUPERVISOR = {
-        '5': '1', '6': '1', '7': '1',
-        '8': '2', '9': '2', '10': '2',
-        '11': '3', '12': '3', '13': '3',
-        '14': '4', '15': '4', '16': '4'
+        '7': '1', '8': '1', '9': '1',
+        '10': '2', '11': '2', '12': '2',
+        '13': '3', '14': '3', '15': '3', '16': '3',
+        '17': '4', '18': '4', '19': '4',
+        '20': '5', '21': '5', '22': '5', '23': '5',
+        '24': '6', '25': '6', '26': '6'
     };
 
     function obtenerEtiquetaEncuestador(id, formato = 'corto') {
@@ -218,7 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
         '#a855f7', // 21: Púrpura Claro
         '#dc2626', // 22: Escarlata
         '#f97316', // 23: Naranja Brillante
-        '#15803d'  // 24: Verde Pino
+        '#15803d', // 24: Verde Pino
+        '#0891b2', // 25: Cian Petróleo
+        '#4338ca', // 26: Azul Índigo Oscuro
+        '#be185d', // 27: Rosa Profundo
+        '#047857'  // 28: Verde Esmeralda Oscuro
     ];
 
     // Parroquias oficiales en estudio (Encuesta Quito PM - Septiembre - 2026 - 51 parroquias)
@@ -1363,19 +1381,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const hayFiltroActivo = (selSup !== 'Todos' || !!selEnc || !!targetPar || selFec !== 'Todas');
 
-        // 1. Selector Supervisores: Estrictamente los 4 supervisores oficiales (1 al 4)
+        // 1. Selector Supervisores: Estrictamente los supervisores oficiales (1 al 6)
         if (UI.supervisorFilter) {
             const actualSup = AppState.supervisorSeleccionado || 'Todos';
             UI.supervisorFilter.innerHTML = '<option value="Todos">Todos los supervisores</option>';
-            ['1', '2', '3', '4'].forEach(id => {
+            const supKeys = Object.keys(SUPERVISORES_CAMPO);
+            supKeys.forEach(id => {
                 const totalEnc = supervisores.get(id) || 0;
                 const option = document.createElement('option');
                 option.value = id;
                 option.textContent = `${obtenerEtiquetaSupervisor(id, 'corto')} (${totalEnc} enc.)`;
                 UI.supervisorFilter.appendChild(option);
             });
-            UI.supervisorFilter.value = ['1', '2', '3', '4'].includes(actualSup) ? actualSup : 'Todos';
-            if (!['1', '2', '3', '4'].includes(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
+            UI.supervisorFilter.value = supKeys.includes(actualSup) ? actualSup : 'Todos';
+            if (!supKeys.includes(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
         // 1.1 Selector Cantón (Encuesta Quito PM - Septiembre - 2026)
@@ -1922,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=29.0.0';
+            const cacheBuster = '?v=30.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2696,7 +2715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=29.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=30.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -3710,7 +3729,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ---------------------------------------------------------------------
         const gruposSupervisor = new Map();
 
-        ['1', '2', '3', '4'].forEach(supId => {
+        Object.keys(SUPERVISORES_CAMPO).forEach(supId => {
             gruposSupervisor.set(supId, {
                 id: supId,
                 encuestadores: [],
@@ -3722,19 +3741,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         datos.forEach(encuestador => {
             const supOficial = ENCUESTADOR_A_SUPERVISOR[encuestador.id];
-            // Solo se admiten encuestadores pertenecientes a la nómina oficial (5 al 16)
+            // Solo se admiten encuestadores pertenecientes a la nómina oficial
             if (supOficial && gruposSupervisor.has(supOficial) && EQUIPO_CAMPO[encuestador.id]) {
                 const gSup = gruposSupervisor.get(supOficial);
                 gSup.encuestadores.push(encuestador);
                 gSup.totalEncuestas += encuestador.encuestas.length;
                 totalOficialesActivos++;
             }
-            // Los códigos de prueba o números raros (100, 103, 115, etc.) quedan EXCLUIDOS de esta tabla
+            // Los códigos de prueba o números raros quedan EXCLUIDOS de esta tabla
             // y se muestran exclusivamente en la viñeta de "Errores".
         });
 
         // Determinar qué supervisores mostrar
-        let supKeys = ['1', '2', '3', '4'];
+        let supKeys = Object.keys(SUPERVISORES_CAMPO);
         if (AppState.supervisorSeleccionado !== 'Todos') {
             supKeys = supKeys.filter(id => id === AppState.supervisorSeleccionado);
         } else if (AppState.filtroTabla) {
@@ -4183,7 +4202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (c) coords.push(c);
         });
 
-        if (supId && ['1', '2', '3', '4'].includes(String(supId)) && UI.supervisorFilter) {
+        if (supId && Object.keys(SUPERVISORES_CAMPO).includes(String(supId)) && UI.supervisorFilter) {
             AppState.supervisorSeleccionado = supId;
             UI.supervisorFilter.value = supId;
         }

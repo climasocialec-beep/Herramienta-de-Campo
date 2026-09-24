@@ -281,8 +281,8 @@ function normalizarEncuesta(raw) {
     } else {
         const numEnc = parseInt(encuestador, 10);
         const numSup = parseInt(supervisor, 10);
-        // Si el encuestador puso 1..9 (código de supervisor) y el supervisor 10..50 (código de encuestador), corregir inversión
-        if (!isNaN(numEnc) && !isNaN(numSup) && numEnc >= 1 && numEnc <= 9 && numSup >= 10 && numSup <= 50) {
+        // Si el encuestador puso 1..6 (código de supervisor) y el supervisor 7..50 (código de encuestador), corregir inversión
+        if (!isNaN(numEnc) && !isNaN(numSup) && numEnc >= 1 && numEnc <= 6 && numSup >= 7 && numSup <= 50) {
             encuestador = String(numSup);
             supervisor = String(numEnc);
         }
