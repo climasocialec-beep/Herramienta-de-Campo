@@ -562,8 +562,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const tipRaw = String(campo(encuesta, 'tipologia') || campo(encuesta, 'TIPOLOGIA') || '').trim().toUpperCase();
         const tip = /^[1-8]$/.test(tipRaw) ? String.fromCharCode(64 + Number(tipRaw)) : tipRaw;
         const candidatos = AppState.sectoresCandidatos.get(alias) || [];
-        const encontrados = candidatos.filter(s => (!canton || s.canton === canton) && (!tip || s.props.tipologia === tip));
-        // Los números 1..30 se repiten: una identidad ambigua queda sin asignar.
+        const normCan = normTexto(canton);
+        const encontrados = candidatos.filter(s => {
+            const matchCanton = !canton || normTexto(s.canton) === normCan || (normCan === 'QUITO' && normTexto(s.canton).includes('QUITO'));
+            const matchTip = !tip || s.props.tipologia === tip;
+            return matchCanton && matchTip;
+        });
+        // Si no encontró por tipología estricta pero hay un único sector con ese número en el cantón, resolver por número
+        if (encontrados.length === 0 && candidatos.length > 0) {
+            const porCanton = candidatos.filter(s => !canton || normTexto(s.canton) === normCan || (normCan === 'QUITO' && normTexto(s.canton).includes('QUITO')));
+            if (porCanton.length === 1) return porCanton[0];
+        }
         return encontrados.length === 1 ? encontrados[0] : null;
     }
 
@@ -1941,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=34.0.0';
+            const cacheBuster = '?v=35.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2715,7 +2724,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=34.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=35.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
