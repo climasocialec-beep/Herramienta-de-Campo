@@ -640,6 +640,30 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
+    function obtenerSectoresDeSupervisor(supId) {
+        const secKeys = new Set();
+        if (!supId || supId === 'Todos') return secKeys;
+        const targetSup = String(supId).trim();
+        const encuestas = AppState.encuestas || [];
+        for (let i = 0; i < encuestas.length; i++) {
+            const e = encuestas[i];
+            const eSup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
+            const eEnc = String(e.encuestador || e.C_digo_encuestador || campo(e, AppState.config.campoEncuestador) || '').trim();
+            const esDeEsteSup = (eSup === targetSup) || (ENCUESTADOR_A_SUPERVISOR[eEnc] === targetSup);
+            if (esDeEsteSup) {
+                const s = resolverSectorEncuesta(e);
+                if (s && s.props) {
+                    if (s.props.sc_key) secKeys.add(String(s.props.sc_key));
+                    if (s.props.sc) secKeys.add(String(s.props.sc));
+                    if (s.props.sec_anm) secKeys.add(String(s.props.sec_anm));
+                    if (s.props.codigo_muestra) secKeys.add(String(s.props.codigo_muestra));
+                    if (s.props.num_muestra) secKeys.add(String(s.props.num_muestra));
+                }
+            }
+        }
+        return secKeys;
+    }
+
     function normalizarSupervisorEncuesta(e) {
         if (!e) return e;
         let sup = String(e.supervisor || e.C_digo_Supervisor || campo(e, AppState.config.campoSupervisor) || '').trim();
@@ -1479,6 +1503,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
             const circActivaNorm = (AppState.circunscripcionSeleccionada !== 'Todas') ? normTexto(AppState.circunscripcionSeleccionada) : null;
+            const sectoresSupervisor = (AppState.supervisorSeleccionado && AppState.supervisorSeleccionado !== 'Todos') 
+                ? obtenerSectoresDeSupervisor(AppState.supervisorSeleccionado) 
+                : null;
             const listaSectores = [];
 
             if (AppState.sectoresGeojson && AppState.sectoresGeojson.features) {
@@ -1492,6 +1519,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const circunscripcion = String(p.circunscripcion || '').trim();
                     const secAnm = String(p.sec_anm || '').trim();
                     const scKey = p.sc_key || `${canton}_${scNum}`;
+
+                    // Cascada: Si hay un Supervisor seleccionado, mostrar solo sus sectores asociados
+                    if (sectoresSupervisor) {
+                        const coincideSup = sectoresSupervisor.has(scKey) ||
+                            sectoresSupervisor.has(scNum) ||
+                            (secAnm && sectoresSupervisor.has(secAnm)) ||
+                            (p.codigo_muestra && sectoresSupervisor.has(String(p.codigo_muestra))) ||
+                            (p.num_muestra && sectoresSupervisor.has(String(p.num_muestra)));
+                        if (!coincideSup) {
+                            return;
+                        }
+                    }
 
                     // Filtrar por Cantón si está activo (Cascada Cantón ➔ Sectores)
                     if (AppState.cantonSeleccionado !== 'Todos') {
@@ -1550,13 +1589,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const totalSectores = listaParaMostrar.length;
-            let labelTodos = (AppState.cantonSeleccionado !== 'Todos') 
-                ? `Todos los sectores de ${AppState.cantonSeleccionado} (${totalSectores})`
-                : `Todos los sectores (${totalSectores})`;
+            const supEtiqueta = (AppState.supervisorSeleccionado && AppState.supervisorSeleccionado !== 'Todos')
+                ? obtenerEtiquetaSupervisor(AppState.supervisorSeleccionado, 'corto')
+                : null;
+            let labelTodos = supEtiqueta
+                ? `Sectores de ${supEtiqueta} (${totalSectores})`
+                : ((AppState.cantonSeleccionado !== 'Todos') 
+                    ? `Todos los sectores de ${AppState.cantonSeleccionado} (${totalSectores})`
+                    : `Todos los sectores (${totalSectores})`);
             if (AppState.filtroSoloPendientes) {
-                labelTodos = (AppState.cantonSeleccionado !== 'Todos')
-                    ? `Sectores pendientes en ${AppState.cantonSeleccionado} (${totalSectores})`
-                    : `Todos los sectores pendientes (${totalSectores})`;
+                labelTodos = supEtiqueta
+                    ? `Sectores pendientes de ${supEtiqueta} (${totalSectores})`
+                    : ((AppState.cantonSeleccionado !== 'Todos')
+                        ? `Sectores pendientes en ${AppState.cantonSeleccionado} (${totalSectores})`
+                        : `Todos los sectores pendientes (${totalSectores})`);
             }
             UI.sectorFilter.innerHTML = `<option value="Todos">${labelTodos}</option>`;
 
@@ -1950,7 +1996,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=35.0.0';
+            const cacheBuster = '?v=36.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -3093,10 +3139,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     filterPendientes = ['in', ['to-string', ['coalesce', ['get', 'sc_key'], '']], ['literal', keysPendientes]];
                 }
 
+                let filterSupervisor = null;
+                if (AppState.supervisorSeleccionado && AppState.supervisorSeleccionado !== 'Todos') {
+                    const secKeysSup = Array.from(obtenerSectoresDeSupervisor(AppState.supervisorSeleccionado));
+                    filterSupervisor = [
+                        'any',
+                        ['in', ['to-string', ['coalesce', ['get', 'sc_key'], '']], ['literal', secKeysSup]],
+                        ['in', ['to-string', ['coalesce', ['get', 'sc'], '']], ['literal', secKeysSup]],
+                        ['in', ['to-string', ['coalesce', ['get', 'sec_anm'], '']], ['literal', secKeysSup]],
+                        ['in', ['to-string', ['coalesce', ['get', 'codigo_muestra'], '']], ['literal', secKeysSup]],
+                        ['in', ['to-string', ['coalesce', ['get', 'num_muestra'], '']], ['literal', secKeysSup]]
+                    ];
+                }
+
                 const aplicarFiltroSectores = (baseFilter) => {
-                    const f = (baseFilter && filterPendientes) 
-                        ? ['all', baseFilter, filterPendientes] 
-                        : (baseFilter || filterPendientes);
+                    const condiciones = [];
+                    if (baseFilter) condiciones.push(baseFilter);
+                    if (filterPendientes) condiciones.push(filterPendientes);
+                    if (filterSupervisor) condiciones.push(filterSupervisor);
+
+                    let f = null;
+                    if (condiciones.length === 1) {
+                        f = condiciones[0];
+                    } else if (condiciones.length > 1) {
+                        f = ['all', ...condiciones];
+                    }
                     map.setFilter('sectores-fill', f);
                     map.setFilter('sectores-line', f);
                     if (map.getLayer('sectores-label')) map.setFilter('sectores-label', f);
@@ -4306,6 +4373,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const sup = enc ? String(enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '') : '';
                     if (AppState.supervisorSeleccionado !== 'Todos' && sup !== AppState.supervisorSeleccionado) {
                         AppState.encuestadorSeleccionado = null;
+                    }
+                }
+                // Si el sector previamente seleccionado no pertenece al nuevo supervisor filtrado, resetear a 'Todos'
+                if (AppState.sectorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado !== 'Todos') {
+                    const secSup = obtenerSectoresDeSupervisor(AppState.supervisorSeleccionado);
+                    if (!secSup.has(AppState.sectorSeleccionado)) {
+                        AppState.sectorSeleccionado = 'Todos';
                     }
                 }
                 renderizarVista(true, true);
