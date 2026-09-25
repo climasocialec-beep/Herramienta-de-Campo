@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '23': { nombre: 'Estefania Pineda', primerNombre: 'Estefania' },
         '24': { nombre: 'Fabiana López', primerNombre: 'Fabiana' },
         '25': { nombre: 'David Schwarz', primerNombre: 'David' },
-        '26': { nombre: 'Jessica Guayasamin', primerNombre: 'Jessica' }
+        '26': { nombre: 'José Alejandro Mera', primerNombre: 'José Alejandro' }
     };
 
     const SUPERVISORES_CAMPO = {
@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=32.0.0';
+            const cacheBuster = '?v=33.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
@@ -2715,7 +2715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (AppState.parroquiasGeojson && AppState.parroquiasGeojson.features && AppState.parroquiasGeojson.features.length > 0) {
                 return; // Ya cargado en inicializarMapa
             }
-            const res = await fetch('assets/parroquias.geojson?v=32.0.0');
+            const res = await fetch('assets/parroquias.geojson?v=33.0.0');
             if (!res.ok) return;
             const geojsonData = await res.json();
 
@@ -3462,10 +3462,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderizarVista();
             },
             (err) => {
-                console.error(err);
-                mostrarToast('No se pudo obtener el GPS. Verifica los permisos.', 'error');
+                console.warn('Fallo geolocalización inicial:', err);
+                // Si falló por timeout o alta precisión, reintentar con precisión estándar (red/antena)
+                if (err.code === 3 || err.code === 2) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const lat = pos.coords.latitude;
+                            const lng = pos.coords.longitude;
+                            AppState.ubicacionSupervisor = { lat, lng };
+                            if (map) {
+                                map.flyTo({ center: [lng, lat], zoom: 15 });
+                                if (AppState.markerSupervisor) {
+                                    AppState.markerSupervisor.setLngLat([lng, lat]);
+                                }
+                            }
+                            mostrarToast('Ubicación aproximada fijada ✓', 'success');
+                        },
+                        (fallbackErr) => {
+                            let msg = 'No se pudo obtener el GPS. ';
+                            if (fallbackErr.code === 1) msg += 'Permiso denegado en el navegador.';
+                            else if (fallbackErr.code === 2) msg += 'Activa el GPS/Ubicación en tu teléfono.';
+                            else msg += 'Tiempo de espera agotado. Reintenta al aire libre.';
+                            mostrarToast(msg, 'error');
+                        },
+                        { enableHighAccuracy: false, timeout: 15000 }
+                    );
+                } else if (err.code === 1) {
+                    mostrarToast('Permiso de GPS bloqueado. Actívalo en el candado 🔒 de tu navegador.', 'error');
+                } else {
+                    mostrarToast('No se pudo obtener el GPS. Verifica que esté activo en los ajustes de tu celular.', 'error');
+                }
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
         );
     }
 
