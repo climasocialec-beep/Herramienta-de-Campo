@@ -594,11 +594,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function obtenerCantonEncuesta(encuesta) {
         const sector = resolverSectorEncuesta(encuesta);
-        if (sector && sector.canton) return sector.canton;
+        if (sector && sector.canton) return normalizarCanton(sector.canton) || sector.canton;
         const declarado = cantonDeclarado(encuesta);
-        if (declarado) return declarado;
+        if (declarado) return normalizarCanton(declarado) || declarado;
         const porParroquia = cantonPorParroquia(parroquiaDeclarada(encuesta));
-        if (porParroquia) return porParroquia;
+        if (porParroquia) return normalizarCanton(porParroquia) || porParroquia;
         return 'Sin asignar';
     }
 
@@ -1386,7 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const matchSup = (selSup === 'Todos' || sup === selSup);
             const matchSec = (selSec === 'Todos' || etiq === selSec);
-            const matchCan = AppState.cantonSeleccionado === 'Todos' || obtenerCantonEncuesta(e) === AppState.cantonSeleccionado;
+            const matchCan = AppState.cantonSeleccionado === 'Todos' || normTexto(obtenerCantonEncuesta(e)) === normTexto(AppState.cantonSeleccionado);
             const matchCirc = AppState.circunscripcionSeleccionada === 'Todas' || normCirc(circunscripcionEncuesta(e)) === normCirc(AppState.circunscripcionSeleccionada);
             if (!matchCan || !matchCirc) continue;
             let matchFec = true;
@@ -1784,7 +1784,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filtro por Cantón
         if (AppState.cantonSeleccionado !== 'Todos') {
-            filtradas = filtradas.filter(e => obtenerCantonEncuesta(e) === AppState.cantonSeleccionado);
+            const targetCan = normTexto(AppState.cantonSeleccionado);
+            filtradas = filtradas.filter(e => normTexto(obtenerCantonEncuesta(e)) === targetCan);
         }
 
         // Filtro por Circunscripción (Quito)
@@ -2007,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=39.0.0';
+            const cacheBuster = '?v=39.1.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
