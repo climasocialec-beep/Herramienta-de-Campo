@@ -563,33 +563,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const tip = /^[1-8]$/.test(tipRaw) ? String.fromCharCode(64 + Number(tipRaw)) : tipRaw;
         const candidatos = AppState.sectoresCandidatos.get(alias) || [];
         const normCan = normTexto(canton);
+
+        // 1. Coincidencia estricta por cantón y tipología
         const encontrados = candidatos.filter(s => {
             const matchCanton = !canton || normTexto(s.canton) === normCan || (normCan === 'QUITO' && normTexto(s.canton).includes('QUITO'));
             const matchTip = !tip || s.props.tipologia === tip;
             return matchCanton && matchTip;
         });
-        // Si no encontró por tipología estricta pero hay un único sector con ese número en el cantón, resolver por número
-        if (encontrados.length === 0 && candidatos.length > 0) {
+        if (encontrados.length === 1) return encontrados[0];
+
+        // 2. Coincidencia por cantón ignorando tipología si hay un único sector con ese número en el cantón
+        if (candidatos.length > 0) {
             const porCanton = candidatos.filter(s => !canton || normTexto(s.canton) === normCan || (normCan === 'QUITO' && normTexto(s.canton).includes('QUITO')));
             if (porCanton.length === 1) return porCanton[0];
         }
-        return encontrados.length === 1 ? encontrados[0] : null;
+
+        // 3. Fallback universal: si el encuestador declaró mal el cantón o parroquia en el XLSForm pero el número de sector es único en la muestra
+        if (candidatos.length === 1) return candidatos[0];
+
+        return null;
     }
 
     function obtenerParroquiaEncuesta(encuesta) {
+        const sector = resolverSectorEncuesta(encuesta);
+        if (sector && sector.parroquia) return sector.parroquia;
         const declarada = parroquiaDeclarada(encuesta);
         if (declarada) return declarada;
-        const sector = resolverSectorEncuesta(encuesta);
-        return sector ? sector.parroquia : '';
+        return '';
     }
 
     function obtenerCantonEncuesta(encuesta) {
+        const sector = resolverSectorEncuesta(encuesta);
+        if (sector && sector.canton) return sector.canton;
         const declarado = cantonDeclarado(encuesta);
         if (declarado) return declarado;
         const porParroquia = cantonPorParroquia(parroquiaDeclarada(encuesta));
         if (porParroquia) return porParroquia;
-        const sector = resolverSectorEncuesta(encuesta);
-        return sector ? sector.canton : 'Sin asignar';
+        return 'Sin asignar';
     }
 
     function coincideSector(encuesta, clave) {
@@ -621,9 +631,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function circunscripcionEncuesta(encuesta) {
-        if (encuesta.circunscripcion) return normCirc(encuesta.circunscripcion);
         const sector = resolverSectorEncuesta(encuesta);
-        return sector ? normCirc(sector.circunscripcion) : '';
+        if (sector && sector.circunscripcion) return normCirc(sector.circunscripcion);
+        if (encuesta.circunscripcion) return normCirc(encuesta.circunscripcion);
+        return '';
     }
 
     function crearFiltroMapLibreCircunscripcion(circVal) {
@@ -1996,7 +2007,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let sectoresData = { type: 'FeatureCollection', features: [] };
 
         try {
-            const cacheBuster = '?v=38.0.0';
+            const cacheBuster = '?v=39.0.0';
             const [resPar, resSec] = await Promise.all([
                 fetch('assets/parroquias.geojson' + cacheBuster),
                 fetch('assets/sectores_censales.geojson' + cacheBuster)
