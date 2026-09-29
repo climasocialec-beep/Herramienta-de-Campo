@@ -1846,7 +1846,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return normTexto(props.canton || props.CANTON || '') === normTexto(AppState.cantonSeleccionado);
                 }).length;
             }
-            const metaCanton = numSectoresCanton > 0 ? numSectoresCanton * 10 : 200;
+            const metaCanton = numSectoresCanton > 0 ? numSectoresCanton * 10 : 500;
             return {
                 meta: metaCanton,
                 etiquetaMeta: `Meta: ${metaCanton.toLocaleString()} (${AppState.cantonSeleccionado})`,

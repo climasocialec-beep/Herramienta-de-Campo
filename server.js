@@ -399,7 +399,7 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-const TITULO_OFICIAL = "Encuesta Provincial Morona Santiago 2026";
+const TITULO_OFICIAL = "Encuesta Cantonal Otavalo 2026";
 
 app.get("/api/config", (req, res) => {
     res.set({
@@ -409,12 +409,12 @@ app.get("/api/config", (req, res) => {
     });
     let nombre = process.env.NOMBRE_PROYECTO || TITULO_OFICIAL;
 
-    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.1174;
-    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -2.3087;
+    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.2625;
+    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : 0.2245;
 
     res.json({
         nombreProyecto: nombre,
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 2660,
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 500,
         campoEncuestador: CAMPO_ENCUESTADOR,
         campoSupervisor: CAMPO_SUPERVISOR,
         centroLng: centroLng,
