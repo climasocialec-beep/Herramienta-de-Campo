@@ -1457,13 +1457,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1.1 Selector Cantón (Otavalo)
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Todos';
-            const cantonesList = [
-                { id: 'Todos', label: 'Otavalo', badge: '📍' },
-                ...Object.keys(PARROQUIAS_POR_CANTON).map(can => {
-                    const cInfo = COLORES_CANTON[can] || {};
-                    return { id: can, label: cInfo.nombre || can, badge: cInfo.badge || '📍' };
-                })
-            ];
+            const keysCantones = Object.keys(PARROQUIAS_POR_CANTON);
+            let cantonesList = [];
+
+            if (keysCantones.length > 1) {
+                cantonesList = [
+                    { id: 'Todos', label: 'Todos los Cantones', badge: '🌐' },
+                    ...keysCantones.map(can => {
+                        const cInfo = COLORES_CANTON[can] || {};
+                        return { id: can, label: cInfo.nombre || can, badge: cInfo.badge || '📍' };
+                    })
+                ];
+            } else if (keysCantones.length === 1) {
+                const can = keysCantones[0];
+                const cInfo = COLORES_CANTON[can] || {};
+                cantonesList = [
+                    { id: 'Todos', label: cInfo.nombre || can, badge: cInfo.badge || '📍' }
+                ];
+            } else {
+                cantonesList = [
+                    { id: 'Todos', label: 'Todos los Cantones', badge: '🌐' }
+                ];
+            }
 
             let html = '';
             cantonesList.forEach(c => {
@@ -2868,8 +2883,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             if (cantonEncontrado) {
-                AppState.cantonSeleccionado = cantonEncontrado;
-                if (UI.cantonFilter) UI.cantonFilter.value = cantonEncontrado;
+                if (Object.keys(PARROQUIAS_POR_CANTON).length > 1) {
+                    AppState.cantonSeleccionado = cantonEncontrado;
+                    if (UI.cantonFilter) UI.cantonFilter.value = cantonEncontrado;
+                } else {
+                    AppState.cantonSeleccionado = 'Todos';
+                    if (UI.cantonFilter) UI.cantonFilter.value = 'Todos';
+                }
             }
         }
 
