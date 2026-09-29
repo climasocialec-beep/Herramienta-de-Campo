@@ -873,27 +873,30 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
 }
 
 /* Barra Flotante Glassmorphism del Sector Censal Activo */
+/* Barra Flotante Glassmorphism del Sector Censal Activo */
 .cs-sector-active-bar {
   position: absolute;
-  top: 0.85rem;
+  bottom: 1.25rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 400;
+  z-index: 500;
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.35rem 0.5rem 0.35rem 0.95rem;
-  background: rgba(44, 11, 54, 0.92);
+  gap: 0.65rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.95rem;
+  background: rgba(30, 27, 75, 0.95);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  border: 1.5px solid #f59e0b;
   border-radius: var(--radius-full);
-  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.35), 0 0 16px rgba(245, 158, 11, 0.25);
-  animation: slideDownGlass 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.5), 0 0 20px rgba(245, 158, 11, 0.35);
+  animation: slideUpGlass 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: calc(100% - 24px);
+  pointer-events: auto;
 }
 
-@keyframes slideDownGlass {
-  0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+@keyframes slideUpGlass {
+  0% { transform: translateX(-50%) translateY(20px); opacity: 0; }
   100% { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
@@ -906,6 +909,30 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-sector-active-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cs-sector-active-close:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: scale(1.1);
 }
 
 .cs-btn-gmaps {
@@ -935,7 +962,7 @@ body.modo-oscuro .maplibregl-map .maplibregl-canvas {
   height: 13px;
 }
 
-/* Leyenda Dinámica de Supervisores en Mapa */
+/* Conteos por supervisor y encuestador en el mapa */
 .cs-map-legend {
   position: absolute;
   bottom: 12px;
@@ -984,8 +1011,21 @@ body.modo-oscuro .cs-map-legend__header {
   display: flex;
   flex-direction: column;
   gap: 0.22rem;
-  max-height: 110px;
+  max-height: 230px;
   overflow-y: auto;
+}
+
+.cs-map-legend__group-title {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
+.cs-map-legend__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cs-map-legend__item {
@@ -3341,7 +3381,7 @@ body.modo-oscuro .cs-layer-pill--pendientes.active {
     transform: translateX(-50%);
     width: calc(100% - 20px);
     max-width: 380px;
-    z-index: 50;
+    z-index: 500;
   }
 }
 

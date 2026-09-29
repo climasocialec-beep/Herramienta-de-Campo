@@ -9,8 +9,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
-  <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social · Encuesta DMQ - Septiembre - 2026">
-  <title>Clima Social · Encuesta DMQ - Septiembre - 2026</title>
+  <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social · Encuesta Cantonal Otavalo 2026">
+  <title>Clima Social · Encuesta Cantonal Otavalo 2026</title>
   <link rel="icon" type="image/png" href="assets/icono.png">
   <link rel="manifest" href="manifest.webmanifest">
 
@@ -25,14 +25,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Preload Cartografía Clave (Caché optimizada para móviles) -->
-  <link rel="preload" href="assets/parroquias.geojson?v=39.1.0" as="fetch" crossorigin>
-  <link rel="preload" href="assets/sectores_censales.geojson?v=39.1.0" as="fetch" crossorigin>
+  <link rel="preload" href="assets/parroquias.geojson?v=73.0.0" as="fetch" crossorigin>
+  <link rel="preload" href="assets/sectores_censales.geojson?v=73.0.0" as="fetch" crossorigin>
 
   <!-- MapLibre GL CSS (Aceleración WebGL Nativa en GPU) -->
   <link rel="stylesheet" href="libs/maplibre-gl.css" />
 
   <!-- Estilos del Dashboard -->
-  <link rel="stylesheet" href="style.css?v=39.1.0">
+  <link rel="stylesheet" href="style.css?v=73.0.0">
 </head>
 <body>
 
@@ -54,11 +54,11 @@
     <div class="cs-header__inner">
       <div class="cs-header__brand">
         <a href="#" class="cs-brand__link" title="Clima Social · Supervisión">
-          <img src="assets/01_ClimaSocial_Horizontal_Transparente.png" alt="Clima Social" class="cs-brand__logo">
+          <img src="assets/01_ClimaSocial_Horizontal_Transparente.png" onerror="this.onerror=null; this.src='assets/01_Logo_Clima_Social_Horizontal_Oficial.svg';" alt="Clima Social" class="cs-brand__logo">
         </a>
         <div class="cs-header__divider"></div>
         <div class="cs-header__title-group">
-          <h1 class="cs-header__title" id="tituloProyecto">Encuesta DMQ - Septiembre - 2026</h1>
+          <h1 class="cs-header__title" id="tituloProyecto">Encuesta Cantonal Otavalo 2026</h1>
           <span class="cs-header__live-badge" id="badgeConexion">
             <span class="cs-header__live-dot"></span>
             <span id="badgeTexto">En espera</span>
@@ -105,7 +105,7 @@
         </div>
         <div class="cs-kpi-bottom">
           <span class="cs-kpi-badge">Total Recolectadas</span>
-          <span class="cs-kpi-sub" id="kpiMeta">Meta: 2,000 (Quito)</span>
+          <span class="cs-kpi-sub" id="kpiMeta">Meta: 500 (Otavalo)</span>
         </div>
         <div class="cs-progress-bar"><div class="cs-progress-bar__fill" id="barraAvance" style="width:0%"></div></div>
       </div>
@@ -151,7 +151,7 @@
         </div>
         <div class="cs-kpi-bottom">
           <span class="cs-kpi-badge" id="kpiTituloAvance">Avance General</span>
-          <span class="cs-kpi-sub" id="kpiSubAvance">Cumplimiento provincial (1,600)</span>
+          <span class="cs-kpi-sub" id="kpiSubAvance">Cumplimiento cantonal (500)</span>
         </div>
       </div>
 
@@ -186,15 +186,15 @@
           </div>
 
 
-          <!-- Circunscripción (Específico para Quito y Rumiñahui) -->
-          <div class="cs-ribbon-field" id="wrapCircunscripcionFilter">
-            <label for="circunscripcionFilter" class="cs-field-label">
-              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-              <span>Circunscripción</span>
+          <!-- Cantón (Otavalo) -->
+          <div class="cs-ribbon-field" id="wrapCantonFilter">
+            <label for="cantonFilter" class="cs-field-label">
+              <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Cantón</span>
             </label>
             <div class="cs-select-wrap">
-              <select id="circunscripcionFilter" class="cs-select">
-                <option value="Todas">Todas las circunscripciones</option>
+              <select id="cantonFilter" class="cs-select">
+                <option value="Todos">Otavalo</option>
               </select>
             </div>
           </div>
@@ -207,12 +207,12 @@
             </label>
             <div class="cs-select-wrap">
               <select id="parroquiaFilter" class="cs-select">
-                <option value="Todas">Todas las parroquias</option>
+                <option value="Todas">Todas las parroquias (9)</option>
               </select>
             </div>
           </div>
 
-          <!-- Sector Censal (1 al 70) -->
+          <!-- Sector Censal (1 al 50) -->
           <div class="cs-ribbon-field">
             <label for="sectorFilter" class="cs-field-label">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
@@ -220,7 +220,7 @@
             </label>
             <div class="cs-select-wrap">
               <select id="sectorFilter" class="cs-select">
-                <option value="Todos">Todos los sectores (120)</option>
+                <option value="Todos">Todos los sectores (50)</option>
               </select>
             </div>
           </div>
@@ -284,13 +284,13 @@
             <div class="cs-map-top-row">
               <!-- Barra Flotante de Control de Capas (Prender y Apagar) -->
               <div class="cs-map-layer-toggles" id="mapLayerToggles" aria-label="Capas del Mapa">
-                <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (48)">
+                <button type="button" class="cs-layer-pill active" id="toggleParroquias" data-layer-group="parroquias" title="Límites Parroquiales de Estudio (9)">
                   <span class="cs-layer-pill__dot" style="background: #2563eb;"></span>
-                  <span id="lblToggleParroquias">Parroquias (48)</span>
+                  <span id="lblToggleParroquias">Parroquias (9)</span>
                 </button>
-                <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (120)">
+                <button type="button" class="cs-layer-pill active" id="toggleSectores" data-layer-group="sectores" title="Sectores Censales Sorteados (50)">
                   <span class="cs-layer-pill__dot" style="background: #3b82f6;"></span>
-                  <span id="lblToggleSectores">Sectores (120)</span>
+                  <span id="lblToggleSectores">Sectores (50)</span>
                 </button>
                 <button type="button" class="cs-layer-pill cs-layer-pill--pendientes" id="toggleSoloPendientes" title="Filtrar únicamente sectores pendientes de completar (<10 encuestas)">
                   <span class="cs-layer-pill__dot" style="background: #f59e0b;"></span>
@@ -298,29 +298,27 @@
                 </button>
               </div>
             </div>
-
-            <!-- Barra Rápida de Circunscripciones (Aparece al seleccionar Quito o Rumiñahui en flujo vertical) -->
-            <div class="cs-circ-legend-bar" id="circLegendBar" style="display:none;" aria-label="Circunscripciones del Cantón"></div>
           </div>
 
           <div id="map"></div>
 
-          <!-- Barra flotante de navegación para Sector Censal activo -->
+          <!-- Barra flotante de navegación para Punto de Muestra activo -->
           <div class="cs-sector-active-bar" id="barraSectorActivo" style="display:none;">
             <div class="cs-sector-active-info">
               <span class="cs-sector-active-icon">🎯</span>
-              <span class="cs-sector-active-title" id="sectorActivoTitulo">Sector Censal</span>
+              <span class="cs-sector-active-title" id="sectorActivoTitulo">Punto de Muestra</span>
             </div>
             <a id="btnRutaGoogleMaps" class="cs-btn-gmaps" href="#" target="_blank" rel="noopener noreferrer">
               <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
               Cómo llegar (Google Maps)
             </a>
+            <button type="button" class="cs-sector-active-close" id="btnCerrarSectorActivo" title="Cerrar barra">✕</button>
           </div>
 
-          <!-- Leyenda Dinámica de Encuestadores -->
+          <!-- Conteos de encuestas visibles en el mapa -->
           <div class="cs-map-legend" id="mapLegend" style="display:none;">
             <div class="cs-map-legend__header">
-              <span class="cs-legend-title">Encuestadores</span>
+              <span class="cs-legend-title">Encuestas en el mapa</span>
             </div>
             <div class="cs-map-legend__items" id="mapLegendItems"></div>
           </div>
@@ -472,12 +470,44 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=39.1.0"></script>
+  <script src="script.js?v=73.0.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js?v=39.1.0').then(reg => {
-          if (reg && reg.update) reg.update();
+        // Conservar únicamente la caché de esta versión
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => {
+              if (name !== 'clima-social-otavalo-2026-v1') {
+                caches.delete(name);
+              }
+            });
+          });
+        }
+        navigator.serviceWorker.register('/service-worker.js?v=73.0.0').then(reg => {
+          if (!reg) return;
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+          if (reg.update) reg.update();
         }).catch(error => {
           console.warn('No se pudo preparar el modo sin conexión:', error);
         });

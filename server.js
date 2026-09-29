@@ -30,9 +30,8 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// El identificador y el token se reciben solo por variables de entorno de Render.
-// Se ignoran ASSET_ID genéricos heredados de otros proyectos para evitar consultas cruzadas.
-const ASSET_ID = limpiarVar(process.env.ASSET_ID_PICHINCHA);
+// El identificador y el token se reciben por variables de entorno de Render.
+const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_MORONA || process.env.ASSET_ID_PICHINCHA);
 const API_TOKEN = limpiarVar(
     process.env.API_TOKEN ||
     process.env.KOBO_API_TOKEN ||
@@ -115,6 +114,7 @@ let cache = {
     enProceso: null
 };
 
+
 function extraerValor(obj, claves) {
     if (!obj || typeof obj !== "object") return "";
     const valorTexto = value => value === undefined || value === null || typeof value === "object"
@@ -157,72 +157,25 @@ function normalizarCoordenadas(valores, validarEcuador = false) {
     return [lat, lng];
 }
 
-// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Quito Septiembre 2026 - XLSForm aKiQPHjXNTHgvsb5d8ur7n)
+// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Cantonal Otavalo 2026 - XLSForm oficial)
 const PARROQUIAS_FORMULARIO = {
-    "1": "CARCELEN",
-    "2": "COCHAPAMBA",
-    "3": "COMITE DEL PUEBLO",
-    "4": "COTOCOLLAO",
-    "5": "EL CONDADO",
-    "6": "IÑAQUITO",
-    "7": "JIPIJAPA",
-    "8": "KENNEDY",
-    "9": "LA CONCEPCION",
-    "10": "PONCEANO",
-    "11": "RUMIPAMBA",
-    "12": "SAN ISIDRO DEL INCA",
-    "13": "BELISARIO QUEVEDO",
-    "14": "CENTRO HISTORICO",
-    "15": "CHILIBULO",
-    "16": "CHIMBACALLE",
-    "17": "ITCHIMBIA",
-    "18": "LA FERROVIARIA",
-    "19": "LA LIBERTAD",
-    "20": "LA MAGDALENA",
-    "21": "MARISCAL SUCRE",
-    "22": "PUENGASI",
-    "23": "SAN BARTOLO",
-    "24": "SAN JUAN",
-    "25": "CHILLOGALLO",
-    "26": "GUAMANI",
-    "27": "LA ARGELIA",
-    "28": "LA ECUATORIANA",
-    "29": "LA MENA",
-    "30": "QUITUMBE",
-    "31": "SOLANDA",
-    "32": "TURUBAMBA",
-    "33": "ALANGASI",
-    "34": "AMAGUAÑA",
-    "35": "CALDERON",
-    "36": "CONOCOTO",
-    "37": "CUMBAYA",
-    "38": "GUAYLLABAMBA",
-    "39": "LLANO CHICO",
-    "40": "NAYON",
-    "41": "PIFO",
-    "42": "PINTAG",
-    "43": "POMASQUI",
-    "44": "PUEMBO",
-    "45": "QUINCHE",
-    "46": "SAN ANTONIO",
-    "47": "TUMBACO",
-    "48": "YARUQUI"
-};
-
-const CIRCUNSCRIPCIONES_FORMULARIO = {
-    "1": "CIRCUNSCRIPCION URBANA 1",
-    "2": "CIRCUNSCRIPCION URBANA 2",
-    "3": "CIRCUNSCRIPCION URBANA 3",
-    "4": "CIRCUNSCRIPCION RURAL",
-    "1q": "CIRCUNSCRIPCION URBANA 1",
-    "2q": "CIRCUNSCRIPCION URBANA 2",
-    "3q": "CIRCUNSCRIPCION URBANA 3",
-    "4q": "CIRCUNSCRIPCION RURAL"
+    "1040": "DR MIGUEL EGAS / PEGUCHE",
+    "1215": "EUGENIO ESPEJO",
+    "1360": "GONZALEZ SUAREZ",
+    "2785": "PATAQUI",
+    "3490": "SAN JOSE DE QUICHINCHE",
+    "3525": "SAN JUAN DE ILUMAN",
+    "3590": "SAN PABLO",
+    "3630": "SAN RAFAEL",
+    "3810": "SELVA ALEGRE",
+    "5490": "JORDAN",
+    "5980": "SAN LUIS"
 };
 
 const CANTONES_FORMULARIO = {
-    "1": "Quito",
-    "60": "Quito"
+    "1004": "Otavalo",
+    "035": "Otavalo",
+    "otavalo": "Otavalo"
 };
 
 const TIPOLOGIAS_FORMULARIO = {
@@ -264,37 +217,31 @@ function normalizarEncuesta(raw) {
     const campoEnc = CAMPO_ENCUESTADOR;
     const campoSup = CAMPO_SUPERVISOR;
 
-    let encuestador = extraerValor(raw, [campoEnc, "cenc", "codencu", "cod_encu", "cod_enc", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
+    let encuestador = extraerValor(raw, [campoEnc, "cenc", "codenc", "codencu", "cod_encu", "cod_enc", "C_digo_encuestador", "encuestador", "cod_encuestador"]);
     let supervisor = extraerValor(raw, [campoSup, "csup", "codsup", "cod_sup", "C_digo_Supervisor", "supervisor", "cod_supervisor"]);
 
-    // Inversión involuntaria: si el encuestador puso 1..6 (código de supervisor) y el supervisor 7..50 (código de encuestador)
-    const numEnc = parseInt(encuestador, 10);
-    const numSup = parseInt(supervisor, 10);
-    if (!isNaN(numEnc) && !isNaN(numSup) && numEnc >= 1 && numEnc <= 6 && numSup >= 7 && numSup <= 50) {
-        encuestador = String(numSup);
-        supervisor = String(numEnc);
-    }
 
     // Consentimiento: 1 = SÍ, 2 = NO / Rechazo
     const rawConsen = extraerValor(raw, ["consent", "consen", "consentimiento", "acepta"]);
     const noConsent = rawConsen === "2" || String(rawConsen).trim().toLowerCase() === "no" || String(rawConsen).trim().toLowerCase() === "rechaza";
     const consentimiento = noConsent ? "NO" : "SI";
 
-    const sc = extraerValor(raw, ["sc", "sectorcen", "p_ref", "codigo_sc", "sector_censal"]);
+    // En el XLSForm vigente el punto se guarda en group_localizacion/seccensal.
+    const sc = extraerValor(raw, ["seccensal", "sc", "sectorcen", "p_ref", "codigo_sc", "sector_censal", "sector", "punto", "num_muestra"]);
     const rawTipol = String(extraerValor(raw, ["tipol", "tipologia", "TIPOLOGIA", "tipo_sc"]) || "").trim().toLowerCase();
     const tipologia = TIPOLOGIAS_FORMULARIO[rawTipol] || rawTipol.toUpperCase();
     const barrio = extraerValor(raw, ["barrio", "barr", "BARRIO_O_SECTOR", "sector", "barrio_sector"]);
     
-    // Parroquia: decodificación por choices del XLSForm Quito
+    // Parroquia: decodificación por choices del XLSForm oficial
     const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
     const parroquia = PARROQUIAS_FORMULARIO[rawParroquia] || String(rawParroquia).trim().toUpperCase();
 
-    // Cantón: Encuesta cantonal Quito
-    const canton = "Quito";
+    // Cantón: Extraer dinámicamente o decodificar (sin fallback forzado que contamine otros cantones)
+    const rawCanton = extraerValor(raw, ["canton", "CANTON", "canton_nombre", "nom_can", "nom_canton"]) || "";
+    const canton = CANTONES_FORMULARIO[rawCanton] || String(rawCanton).trim();
 
-    // Circunscripción
-    const rawCircuns = extraerValor(raw, ["circuns", "circunscripcion", "CIRCUNSCRIPCION"]) || "";
-    const circunscripcion = CIRCUNSCRIPCIONES_FORMULARIO[rawCircuns] || String(rawCircuns).trim();
+    // Circunscripción (No aplica en Morona Santiago)
+    const circunscripcion = "";
 
     // Extracción tolerante de Género (p1: 1=Masculino, 2=Femenino, 3=LGBTIQ+, 0=Otro; p1_1: 1=Hombre, 2=Mujer)
     const rawGen = extraerValor(raw, [
@@ -452,30 +399,22 @@ app.get("/api/health", (req, res) => {
     });
 });
 
+const TITULO_OFICIAL = "Encuesta Provincial Morona Santiago 2026";
+
 app.get("/api/config", (req, res) => {
     res.set({
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0"
     });
-    const TITULO_OFICIAL = "Encuesta DMQ - Septiembre - 2026";
     let nombre = process.env.NOMBRE_PROYECTO || TITULO_OFICIAL;
-    // Blindaje riguroso contra variables de entorno heredadas de otros cantones (ej. Cuenca, Machala, etc.)
-    if (!nombre || nombre.toLowerCase().includes("cuenca") || (!nombre.toLowerCase().includes("quito") && !nombre.toLowerCase().includes("dmq"))) {
-        nombre = TITULO_OFICIAL;
-    }
 
-    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.4678;
-    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -0.1807;
-    // Si coordenadas heredadas apuntan fuera de Pichincha/Quito (ej. Cuenca -79, -2.9), forzar Quito
-    if (centroLat < -1.0 || centroLng < -79.2) {
-        centroLng = -78.4678;
-        centroLat = -0.1807;
-    }
+    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.1174;
+    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : -2.3087;
 
     res.json({
         nombreProyecto: nombre,
-        metaEncuestas: Number(process.env.META_ENCUESTAS) || 2000,
+        metaEncuestas: Number(process.env.META_ENCUESTAS) || 2660,
         campoEncuestador: CAMPO_ENCUESTADOR,
         campoSupervisor: CAMPO_SUPERVISOR,
         centroLng: centroLng,
@@ -491,7 +430,7 @@ app.get("/api/encuestas", async (req, res) => {
                 total: 0,
                 resultados: [],
                 obtenidoEn: Date.now(),
-                mensaje: "Esperando configuración de formulario para Encuesta DMQ - Septiembre - 2026"
+                mensaje: "Esperando configuración de formulario para " + (process.env.NOMBRE_PROYECTO || TITULO_OFICIAL)
             });
         }
         res.set({
@@ -521,7 +460,7 @@ app.get("/api/encuestas", async (req, res) => {
 app.post("/api/sync", async (req, res) => {
     try {
         if (!ASSET_ID || !API_TOKEN) {
-            return res.json({ estado: "ok", total: 0, obtenidoEn: Date.now(), mensaje: "Esperando ASSET_ID_PICHINCHA" });
+            return res.json({ estado: "ok", total: 0, obtenidoEn: Date.now(), mensaje: "Esperando ASSET_ID" });
         }
         cache.datos = null;
         cache.timestamp = 0;

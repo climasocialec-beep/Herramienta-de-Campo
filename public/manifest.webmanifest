@@ -1,7 +1,7 @@
 {
-  "name": "Clima Social · Supervisión de Campo",
-  "short_name": "Clima Social",
-  "description": "Supervisión de campo para Encuesta DMQ - Septiembre - 2026.",
+  "name": "Clima Social · Supervisión Otavalo 2026",
+  "short_name": "CS Otavalo",
+  "description": "Supervisión de campo para Encuesta Cantonal Otavalo 2026.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
