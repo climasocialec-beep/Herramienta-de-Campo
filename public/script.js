@@ -3943,14 +3943,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const encTituloCorto = obtenerEtiquetaEncuestador(grupo.id, 'corto');
         const encTituloCompleto = obtenerEtiquetaEncuestador(grupo.id, 'completo');
 
-        // Badge de supervisor, ciudad y contacto
+        // Badge de supervisor y ciudad
         const encMeta = EQUIPO_CAMPO[grupo.id];
         const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="${supTitle}">${supLabel}</span>`;
         const badgeCiudadHtml = encMeta && encMeta.ciudad 
             ? `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="Ciudad base">${encMeta.ciudad}</span>` 
-            : '';
-        const badgeContactoHtml = encMeta && encMeta.contacto 
-            ? `<a href="tel:${encMeta.contacto.replace(/\s+/g, '')}" class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);text-decoration:none;" title="Llamar a ${encMeta.nombre}" onclick="event.stopPropagation();">📞 ${encMeta.contacto}</a>` 
             : '';
 
         tr.innerHTML = `
@@ -3966,7 +3963,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="cs-enc-sub">
                             ${badgeSupHtml}
                             ${badgeCiudadHtml}
-                            ${badgeContactoHtml}
                             <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
                             <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
                             <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
@@ -4100,9 +4096,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const supTitle = obtenerEtiquetaSupervisor(supId, 'completo');
             const supMeta = SUPERVISORES_CAMPO[supId];
             const ciudadSup = supMeta && supMeta.ciudad ? ` (${supMeta.ciudad})` : '';
-            const contactoSup = supMeta && supMeta.contacto 
-                ? `<a href="tel:${supMeta.contacto.replace(/\s+/g, '')}" class="cs-badge" style="background:rgba(255,255,255,0.22);color:#fff;font-weight:600;font-size:0.65rem;padding:0.12rem 0.45rem;border-radius:4px;text-decoration:none;margin-left:auto;" onclick="event.stopPropagation();" title="Llamar a ${supMeta.nombre}">📞 ${supMeta.contacto}</a>` 
-                : '';
             const pluralEnc = gSup.encuestadores.length === 1 ? 'enc.' : 'enc.';
             const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
@@ -4114,8 +4107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                         <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
                         <span class="cs-group-name" title="${supTitle}">${supLabel}${ciudadSup}</span>
-                        <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
-                        ${contactoSup}
+                        <span class="cs-group-pill" style="margin-left:auto;">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
                     </div>
                 </td>
             `;

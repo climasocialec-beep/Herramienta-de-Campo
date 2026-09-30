@@ -470,7 +470,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="libs/maplibre-gl.js"></script>
-  <script src="script.js?v=73.3.0"></script>
+  <script src="script.js?v=73.4.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let refreshing = false;
@@ -486,13 +486,13 @@
         if ('caches' in window) {
           caches.keys().then(names => {
             names.forEach(name => {
-              if (name !== 'clima-social-otavalo-2026-v4') {
+              if (name !== 'clima-social-otavalo-2026-v5') {
                 caches.delete(name);
               }
             });
           });
         }
-        navigator.serviceWorker.register('/service-worker.js?v=73.3.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=73.4.0').then(reg => {
           if (!reg) return;
           if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });

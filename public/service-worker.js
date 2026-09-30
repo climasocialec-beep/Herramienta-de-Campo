@@ -1,11 +1,11 @@
 /* Modo de contingencia: conserva solo la aplicación y cartografía pública de Otavalo 2026.
  * No almacena respuestas de Kobo ni coordenadas de encuestas en el teléfono. */
-const CACHE_NAME = 'clima-social-otavalo-2026-v4';
+const CACHE_NAME = 'clima-social-otavalo-2026-v5';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/style.css?v=73.3.0',
-  '/script.js?v=73.3.0',
+  '/style.css?v=73.4.0',
+  '/script.js?v=73.4.0',
   '/libs/maplibre-gl.js',
   '/libs/maplibre-gl.css',
   '/assets/icono.png',
