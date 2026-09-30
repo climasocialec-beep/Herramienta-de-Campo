@@ -116,15 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPERVISORES_CAMPO = {
         '1': {
             nombre: 'Gabriela Caranqui',
-            primerNombre: 'Gabriela',
-            contacto: '098 834 8465',
-            ciudad: 'IBARRA'
+            primerNombre: 'Gabriela'
         },
         '2': {
             nombre: 'Melina Toaquiza',
-            primerNombre: 'Melina',
-            contacto: '099 269 6924',
-            ciudad: 'QUITO'
+            primerNombre: 'Melina'
         }
     };
 
@@ -132,57 +128,41 @@ document.addEventListener('DOMContentLoaded', () => {
         '3': {
             nombre: 'Valeria Enriquez',
             primerNombre: 'Valeria',
-            contacto: '093 903 0808',
-            ciudad: 'IBARRA',
             supervisor: '1'
         },
         '4': {
             nombre: 'Patricia Aldas',
             primerNombre: 'Patricia',
-            contacto: '098 919 9648',
-            ciudad: 'IBARRA',
             supervisor: '1'
         },
         '5': {
             nombre: 'Benjamín González',
             primerNombre: 'Benjamín',
-            contacto: '099 865 6336',
-            ciudad: 'QUITO',
             supervisor: '1'
         },
         '6': {
             nombre: 'Isabel Mantilla',
             primerNombre: 'Isabel',
-            contacto: '098 314 4117',
-            ciudad: 'QUITO',
             supervisor: '1'
         },
         '7': {
             nombre: 'Anahí Vega de la Torre',
             primerNombre: 'Anahí',
-            contacto: '097 883 4921',
-            ciudad: 'IBARRA',
             supervisor: '2'
         },
         '8': {
             nombre: 'Lizeth Revelo',
             primerNombre: 'Lizeth',
-            contacto: '099 380 8557',
-            ciudad: 'IBARRA',
             supervisor: '2'
         },
         '9': {
             nombre: 'Alan Herrera',
             primerNombre: 'Alan',
-            contacto: '099 837 8854',
-            ciudad: 'QUITO',
             supervisor: '2'
         },
         '10': {
             nombre: 'Sebastián Pardo',
             primerNombre: 'Sebastián',
-            contacto: '099 885 1060',
-            ciudad: 'QUITO',
             supervisor: '2'
         }
     };
@@ -3943,12 +3923,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const encTituloCorto = obtenerEtiquetaEncuestador(grupo.id, 'corto');
         const encTituloCompleto = obtenerEtiquetaEncuestador(grupo.id, 'completo');
 
-        // Badge de supervisor y ciudad
-        const encMeta = EQUIPO_CAMPO[grupo.id];
+        // Badge de supervisor
         const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="${supTitle}">${supLabel}</span>`;
-        const badgeCiudadHtml = encMeta && encMeta.ciudad 
-            ? `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="Ciudad base">${encMeta.ciudad}</span>` 
-            : '';
 
         tr.innerHTML = `
             <td>
@@ -3962,7 +3938,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="cs-enc-sub">
                             ${badgeSupHtml}
-                            ${badgeCiudadHtml}
                             <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
                             <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
                             <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
@@ -4094,8 +4069,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const supLabel = obtenerEtiquetaSupervisor(supId, 'completo');
             const supTitle = obtenerEtiquetaSupervisor(supId, 'completo');
-            const supMeta = SUPERVISORES_CAMPO[supId];
-            const ciudadSup = supMeta && supMeta.ciudad ? ` (${supMeta.ciudad})` : '';
             const pluralEnc = gSup.encuestadores.length === 1 ? 'enc.' : 'enc.';
             const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
@@ -4106,7 +4079,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                         </span>
                         <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
-                        <span class="cs-group-name" title="${supTitle}">${supLabel}${ciudadSup}</span>
+                        <span class="cs-group-name" title="${supTitle}">${supLabel}</span>
                         <span class="cs-group-pill" style="margin-left:auto;">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
                     </div>
                 </td>
