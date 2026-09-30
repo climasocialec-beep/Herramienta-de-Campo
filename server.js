@@ -43,10 +43,9 @@ function campoFormularioActual(valor, esperado, aliasAnteriores) {
     return !candidato || aliasAnteriores.includes(candidato.toLowerCase()) ? esperado : candidato;
 }
 
-// El XLSForm vigente usa cenc/csup. Esto corrige variables antiguas de Render sin
-// impedir que se configure explícitamente otro campo si el formulario cambiara.
-const CAMPO_ENCUESTADOR = campoFormularioActual(process.env.CAMPO_ENCUESTADOR, "cenc", ["cod_encu", "codencu"]);
-const CAMPO_SUPERVISOR = campoFormularioActual(process.env.CAMPO_SUPERVISOR, "csup", ["cod_sup", "codsup"]);
+// El XLSForm vigente de Otavalo usa codenc/codsup.
+const CAMPO_ENCUESTADOR = campoFormularioActual(process.env.CAMPO_ENCUESTADOR, "codenc", ["cenc", "cod_encu", "codencu", "encuestador"]);
+const CAMPO_SUPERVISOR = campoFormularioActual(process.env.CAMPO_SUPERVISOR, "codsup", ["csup", "cod_sup", "codsup", "supervisor"]);
 const LIMITE_POR_PAGINA = 3000;
 const CACHE_TTL_MS = (Number(process.env.CACHE_TTL_SEGUNDOS) || 90) * 1000;
 const TIMEOUT_MS = 30000;

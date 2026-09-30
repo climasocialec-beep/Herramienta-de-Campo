@@ -112,14 +112,97 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': '#f26419'
     };
 
-    // Nómina para Otavalo 2026 (purgada de encuestas previas, se llena dinámicamente o por configuración)
-    const SUPERVISORES_CAMPO = {};
+    // Nómina oficial del Equipo de Campo (Encuesta Cantonal Otavalo 2026)
+    const SUPERVISORES_CAMPO = {
+        '1': {
+            nombre: 'Gabriela Caranqui',
+            primerNombre: 'Gabriela',
+            contacto: '098 834 8465',
+            ciudad: 'IBARRA'
+        },
+        '2': {
+            nombre: 'Melina Toaquiza',
+            primerNombre: 'Melina',
+            contacto: '099 269 6924',
+            ciudad: 'QUITO'
+        }
+    };
 
-    const EQUIPO_CAMPO = {};
+    const EQUIPO_CAMPO = {
+        '3': {
+            nombre: 'Valeria Enriquez',
+            primerNombre: 'Valeria',
+            contacto: '093 903 0808',
+            ciudad: 'IBARRA',
+            supervisor: '1'
+        },
+        '4': {
+            nombre: 'Patricia Aldas',
+            primerNombre: 'Patricia',
+            contacto: '098 919 9648',
+            ciudad: 'IBARRA',
+            supervisor: '1'
+        },
+        '5': {
+            nombre: 'Benjamín González',
+            primerNombre: 'Benjamín',
+            contacto: '099 865 6336',
+            ciudad: 'QUITO',
+            supervisor: '1'
+        },
+        '6': {
+            nombre: 'Isabel Mantilla',
+            primerNombre: 'Isabel',
+            contacto: '098 314 4117',
+            ciudad: 'QUITO',
+            supervisor: '1'
+        },
+        '7': {
+            nombre: 'Anahí Vega de la Torre',
+            primerNombre: 'Anahí',
+            contacto: '097 883 4921',
+            ciudad: 'IBARRA',
+            supervisor: '2'
+        },
+        '8': {
+            nombre: 'Lizeth Revelo',
+            primerNombre: 'Lizeth',
+            contacto: '099 380 8557',
+            ciudad: 'IBARRA',
+            supervisor: '2'
+        },
+        '9': {
+            nombre: 'Alan Herrera',
+            primerNombre: 'Alan',
+            contacto: '099 837 8854',
+            ciudad: 'QUITO',
+            supervisor: '2'
+        },
+        '10': {
+            nombre: 'Sebastián Pardo',
+            primerNombre: 'Sebastián',
+            contacto: '099 885 1060',
+            ciudad: 'QUITO',
+            supervisor: '2'
+        }
+    };
 
-    const SUPERVISOR_ENCUESTADORES = {};
+    // Asignación estricta de 4 encuestadores por supervisor (Otavalo 2026)
+    const SUPERVISOR_ENCUESTADORES = {
+        '1': ['3', '4', '5', '6'],
+        '2': ['7', '8', '9', '10']
+    };
 
-    const ENCUESTADOR_A_SUPERVISOR = {};
+    const ENCUESTADOR_A_SUPERVISOR = {
+        '3': '1',
+        '4': '1',
+        '5': '1',
+        '6': '1',
+        '7': '2',
+        '8': '2',
+        '9': '2',
+        '10': '2'
+    };
 
     function obtenerEtiquetaEncuestador(id, formato = 'corto') {
         const raw = String(id || '').trim();
@@ -3782,6 +3865,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Asegurar que toda la nómina oficial esté representada en el panel de equipo
+        if (Object.keys(EQUIPO_CAMPO).length > 0) {
+            Object.keys(EQUIPO_CAMPO).forEach(codEnc => {
+                if (!grupos.has(codEnc)) {
+                    const supOficial = ENCUESTADOR_A_SUPERVISOR[codEnc] || 'Sin asignar';
+                    grupos.set(codEnc, {
+                        id: codEnc,
+                        encuestas: [],
+                        duraciones: [],
+                        totalMins: 0,
+                        numAlertas: 0,
+                        supervisor: String(supOficial).trim(),
+                        cantonesConteo: { 'Otavalo': 0 },
+                        promStr: '--',
+                        minStr: '--',
+                        maxStr: '--'
+                    });
+                }
+            });
+        }
+
         const resultado = [];
         for (const g of grupos.values()) {
             if (g.duraciones.length > 0) {
@@ -3839,8 +3943,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const encTituloCorto = obtenerEtiquetaEncuestador(grupo.id, 'corto');
         const encTituloCompleto = obtenerEtiquetaEncuestador(grupo.id, 'completo');
 
-        // Badge de supervisor
+        // Badge de supervisor, ciudad y contacto
+        const encMeta = EQUIPO_CAMPO[grupo.id];
         const badgeSupHtml = `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="${supTitle}">${supLabel}</span>`;
+        const badgeCiudadHtml = encMeta && encMeta.ciudad 
+            ? `<span class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);" title="Ciudad base">${encMeta.ciudad}</span>` 
+            : '';
+        const badgeContactoHtml = encMeta && encMeta.contacto 
+            ? `<a href="tel:${encMeta.contacto.replace(/\s+/g, '')}" class="cs-badge" style="background:var(--bg-subtle);color:var(--text-muted);font-weight:600;font-size:0.6rem;padding:0.06rem 0.35rem;border:1px solid var(--border-subtle);text-decoration:none;" title="Llamar a ${encMeta.nombre}" onclick="event.stopPropagation();">📞 ${encMeta.contacto}</a>` 
+            : '';
 
         tr.innerHTML = `
             <td>
@@ -3854,6 +3965,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="cs-enc-sub">
                             ${badgeSupHtml}
+                            ${badgeCiudadHtml}
+                            ${badgeContactoHtml}
                             <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
                             <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
                             <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
@@ -3974,8 +4087,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
             const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
             const hasSearch = Boolean(AppState.filtroTabla);
-            // Comprimidas por defecto: solo se abren al hacer clic, al buscar o al filtrar ese supervisor
-            const isCollapsed = !isExplicitlyExpanded && !hasSearch && !isFilteredSup;
+            // Para 2 supervisores en Otavalo, abiertos por defecto salvo que se colapsen explícitamente
+            const isExplicitlyCollapsed = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId) === false;
+            const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredSup;
 
             // Fila de encabezado de grupo (Supervisor)
             const trHeader = document.createElement('tr');
@@ -3984,6 +4098,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const supLabel = obtenerEtiquetaSupervisor(supId, 'completo');
             const supTitle = obtenerEtiquetaSupervisor(supId, 'completo');
+            const supMeta = SUPERVISORES_CAMPO[supId];
+            const ciudadSup = supMeta && supMeta.ciudad ? ` (${supMeta.ciudad})` : '';
+            const contactoSup = supMeta && supMeta.contacto 
+                ? `<a href="tel:${supMeta.contacto.replace(/\s+/g, '')}" class="cs-badge" style="background:rgba(255,255,255,0.22);color:#fff;font-weight:600;font-size:0.65rem;padding:0.12rem 0.45rem;border-radius:4px;text-decoration:none;margin-left:auto;" onclick="event.stopPropagation();" title="Llamar a ${supMeta.nombre}">📞 ${supMeta.contacto}</a>` 
+                : '';
             const pluralEnc = gSup.encuestadores.length === 1 ? 'enc.' : 'enc.';
             const pluralEncuestas = gSup.totalEncuestas === 1 ? 'encuesta' : 'encuestas';
 
@@ -3994,8 +4113,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <svg class="cs-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                         </span>
                         <span class="cs-group-color-dot" style="--sup-dot-color: ${colorSupervisor};"></span>
-                        <span class="cs-group-name" title="${supTitle}">${supLabel}</span>
+                        <span class="cs-group-name" title="${supTitle}">${supLabel}${ciudadSup}</span>
                         <span class="cs-group-pill">${gSup.encuestadores.length} ${pluralEnc} · ${gSup.totalEncuestas} ${pluralEncuestas}</span>
+                        ${contactoSup}
                     </div>
                 </td>
             `;
