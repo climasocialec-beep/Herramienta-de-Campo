@@ -30,8 +30,14 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// El identificador y el token se reciben por variables de entorno de Render.
-const ASSET_ID = limpiarVar(process.env.ASSET_ID || process.env.ASSET_ID_MORONA || process.env.ASSET_ID_PICHINCHA);
+// El identificador y el token se reciben por variables de entorno de Render (con fallback oficial de Otavalo).
+const ASSET_ID = limpiarVar(
+    process.env.ASSET_ID ||
+    process.env.ASSET_ID_OTAVALO ||
+    process.env.ASSET_ID_MORONA ||
+    process.env.ASSET_ID_PICHINCHA ||
+    "aqytRCeMM2bpTSgPnzhdRB"
+);
 const API_TOKEN = limpiarVar(
     process.env.API_TOKEN ||
     process.env.KOBO_API_TOKEN ||
