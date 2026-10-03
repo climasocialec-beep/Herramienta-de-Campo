@@ -9,8 +9,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
-  <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social · Encuesta Cantonal Otavalo 2026">
-  <title>Clima Social · Encuesta Cantonal Otavalo 2026</title>
+  <meta name="description" content="Panel de Supervisión de Campo en tiempo real — Clima Social · Encuesta Cantonal Ibarra 2026">
+  <title>Clima Social · Encuesta Cantonal Ibarra 2026</title>
   <link rel="icon" type="image/png" href="assets/icono.png">
   <link rel="manifest" href="manifest.webmanifest">
 
@@ -58,7 +58,7 @@
         </a>
         <div class="cs-header__divider"></div>
         <div class="cs-header__title-group">
-          <h1 class="cs-header__title" id="tituloProyecto">Encuesta Cantonal Otavalo 2026</h1>
+          <h1 class="cs-header__title" id="tituloProyecto">Encuesta Cantonal Ibarra 2026</h1>
           <span class="cs-header__live-badge" id="badgeConexion">
             <span class="cs-header__live-dot"></span>
             <span id="badgeTexto">En espera</span>
@@ -105,7 +105,7 @@
         </div>
         <div class="cs-kpi-bottom">
           <span class="cs-kpi-badge">Total Recolectadas</span>
-          <span class="cs-kpi-sub" id="kpiMeta">Meta: 500 (Otavalo)</span>
+          <span class="cs-kpi-sub" id="kpiMeta">Meta: 500 (Ibarra)</span>
         </div>
         <div class="cs-progress-bar"><div class="cs-progress-bar__fill" id="barraAvance" style="width:0%"></div></div>
       </div>
@@ -186,7 +186,7 @@
           </div>
 
 
-          <!-- Cantón (Otavalo) -->
+          <!-- Cantón (Ibarra) -->
           <div class="cs-ribbon-field" id="wrapCantonFilter">
             <label for="cantonFilter" class="cs-field-label">
               <svg class="cs-icon cs-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -194,7 +194,7 @@
             </label>
             <div class="cs-select-wrap">
               <select id="cantonFilter" class="cs-select">
-                <option value="Todos">Otavalo</option>
+                <option value="Todos">Ibarra</option>
               </select>
             </div>
           </div>
@@ -486,7 +486,7 @@
         if ('caches' in window) {
           caches.keys().then(names => {
             names.forEach(name => {
-              if (name !== 'clima-social-otavalo-2026-v6') {
+              if (name !== 'clima-social-ibarra-2026-v1') {
                 caches.delete(name);
               }
             });

@@ -42,7 +42,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
     if ('caches' in window) {
-        const CACHE_VALIDA = 'clima-social-otavalo-2026-v1';
+        const CACHE_VALIDA = 'clima-social-ibarra-2026-v1';
         caches.keys().then(keys => {
             keys.forEach(k => {
                 if (k !== CACHE_VALIDA) {
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     const AppState = {
         config: {
-            nombreProyecto: 'Encuesta Cantonal Otavalo 2026',
+            nombreProyecto: 'Encuesta Cantonal Ibarra 2026',
             metaEncuestas: 500,
             campoEncuestador: 'encuestador',
             campoSupervisor: 'supervisor'
@@ -112,77 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': '#f26419'
     };
 
-    // Nómina oficial del Equipo de Campo (Encuesta Cantonal Otavalo 2026)
-    const SUPERVISORES_CAMPO = {
-        '1': {
-            nombre: 'Gabriela Caranqui',
-            primerNombre: 'Gabriela'
-        },
-        '2': {
-            nombre: 'Melina Toaquiza',
-            primerNombre: 'Melina'
-        }
-    };
+    // Nómina oficial del Equipo de Campo (Encuesta Cantonal Ibarra 2026)
+    const SUPERVISORES_CAMPO = {};
 
-    const EQUIPO_CAMPO = {
-        '3': {
-            nombre: 'Valeria Enriquez',
-            primerNombre: 'Valeria',
-            supervisor: '1'
-        },
-        '4': {
-            nombre: 'Patricia Aldas',
-            primerNombre: 'Patricia',
-            supervisor: '1'
-        },
-        '5': {
-            nombre: 'Benjamín González',
-            primerNombre: 'Benjamín',
-            supervisor: '1'
-        },
-        '6': {
-            nombre: 'Isabel Mantilla',
-            primerNombre: 'Isabel',
-            supervisor: '1'
-        },
-        '7': {
-            nombre: 'Anahí Vega de la Torre',
-            primerNombre: 'Anahí',
-            supervisor: '2'
-        },
-        '8': {
-            nombre: 'Lizeth Revelo',
-            primerNombre: 'Lizeth',
-            supervisor: '2'
-        },
-        '9': {
-            nombre: 'Alan Herrera',
-            primerNombre: 'Alan',
-            supervisor: '2'
-        },
-        '10': {
-            nombre: 'Sebastián Pardo',
-            primerNombre: 'Sebastián',
-            supervisor: '2'
-        }
-    };
+    const EQUIPO_CAMPO = {};
 
-    // Asignación estricta de 4 encuestadores por supervisor (Otavalo 2026)
-    const SUPERVISOR_ENCUESTADORES = {
-        '1': ['3', '4', '5', '6'],
-        '2': ['7', '8', '9', '10']
-    };
+    // Asignación de encuestadores por supervisor (Ibarra 2026)
+    const SUPERVISOR_ENCUESTADORES = {};
 
-    const ENCUESTADOR_A_SUPERVISOR = {
-        '3': '1',
-        '4': '1',
-        '5': '1',
-        '6': '1',
-        '7': '2',
-        '8': '2',
-        '9': '2',
-        '10': '2'
-    };
+    const ENCUESTADOR_A_SUPERVISOR = {};
 
     function obtenerEtiquetaEncuestador(id, formato = 'corto') {
         const raw = String(id || '').trim();
@@ -255,25 +193,26 @@ document.addEventListener('DOMContentLoaded', () => {
         '#047857'  // 28: Verde Esmeralda Oscuro
     ];
 
-    // Parroquias oficiales con levantamiento de muestra (9 parroquias activas de Otavalo)
+    // Parroquias oficiales con levantamiento de muestra (10 parroquias activas de Ibarra)
     const PARROQUIAS_POR_CANTON = {
-        'OTAVALO': [
-            'DR MIGUEL EGAS/PEGUCHE',
-            'EUGENIO ESPEJO',
-            'GONZALEZ SUAREZ',
-            'JORDAN',
-            'SAN JOSE DE QUICHINCHE',
-            'SAN JUAN DE ILUMAN',
-            'SAN LUIS',
-            'SAN PABLO',
-            'SAN RAFAEL'
+        'IBARRA': [
+            'AMBUQUI / CHOTA',
+            'ANGOCHAGUA',
+            'CARANQUI',
+            'GUAYAQUIL DE ALPACHACA',
+            'LA DOLOROSA DEL PRIORATO',
+            'LA ESPERANZA',
+            'SAGRARIO',
+            'SALINAS',
+            'SAN ANTONIO',
+            'SAN FRANCISCO'
         ]
     };
 
-    // Paleta cromática oficial por Cantón (Encuesta Cantonal Otavalo 2026)
+    // Paleta cromática oficial por Cantón (Encuesta Cantonal Ibarra 2026)
     const COLORES_CANTON = {
-        'OTAVALO': { 
-            nombre: 'Otavalo', 
+        'IBARRA': { 
+            nombre: 'Ibarra', 
             hex: '#028090', 
             linea: '#028090', 
             fill: 'rgba(2, 128, 144, 0.22)', 
@@ -287,29 +226,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expresiones MapLibre GL por Cantón
     const EXPR_PARROQUIAS_FILL = [
         'match',
-        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'OTAVALO']],
-        'OTAVALO', 'rgba(2, 128, 144, 0.20)',
+        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'IBARRA']],
+        'IBARRA', 'rgba(2, 128, 144, 0.20)',
         'rgba(2, 128, 144, 0.20)'
     ];
 
     const EXPR_PARROQUIAS_LINE = [
         'match',
-        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'OTAVALO']],
-        'OTAVALO', '#028090',
+        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'IBARRA']],
+        'IBARRA', '#028090',
         '#028090'
     ];
 
     const EXPR_PARROQUIAS_LABEL = [
         'match',
-        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'OTAVALO']],
-        'OTAVALO', '#005f73',
+        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'IBARRA']],
+        'IBARRA', '#005f73',
         '#005f73'
     ];
 
     const EXPR_SECTORES_FILL = [
         'match',
-        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'OTAVALO']],
-        'OTAVALO', '#028090',
+        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'IBARRA']],
+        'IBARRA', '#028090',
         '#028090'
     ];
 
@@ -318,8 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const EXPR_PIN_CANTON = [
         'match',
-        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'OTAVALO']],
-        'OTAVALO', 'pin-otavalo',
+        ['upcase', ['coalesce', ['get', 'canton'], ['get', 'CANTON'], 'IBARRA']],
+        'IBARRA', 'pin-ibarra',
         'pin-referencia'
     ];
 
@@ -516,16 +455,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // EXTRACCIÓN Y NORMALIZACIÓN DE PARROQUIA Y CANTÓN (OTAVALO)
+    // EXTRACCIÓN Y NORMALIZACIÓN DE PARROQUIA Y CANTÓN (IBARRA)
     // =========================================================================
     function normalizarCanton(valor) {
-        if (!valor) return 'OTAVALO';
+        if (!valor) return 'IBARRA';
         const texto = normTexto(valor);
         const codigos = {
-            '1004': 'OTAVALO', 'OTAVALO': 'OTAVALO'
+            '1001': 'IBARRA', 'IBARRA': 'IBARRA', '100150': 'IBARRA', '30': 'IBARRA', '030': 'IBARRA'
         };
         if (codigos[texto]) return codigos[texto];
-        return 'OTAVALO';
+        return 'IBARRA';
     }
 
     function parroquiaDeclarada(encuesta) {
@@ -1010,10 +949,11 @@ document.addEventListener('DOMContentLoaded', () => {
         configurarNavegacionMovil();
         configurarEventos();
 
-        // 1. Limpieza de caché previa y Boot Instantáneo Otavalo 2026
+        // 1. Limpieza de caché previa y Boot Instantáneo Ibarra 2026
         try {
-            const VERSION_ACTUAL = 'v73.0.0';
+            const VERSION_ACTUAL = 'v74.0.0';
             if (localStorage.getItem('cs_version_app') !== VERSION_ACTUAL) {
+                localStorage.removeItem('cs_encuestas_ibarra_2026_v1');
                 localStorage.removeItem('cs_encuestas_otavalo_2026_v1');
                 localStorage.removeItem('cs_encuestas_morona_2026_nomina_v1');
                 localStorage.setItem('cs_version_app', VERSION_ACTUAL);
@@ -1027,11 +967,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 'cs_encuestas_quito_2026',
                 'cs_encuestas_morona_2026',
                 'cs_encuestas_morona_2026_nomina_v1',
+                'cs_encuestas_otavalo_2026_v1',
                 'cs_proyecto_version'
             ].forEach(k => {
                 if (localStorage.getItem(k)) localStorage.removeItem(k);
             });
-            const cached = localStorage.getItem('cs_encuestas_otavalo_2026_v1');
+            const cached = localStorage.getItem('cs_encuestas_ibarra_2026_v1');
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1094,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarConfiguracion() {
-        const TITULO_OFICIAL = 'Encuesta Cantonal Otavalo 2026';
+        const TITULO_OFICIAL = 'Encuesta Cantonal Ibarra 2026';
         try {
             const res = await fetch('/api/config', { 
                 cache: 'no-store',
@@ -1112,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let nom = AppState.config.nombreProyecto || TITULO_OFICIAL;
-        if (!nom || nom.toLowerCase().includes('morona') || nom.toLowerCase().includes('cuenca') || nom.toLowerCase().includes('quito') || nom.toLowerCase().includes('dmq')) {
+        if (!nom || nom.toLowerCase().includes('morona') || nom.toLowerCase().includes('cuenca') || nom.toLowerCase().includes('quito') || nom.toLowerCase().includes('dmq') || nom.toLowerCase().includes('otavalo')) {
             nom = TITULO_OFICIAL;
             AppState.config.nombreProyecto = TITULO_OFICIAL;
         }
@@ -1123,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = 'Clima Social · ' + nom;
 
         if (UI.kpiMeta) {
-            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 500).toLocaleString()} (Otavalo)`;
+            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 500).toLocaleString()} (Ibarra)`;
         }
     }
 
@@ -1169,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guardar último resultado; el mapa base sigue necesitando conexión.
             try {
-                localStorage.setItem('cs_encuestas_otavalo_2026_v1', JSON.stringify(AppState.encuestas));
+                localStorage.setItem('cs_encuestas_ibarra_2026_v1', JSON.stringify(AppState.encuestas));
             } catch (e) {
                 console.warn('[Cache] Error al guardar caché:', e);
             }
@@ -1517,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!supKeys.includes(actualSup) && actualSup !== 'Todos') AppState.supervisorSeleccionado = 'Todos';
         }
 
-        // 1.1 Selector Cantón (Otavalo)
+        // 1.1 Selector Cantón (Ibarra)
         if (UI.cantonFilter) {
             const actualCan = AppState.cantonSeleccionado || 'Todos';
             const keysCantones = Object.keys(PARROQUIAS_POR_CANTON);
@@ -1561,7 +1502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.cantonFilter.value = validCantones.includes(actualCan) ? actualCan : 'Todos';
         }
 
-        // 2b. Selector Sectores Censales (50 sectores de Otavalo)
+        // 2b. Selector Sectores Censales (50 sectores de Ibarra)
         if (UI.sectorFilter) {
             const actualSec = AppState.sectorSeleccionado || 'Todos';
             const parActivaNorm = (AppState.parroquiaSeleccionada !== 'Todas') ? normTexto(AppState.parroquiaSeleccionada) : null;
@@ -1574,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tipologia = String(p.tipologia || '').trim().toUpperCase();
                     const etiqueta = p.etiquetaSC || p.etiqueta || (scNum && tipologia ? `${scNum}|${tipologia}` : scNum);
                     const parroquia = String(p.parroquia || p.PARROQUIA || '').trim();
-                    const canton = String(p.canton || p.CANTON || 'OTAVALO').trim();
+                    const canton = String(p.canton || p.CANTON || 'IBARRA').trim();
                     const scKey = p.sc_key || `${canton}_${scNum}`;
 
                     // Filtrar por Cantón si está activo (Cascada Cantón ➔ Puntos)
@@ -1919,11 +1860,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 4. Ámbito General (Otavalo)
+        // 4. Ámbito General (Ibarra)
         const metaGeneral = AppState.config.metaEncuestas || 500;
         return {
             meta: metaGeneral,
-            etiquetaMeta: `Meta: ${metaGeneral.toLocaleString()} (Otavalo)`,
+            etiquetaMeta: `Meta: ${metaGeneral.toLocaleString()} (Ibarra)`,
             subPendientes: `Faltan para la meta cantonal`,
             tituloAvance: `Avance General`,
             subAvance: `Cumplimiento cantonal (${metaGeneral.toLocaleString()})`
@@ -2191,8 +2132,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const BBOX_CANTON = [[-78.36, 0.14], [-78.14, 0.29]];
-        let mapCenter = [-78.2625, 0.2285]; // Otavalo Centro
+        const BBOX_CANTON = [[-78.20, 0.15], [-77.96, 0.59]];
+        let mapCenter = [-78.12, 0.35]; // Ibarra Centro
         let initialBounds = BBOX_CANTON;
 
         if (globalMinX !== Infinity && globalMaxX !== -Infinity) {
@@ -2551,7 +2492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Generar pin temático oficial para cada cantón según COLORES_CANTON
                 const SLUG_CANTONES = {
-                    'OTAVALO': 'pin-otavalo'
+                    'IBARRA': 'pin-ibarra'
                 };
 
                 Object.keys(SLUG_CANTONES).forEach(cantonNombre => {
@@ -3390,8 +3331,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else {
-                // Nivel 4: Vista global de Otavalo
-                const globalBbox = AppState.cantonBbox || [[-78.36, 0.14], [-78.14, 0.29]];
+                // Nivel 4: Vista global de Ibarra
+                const globalBbox = AppState.cantonBbox || [[-78.20, 0.15], [-77.96, 0.59]];
                 map.fitBounds(globalBbox, {
                     padding: { top: 40, bottom: 40, left: 40, right: 40 },
                     maxZoom: 12.5,
@@ -3857,7 +3798,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         totalMins: 0,
                         numAlertas: 0,
                         supervisor: String(supOficial).trim(),
-                        cantonesConteo: { 'Otavalo': 0 },
+                        cantonesConteo: { 'Ibarra': 0 },
                         promStr: '--',
                         minStr: '--',
                         maxStr: '--'
@@ -3879,7 +3820,7 @@ document.addEventListener('DOMContentLoaded', () => {
             g.numAlertas = g.encuestas.filter(e => e._tieneAlerta).length;
 
             // Cantón principal asignado según encuestas recolectadas
-            let topCan = 'Otavalo';
+            let topCan = 'Ibarra';
             let topCnt = -1;
             for (const [can, cnt] of Object.entries(g.cantonesConteo || {})) {
                 if (cnt > topCnt) {
@@ -4058,7 +3999,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isExplicitlyExpanded = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId);
             const isFilteredSup = AppState.supervisorSeleccionado !== 'Todos' && AppState.supervisorSeleccionado === supId;
             const hasSearch = Boolean(AppState.filtroTabla);
-            // Para 2 supervisores en Otavalo, abiertos por defecto salvo que se colapsen explícitamente
+            // Para supervisores en Ibarra, abiertos por defecto salvo que se colapsen explícitamente
             const isExplicitlyCollapsed = AppState.supervisoresExpandidos && AppState.supervisoresExpandidos.has(supId) === false;
             const isCollapsed = isExplicitlyCollapsed && !hasSearch && !isFilteredSup;
 

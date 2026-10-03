@@ -30,13 +30,11 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// El identificador y el token se reciben por variables de entorno de Render (con fallback oficial de Otavalo).
+// El identificador y el token se reciben por variables de entorno de Render (o .env local).
 const ASSET_ID = limpiarVar(
     process.env.ASSET_ID ||
-    process.env.ASSET_ID_OTAVALO ||
-    process.env.ASSET_ID_MORONA ||
-    process.env.ASSET_ID_PICHINCHA ||
-    "aqytRCeMM2bpTSgPnzhdRB"
+    process.env.ASSET_ID_IBARRA ||
+    ""
 );
 const API_TOKEN = limpiarVar(
     process.env.API_TOKEN ||
@@ -49,7 +47,7 @@ function campoFormularioActual(valor, esperado, aliasAnteriores) {
     return !candidato || aliasAnteriores.includes(candidato.toLowerCase()) ? esperado : candidato;
 }
 
-// El XLSForm vigente de Otavalo usa codenc/codsup.
+// El XLSForm vigente de Ibarra usa codenc/codsup.
 const CAMPO_ENCUESTADOR = campoFormularioActual(process.env.CAMPO_ENCUESTADOR, "codenc", ["cenc", "cod_encu", "codencu", "encuestador"]);
 const CAMPO_SUPERVISOR = campoFormularioActual(process.env.CAMPO_SUPERVISOR, "codsup", ["csup", "cod_sup", "codsup", "supervisor"]);
 const LIMITE_POR_PAGINA = 3000;
@@ -162,25 +160,25 @@ function normalizarCoordenadas(valores, validarEcuador = false) {
     return [lat, lng];
 }
 
-// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Cantonal Otavalo 2026 - XLSForm oficial)
+// Diccionarios oficiales de decodificación de choices de Kobo (Encuesta Cantonal Ibarra 2026 - XLSForm oficial)
 const PARROQUIAS_FORMULARIO = {
-    "1040": "DR MIGUEL EGAS / PEGUCHE",
-    "1215": "EUGENIO ESPEJO",
-    "1360": "GONZALEZ SUAREZ",
-    "2785": "PATAQUI",
-    "3490": "SAN JOSE DE QUICHINCHE",
-    "3525": "SAN JUAN DE ILUMAN",
-    "3590": "SAN PABLO",
-    "3630": "SAN RAFAEL",
-    "3810": "SELVA ALEGRE",
-    "5490": "JORDAN",
-    "5980": "SAN LUIS"
+    "5440": "GUAYAQUIL DE ALPACHACA",
+    "6780": "LA DOLOROSA DEL PRIORATO",
+    "5915": "SAGRARIO",
+    "5165": "CARANQUI",
+    "5960": "SAN FRANCISCO",
+    "0100": "AMBUQUI / CHOTA",
+    "0130": "ANGOCHAGUA",
+    "2020": "LA ESPERANZA",
+    "3290": "SALINAS",
+    "3315": "SAN ANTONIO"
 };
 
 const CANTONES_FORMULARIO = {
-    "1004": "Otavalo",
-    "035": "Otavalo",
-    "otavalo": "Otavalo"
+    "1001": "Ibarra",
+    "030": "Ibarra",
+    "30": "Ibarra",
+    "ibarra": "Ibarra"
 };
 
 const TIPOLOGIAS_FORMULARIO = {
@@ -404,7 +402,7 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-const TITULO_OFICIAL = "Encuesta Cantonal Otavalo 2026";
+const TITULO_OFICIAL = "Encuesta Cantonal Ibarra 2026";
 
 app.get("/api/config", (req, res) => {
     res.set({
@@ -414,8 +412,8 @@ app.get("/api/config", (req, res) => {
     });
     let nombre = process.env.NOMBRE_PROYECTO || TITULO_OFICIAL;
 
-    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.2625;
-    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : 0.2245;
+    let centroLng = process.env.MAPA_CENTRO_LNG ? Number(process.env.MAPA_CENTRO_LNG) : -78.12;
+    let centroLat = process.env.MAPA_CENTRO_LAT ? Number(process.env.MAPA_CENTRO_LAT) : 0.35;
 
     res.json({
         nombreProyecto: nombre,
