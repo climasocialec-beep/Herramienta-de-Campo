@@ -30,11 +30,11 @@ function limpiarVar(val) {
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// El identificador y el token se reciben por variables de entorno de Render (o .env local).
+// El identificador y el token se reciben por variables de entorno de Render (con fallback oficial de Ibarra).
 const ASSET_ID = limpiarVar(
     process.env.ASSET_ID ||
     process.env.ASSET_ID_IBARRA ||
-    ""
+    "aGbxNjPcsMXWfPiDUtUpWo"
 );
 const API_TOKEN = limpiarVar(
     process.env.API_TOKEN ||
@@ -239,12 +239,14 @@ function normalizarEncuesta(raw) {
     const rawParroquia = extraerValor(raw, ["parroquia", "PARROQUIA", "nom_parroquia", "parr"]) || "";
     const parroquia = PARROQUIAS_FORMULARIO[rawParroquia] || String(rawParroquia).trim().toUpperCase();
 
-    // Cantón: Extraer dinámicamente o decodificar (sin fallback forzado que contamine otros cantones)
+    // Cantón: Extraer dinámicamente o asignar Ibarra por defecto
     const rawCanton = extraerValor(raw, ["canton", "CANTON", "canton_nombre", "nom_can", "nom_canton"]) || "";
-    const canton = CANTONES_FORMULARIO[rawCanton] || String(rawCanton).trim();
+    const canton = CANTONES_FORMULARIO[rawCanton] || (rawCanton ? String(rawCanton).trim() : "Ibarra");
 
-    // Circunscripción (No aplica en Morona Santiago)
-    const circunscripcion = "";
+    // Circunscripción
+    const rawCirc = extraerValor(raw, ["circunscripcion", "circ", "CIRCUNSCRIPCION"]) || "";
+    const CIRCUNSCRIPCIONES = { "1": "CIRCUNSCRIPCION URBANA 1", "2": "CIRCUNSCRIPCION URBANA 2", "3": "CIRCUNSCRIPCION RURAL" };
+    const circunscripcion = CIRCUNSCRIPCIONES[rawCirc] || String(rawCirc).trim();
 
     // Extracción tolerante de Género (p1: 1=Masculino, 2=Femenino, 3=LGBTIQ+, 0=Otro; p1_1: 1=Hombre, 2=Mujer)
     const rawGen = extraerValor(raw, [
