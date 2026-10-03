@@ -1,6 +1,6 @@
 /* Modo de contingencia: conserva solo la aplicación y cartografía pública de Ibarra 2026.
  * No almacena respuestas de Kobo ni coordenadas de encuestas en el teléfono. */
-const CACHE_NAME = 'clima-social-ibarra-2026-v1';
+const CACHE_NAME = 'clima-social-ibarra-2026-v2';
 const APP_SHELL = [
   '/',
   '/index.html',

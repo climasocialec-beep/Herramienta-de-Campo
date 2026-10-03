@@ -42,7 +42,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Purga proactiva inmediata de cachés heredadas de otros cantones o versiones en el navegador (Brave/Chrome)
     if ('caches' in window) {
-        const CACHE_VALIDA = 'clima-social-ibarra-2026-v1';
+        const CACHE_VALIDA = 'clima-social-ibarra-2026-v2';
         caches.keys().then(keys => {
             keys.forEach(k => {
                 if (k !== CACHE_VALIDA) {
@@ -113,14 +113,76 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Nómina oficial del Equipo de Campo (Encuesta Cantonal Ibarra 2026)
-    const SUPERVISORES_CAMPO = {};
+    const SUPERVISORES_CAMPO = {
+        '1': {
+            nombre: 'Gabriela Caranqui',
+            primerNombre: 'Gabriela'
+        },
+        '2': {
+            nombre: 'Melina Toaquiza',
+            primerNombre: 'Melina'
+        }
+    };
 
-    const EQUIPO_CAMPO = {};
+    const EQUIPO_CAMPO = {
+        '3': {
+            nombre: 'Valeria Enriquez',
+            primerNombre: 'Valeria',
+            supervisor: '1'
+        },
+        '4': {
+            nombre: 'Patricia Aldas',
+            primerNombre: 'Patricia',
+            supervisor: '1'
+        },
+        '5': {
+            nombre: 'Benjamín González',
+            primerNombre: 'Benjamín',
+            supervisor: '1'
+        },
+        '6': {
+            nombre: 'Isabel Mantilla',
+            primerNombre: 'Isabel',
+            supervisor: '1'
+        },
+        '7': {
+            nombre: 'Anahí Vega de la Torre',
+            primerNombre: 'Anahí',
+            supervisor: '2'
+        },
+        '8': {
+            nombre: 'Lizeth Revelo',
+            primerNombre: 'Lizeth',
+            supervisor: '2'
+        },
+        '9': {
+            nombre: 'Alan Herrera',
+            primerNombre: 'Alan',
+            supervisor: '2'
+        },
+        '10': {
+            nombre: 'Sebastián Pardo',
+            primerNombre: 'Sebastián',
+            supervisor: '2'
+        }
+    };
 
-    // Asignación de encuestadores por supervisor (Ibarra 2026)
-    const SUPERVISOR_ENCUESTADORES = {};
+    // Asignación estricta de 4 encuestadores por supervisor (Ibarra 2026)
+    const SUPERVISOR_ENCUESTADORES = {
+        '1': ['3', '4', '5', '6'],
+        '2': ['7', '8', '9', '10']
+    };
 
-    const ENCUESTADOR_A_SUPERVISOR = {};
+    const ENCUESTADOR_A_SUPERVISOR = {
+        '3': '1',
+        '4': '1',
+        '5': '1',
+        '6': '1',
+        '7': '2',
+        '8': '2',
+        '9': '2',
+        '10': '2'
+    };
 
     function obtenerEtiquetaEncuestador(id, formato = 'corto') {
         const raw = String(id || '').trim();
