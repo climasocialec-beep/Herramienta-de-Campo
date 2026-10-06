@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Nómina oficial del Equipo de Campo (Encuesta Cantonal Ibarra 2026)
-    const SUPERVISORES_CAMPO = {
+    let SUPERVISORES_CAMPO = {
         '1': {
             nombre: 'Gabriela Caranqui',
             primerNombre: 'Gabriela'
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const EQUIPO_CAMPO = {
+    let EQUIPO_CAMPO = {
         '3': {
             nombre: 'Valeria Enriquez',
             primerNombre: 'Valeria',
@@ -168,12 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Asignación estricta de 4 encuestadores por supervisor (Ibarra 2026)
-    const SUPERVISOR_ENCUESTADORES = {
+    let SUPERVISOR_ENCUESTADORES = {
         '1': ['3', '4', '5', '6'],
         '2': ['7', '8', '9', '10']
     };
 
-    const ENCUESTADOR_A_SUPERVISOR = {
+    let ENCUESTADOR_A_SUPERVISOR = {
         '3': '1',
         '4': '1',
         '5': '1',
@@ -1053,7 +1053,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 6000);
         
         try {
-            await cargarConfiguracion();
+            const esActivo = await cargarConfiguracion();
+            if (!esActivo) {
+                console.log('[App] Terminal en modo STANDBY (en espera).');
+                return;
+            }
             try {
                 await inicializarMapa();
             } catch (errorMapa) {
@@ -1097,7 +1101,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function cargarConfiguracion() {
-        const TITULO_OFICIAL = 'Encuesta Cantonal Ibarra 2026';
         try {
             const res = await fetch('/api/config', { 
                 cache: 'no-store',
@@ -1111,23 +1114,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.config = { ...AppState.config, ...configData };
             }
         } catch (e) {
-            console.warn('Usando configuración por defecto');
+            console.warn('[Config] Usando configuración local o por defecto');
         }
 
-        let nom = AppState.config.nombreProyecto || TITULO_OFICIAL;
-        if (!nom || nom.toLowerCase().includes('morona') || nom.toLowerCase().includes('cuenca') || nom.toLowerCase().includes('quito') || nom.toLowerCase().includes('dmq') || nom.toLowerCase().includes('otavalo')) {
-            nom = TITULO_OFICIAL;
-            AppState.config.nombreProyecto = TITULO_OFICIAL;
+        const estado = (AppState.config && AppState.config.estado || 'STANDBY').toUpperCase();
+        const standbyEl = document.getElementById('standbyOverlay');
+        if (estado === 'STANDBY') {
+            document.title = 'Clima Social · Terminal en Espera';
+            if (standbyEl) standbyEl.style.display = 'flex';
+            if (UI.cargaOverlay) UI.cargaOverlay.style.display = 'none';
+            if (UI.badgeTexto) UI.badgeTexto.textContent = 'En espera';
+            return false;
         }
 
+        if (standbyEl) standbyEl.style.display = 'none';
+
+        const nom = AppState.config.proyecto || AppState.config.nombreProyecto || 'Encuesta de Campo';
         if (UI.tituloProyecto) {
             UI.tituloProyecto.textContent = nom;
         }
         document.title = 'Clima Social · ' + nom;
 
+        const meta = AppState.config.meta || AppState.config.metaEncuestas || 500;
+        const canton = AppState.config.canton || '';
         if (UI.kpiMeta) {
-            UI.kpiMeta.textContent = `Meta: ${(AppState.config.metaEncuestas || 500).toLocaleString()} (Ibarra)`;
+            UI.kpiMeta.textContent = `Meta: ${meta.toLocaleString()} ${canton ? '(' + canton + ')' : ''}`;
         }
+
+        if (AppState.config.bounds && Array.isArray(AppState.config.bounds)) {
+            AppState.cantonBbox = AppState.config.bounds;
+        }
+
+        if (AppState.config.equipo) {
+            if (AppState.config.equipo.supervisores && typeof AppState.config.equipo.supervisores === 'object') {
+                Object.assign(SUPERVISORES_CAMPO, AppState.config.equipo.supervisores);
+            }
+            if (AppState.config.equipo.encuestadores && typeof AppState.config.equipo.encuestadores === 'object') {
+                Object.assign(EQUIPO_CAMPO, AppState.config.equipo.encuestadores);
+            }
+            Object.keys(EQUIPO_CAMPO).forEach(encId => {
+                const enc = EQUIPO_CAMPO[encId];
+                const supId = enc.supervisor ? String(enc.supervisor) : null;
+                if (supId) {
+                    ENCUESTADOR_A_SUPERVISOR[encId] = supId;
+                    if (!SUPERVISOR_ENCUESTADORES[supId]) {
+                        SUPERVISOR_ENCUESTADORES[supId] = [];
+                    }
+                    if (!SUPERVISOR_ENCUESTADORES[supId].includes(encId)) {
+                        SUPERVISOR_ENCUESTADORES[supId].push(encId);
+                    }
+                }
+            });
+        }
+        return true;
     }
 
     let reintentoDatos = null;
@@ -2311,11 +2350,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             'text-halo-width': 3.2
                         }
                     },
-                    // 2. Sectores Censales Sorteados (200 polígonos de Quito PM 2026)
+                    // 2. Sectores Censales Poligonales (si la geometría es Polygon)
                     {
                         id: 'sectores-fill',
                         type: 'fill',
                         source: 'sectores-source',
+                        filter: ['==', ['geometry-type'], 'Polygon'],
                         paint: {
                             'fill-color': EXPR_SECTORES_FILL,
                             'fill-opacity': 0.20
@@ -2325,6 +2365,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: 'sectores-line',
                         type: 'line',
                         source: 'sectores-source',
+                        filter: ['==', ['geometry-type'], 'Polygon'],
                         paint: {
                             'line-color': EXPR_SECTORES_LINE,
                             'line-width': [
@@ -2334,6 +2375,26 @@ document.addEventListener('DOMContentLoaded', () => {
                                 16, 5.0
                             ],
                             'line-opacity': 1.0
+                        }
+                    },
+                    // 3. Puntos de Muestreo / Puntos Referenciales (si la geometría es Point)
+                    {
+                        id: 'sectores-point',
+                        type: 'symbol',
+                        source: 'sectores-source',
+                        filter: ['==', ['geometry-type'], 'Point'],
+                        layout: {
+                            'icon-image': 'pin-referencia',
+                            'icon-size': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 0.65,
+                                12, 0.82,
+                                14, 0.98,
+                                17, 1.18
+                            ],
+                            'icon-anchor': 'bottom',
+                            'icon-allow-overlap': true,
+                            'icon-ignore-placement': true
                         }
                     },
                     // Etiqueta del Sector Censal (Centrada en el centroide único del polígono)
