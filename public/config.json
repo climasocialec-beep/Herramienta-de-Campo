@@ -1,17 +1,23 @@
 {
-  "estado": "ACTIVO",
+  "estado": "STANDBY",
   "version": "1.0.0",
-  "proyecto": "Movilidad Movidelnor - Imbabura 2026",
-  "canton": "Todos",
-  "provincia": "Imbabura",
+  "proyecto": "Movilidad Movidelnor · Esmeraldas 2026",
+  "canton": "",
+  "provincia": "Esmeraldas",
   "modalidad": "sectores",
-  "meta": 1900,
+  "meta": 490,
   "bounds": [
-    [-78.85, 0.12],
-    [-77.80, 0.75]
+    [
+      -79.51301,
+      0.30348
+    ],
+    [
+      -78.42639,
+      1.46958
+    ]
   ],
   "kobo": {
-    "asset_id": "ag7L7pRAqLCwckTTgAYiTT",
+    "asset_id": "",
     "campo_encuestador": "codenc",
     "campo_supervisor": "codsup",
     "choices_parroquias": {}
