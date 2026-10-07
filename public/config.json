@@ -1,16 +1,26 @@
 {
-  "estado": "STANDBY",
+  "estado": "ACTIVO",
   "version": "1.0.0",
-  "proyecto": "Terminal de Supervisión en Espera",
+  "proyecto": "Movilidad Movidelnor · Imbabura 2026",
   "canton": "",
-  "provincia": "",
+  "provincia": "Imbabura",
   "modalidad": "sectores",
-  "meta": 0,
-  "bounds": null,
+  "meta": 1900,
+  "bounds": [
+    [
+      -79.27501,
+      0.12112
+    ],
+    [
+      -77.88417,
+      0.87599
+    ]
+  ],
   "kobo": {
     "asset_id": "",
     "campo_encuestador": "codenc",
-    "campo_supervisor": "codsup"
+    "campo_supervisor": "codsup",
+    "choices_parroquias": {}
   },
   "equipo": {
     "supervisores": {},
