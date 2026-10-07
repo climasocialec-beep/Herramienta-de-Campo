@@ -1,26 +1,56 @@
 {
-  "estado": "STANDBY",
+  "estado": "ACTIVO",
   "version": "1.0.0",
-  "proyecto": "Movilidad Movidelnor · Esmeraldas 2026",
-  "canton": "",
-  "provincia": "Esmeraldas",
+  "proyecto": "Piloto Movidelnor · Ibarra 2026",
+  "canton": "Ibarra",
+  "provincia": "Imbabura",
   "modalidad": "sectores",
-  "meta": 490,
+  "meta": 90,
   "bounds": [
     [
-      -79.51301,
-      0.30348
+      -78.135,
+      0.34
     ],
     [
-      -78.42639,
-      1.46958
+      -78.11,
+      0.37
     ]
   ],
   "kobo": {
-    "asset_id": "",
+    "asset_id": "ag7L7pRAqLCwckTTgAYiTT",
     "campo_encuestador": "codenc",
     "campo_supervisor": "codsup",
-    "choices_parroquias": {}
+    "choices_cantones": {
+      "103": "IBARRA",
+      "Ibarra": "IBARRA",
+      "IBARRA": "IBARRA"
+    },
+    "choices_parroquias": {
+      "1039": "SAGRARIO",
+      "10312": "SAN FRANCISCO",
+      "Sagrario": "SAGRARIO",
+      "SAGRARIO": "SAGRARIO",
+      "San Francisco": "SAN FRANCISCO",
+      "SAN FRANCISCO": "SAN FRANCISCO"
+    },
+    "choices_tipologias": {
+      "1": "A",
+      "2": "B",
+      "3": "C",
+      "4": "D",
+      "5": "E",
+      "6": "F",
+      "7": "G",
+      "8": "H",
+      "a": "A",
+      "b": "B",
+      "c": "C",
+      "d": "D",
+      "e": "E",
+      "f": "F",
+      "g": "G",
+      "h": "H"
+    }
   },
   "equipo": {
     "supervisores": {},
