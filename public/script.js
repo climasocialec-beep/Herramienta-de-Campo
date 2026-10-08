@@ -80,9 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         filtroGPS: 'Todos',
         filtroSoloAlertas: false,
+        filtroSoloAtipicas: false,
         filtroSoloPendientes: false,
         conteoPorSector: new Map(),
         totalAlertas: 0,
+        totalAtipicas: 0,
         erroresColapsados: true,
         filtroTabla: '',
         modoVisualizacion: 'puntos',
@@ -1009,9 +1011,28 @@ document.addEventListener('DOMContentLoaded', () => {
             enc._alertas = alertas;
             enc._alertaMensaje = alertas.map(a => a.mensaje).join(' · ');
             if (enc._tieneAlerta) totalAlertas++;
+
+            // AUDITORÍA DE TIEMPO DE APLICACIÓN (ENCUESTAS ATÍPICAS < 10 MIN)
+            let duracionMin = null;
+            if (enc.start && enc.end) {
+                const tInicio = new Date(enc.start).getTime();
+                const tFin = new Date(enc.end).getTime();
+                if (!isNaN(tInicio) && !isNaN(tFin) && tFin > tInicio) {
+                    duracionMin = (tFin - tInicio) / 60000;
+                }
+            }
+
+            // Umbral estricto: encuestas completadas en menos de 10 minutos
+            const umbralMin = 10.0;
+            const esAtipica = (duracionMin !== null && duracionMin > 0 && duracionMin < umbralMin);
+            enc._duracionMin = duracionMin;
+            enc._umbralMin = umbralMin;
+            enc._esAtipica = esAtipica;
+            if (esAtipica) totalAtipicas++;
         });
 
         AppState.totalAlertas = totalAlertas;
+        AppState.totalAtipicas = totalAtipicas;
     }
 
     // =========================================================================
@@ -1468,6 +1489,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: `⚠️ Errores (${AppState.totalAlertas})`,
                 onClear: () => {
                     AppState.filtroSoloAlertas = false;
+                    renderizarVista();
+                }
+            });
+        }
+        if (AppState.filtroSoloAtipicas) {
+            activeCount++;
+            chips.push({
+                tipo: 'alerta',
+                label: `⏱️ Atípicas (${AppState.totalAtipicas})`,
+                onClear: () => {
+                    AppState.filtroSoloAtipicas = false;
                     renderizarVista();
                 }
             });
@@ -1959,6 +1991,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtro por Errores de Código
         if (AppState.filtroSoloAlertas) {
             filtradas = filtradas.filter(e => e._tieneAlerta);
+        }
+
+        // Filtro por Encuestas Atípicas (Duración sospechosamente corta)
+        if (AppState.filtroSoloAtipicas) {
+            filtradas = filtradas.filter(e => e._esAtipica);
         }
 
         // Filtro por Solo Sectores Pendientes (< 10 encuestas)
@@ -2887,8 +2924,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!e.features || !e.features.length) return;
             const p = e.features[0].properties;
             const coords = e.features[0].geometry.coordinates;
-            const tieneAlerta = p.tieneAlerta === true || p.tieneAlerta === 'true';
-            const colorPunto = tieneAlerta ? '#dc2626' : (p.color || obtenerColorEncuestador(p.encuestador));
+            const esAtipica = p.esAtipica === true || p.esAtipica === 'true';
+            const tieneAlerta = p.tieneAlerta === true || p.tieneAlerta === 'true' || esAtipica;
+            const colorPunto = esAtipica ? '#dc2626' : (tieneAlerta ? '#dc2626' : (p.color || obtenerColorEncuestador(p.encuestador)));
 
             let distInfo = '';
             if (AppState.ubicacionSupervisor) {
@@ -2897,10 +2935,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let bannerAlerta = '';
-            if (tieneAlerta) {
+            if (esAtipica) {
+                bannerAlerta = `
+                    <div style="background:#fee2e2;border:1.5px solid #dc2626;color:#991b1b;padding:6px 8px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.3;">
+                        <strong style="display:block;margin-bottom:2px;font-size:0.76rem;color:#dc2626;">⏱️ Alerta: Encuesta Atípica (&lt; 10 min)</strong>
+                        <span>Duración registrada: <strong>${p.duracionMin || 'Menos de 10 min'}</strong></span>
+                    </div>
+                `;
+            } else if (tieneAlerta) {
                 bannerAlerta = `
                     <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:6px 8px;border-radius:6px;margin:6px 0 8px 0;font-size:0.75rem;line-height:1.3;">
-                        <strong style="display:block;margin-bottom:2px;font-size:0.76rem;color:#b91c1c;">⚠️ Error:</strong>
+                        <strong style="display:block;margin-bottom:2px;font-size:0.76rem;color:#b91c1c;">⚠️ Observación:</strong>
                         <span>${p.alertaMensaje || 'Código no válido'}</span>
                     </div>
                 `;
@@ -3610,6 +3655,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const parroquia = obtenerParroquiaEncuesta(enc) || '';
             const barrio = enc.barrio || campo(enc, 'BARRIO_O_SECTOR') || campo(enc, 'barrio');
             const fecha = formatearFechaHoraEcuador(enc);
+            const esAtipica = Boolean(enc._esAtipica);
+            const duracionMin = enc._duracionMin !== null && enc._duracionMin !== undefined ? Number(enc._duracionMin).toFixed(1) : null;
+            const colorPunto = esAtipica ? '#dc2626' : obtenerColorEncuestador(encuestador);
 
             features.push({
                 type: 'Feature',
@@ -3620,15 +3668,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 properties: {
                     encuestador,
                     supervisor,
-                    color: obtenerColorEncuestador(encuestador),
+                    color: colorPunto,
+                    esAtipica,
+                    duracionMin: duracionMin !== null ? `${duracionMin} min` : 'N/D',
                     sc,
                     tipologia,
                     microEtiqueta,
                     parroquia,
                     barrio,
                     fecha,
-                    tieneAlerta: Boolean(enc._tieneAlerta),
-                    alertaMensaje: enc._alertaMensaje || ''
+                    tieneAlerta: Boolean(enc._tieneAlerta || esAtipica),
+                    alertaMensaje: enc._alertaMensaje || (esAtipica ? `Duración atípica: ${duracionMin} min (< 10 min)` : '')
                 }
             });
         }
@@ -3976,6 +4026,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     duraciones: [],
                     totalMins: 0,
                     numAlertas: 0,
+                    numAtipicas: 0,
                     supervisor: String(supVal).trim(),
                     cantonesConteo: {},
                     promStr: 'Sin datos',
@@ -3987,6 +4038,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (enc._tieneAlerta) {
                 g.numAlertas = (g.numAlertas || 0) + 1;
+            }
+            if (enc._esAtipica) {
+                g.numAtipicas = (g.numAtipicas || 0) + 1;
             }
 
             g.encuestas.push(enc);
@@ -4108,6 +4162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="cs-time-tag cs-time-tag--avg" title="Tiempo promedio por encuesta">⏱️ ${grupo.promStr}</span>
                             <span class="cs-time-tag cs-time-tag--min" title="Tiempo mínimo registrado">⬇️ ${grupo.minStr}</span>
                             <span class="cs-time-tag cs-time-tag--max" title="Tiempo máximo registrado">⬆️ ${grupo.maxStr}</span>
+                            ${grupo.numAtipicas > 0 ? `<span class="cs-time-tag" style="background:#fee2e2;color:#dc2626;font-weight:700;border:1px solid #fca5a5;" title="${grupo.numAtipicas} encuestas con duración < 10 min">⚠️ ${grupo.numAtipicas} atípicas</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -4818,11 +4873,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 AppState.fechaSeleccionada = 'Todas';
                 AppState.encuestadorSeleccionado = null;
                 AppState.filtroSoloAlertas = false;
+                AppState.filtroSoloAtipicas = false;
                 AppState.filtroSoloPendientes = false;
                 AppState.mostrarEtiquetas = false;
                 AppState.filtroTabla = '';
                 if (UI.cantonFilter) UI.cantonFilter.value = 'Todos';
                 if (UI.toggleSoloPendientes) UI.toggleSoloPendientes.classList.remove('active');
+                if (UI.cardKpiAtipicas) UI.cardKpiAtipicas.classList.remove('active');
                 if (UI.btnEtiquetasOn) UI.btnEtiquetasOn.classList.remove('active');
                 if (UI.btnEtiquetasOff) UI.btnEtiquetasOff.classList.add('active');
                 if (UI.searchInput) UI.searchInput.value = '';
