@@ -126,17 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const numOnly = parseInt(raw, 10);
         const sid = !isNaN(numOnly) ? String(numOnly) : raw;
         const miembro = EQUIPO_CAMPO[sid] || EQUIPO_CAMPO[raw];
-        if (miembro) {
-            if (formato === 'completo') return `Enc. ${sid} · ${miembro.nombre}`;
+        if (miembro && miembro.nombre) {
+            if (formato === 'completo') return `Encuestador ${sid} · ${miembro.nombre}`;
             if (formato === 'nombre') return miembro.nombre;
-            if (formato === 'primerNombre') return miembro.primerNombre;
-            if (formato === 'busqueda') return `Enc. ${sid} ${miembro.primerNombre} ${miembro.nombre}`;
-            return `Enc. ${sid} · ${miembro.primerNombre}`;
+            if (formato === 'primerNombre') return miembro.primerNombre || miembro.nombre;
+            if (formato === 'busqueda') return `Encuestador ${sid} ${miembro.nombre}`;
+            return `Encuestador ${sid} · ${miembro.primerNombre || miembro.nombre}`;
         }
         if (!isNaN(numOnly)) {
-            return `Enc. ${sid}`;
+            return `Encuestador ${sid}`;
         }
-        return `Enc. ${raw}`;
+        return `Encuestador ${raw}`;
     }
 
     function obtenerEtiquetaSupervisor(id, formato = 'corto') {
@@ -145,18 +145,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const numOnly = parseInt(raw, 10);
         const sid = !isNaN(numOnly) ? String(numOnly) : raw;
         const miembro = SUPERVISORES_CAMPO[sid] || SUPERVISORES_CAMPO[raw];
-        if (miembro) {
-            if (formato === 'completo') return `Sup. ${sid} · ${miembro.nombre}`;
-            if (formato === 'micro') return `Sup. ${sid}`;
+        if (miembro && miembro.nombre) {
+            if (formato === 'completo') return `Supervisor ${sid} · ${miembro.nombre}`;
+            if (formato === 'micro') return `Supervisor ${sid}`;
             if (formato === 'nombre') return miembro.nombre;
-            if (formato === 'primerNombre') return miembro.primerNombre;
-            if (formato === 'busqueda') return `Sup. ${sid} ${miembro.primerNombre} ${miembro.nombre}`;
-            return `Sup. ${sid} · ${miembro.primerNombre}`;
+            if (formato === 'primerNombre') return miembro.primerNombre || miembro.nombre;
+            if (formato === 'busqueda') return `Supervisor ${sid} ${miembro.nombre}`;
+            return `Supervisor ${sid} · ${miembro.primerNombre || miembro.nombre}`;
         }
         if (!isNaN(numOnly)) {
-            return `Sup. ${sid}`;
+            return `Supervisor ${sid}`;
         }
-        return `Sup. ${raw}`;
+        return `Supervisor ${raw}`;
     }
 
     // Paleta cromática distintiva de alto contraste para Encuestadores (excluye Teal #0d9488 de Muestreo)
@@ -986,24 +986,27 @@ document.addEventListener('DOMContentLoaded', () => {
         AppState.encuestas.forEach(enc => {
             const alertas = [];
 
-            // ÚNICAMENTE VERIFICACIÓN DE CÓDIGOS DE ENCUESTADOR Y SUPERVISOR
+            // ÚNICAMENTE VERIFICACIÓN DE CÓDIGOS DE ENCUESTADOR Y SUPERVISOR (SI HAY NÓMINA OFICIAL DEFINIDA)
             const encCodStr = String(enc.encuestador || enc.C_digo_encuestador || campo(enc, AppState.config.campoEncuestador) || '').trim();
             const supCodOriginal = String(enc._supervisorOriginal || enc.supervisor || enc.C_digo_Supervisor || campo(enc, AppState.config.campoSupervisor) || '').trim();
+            const hayNominaOficial = Object.keys(EQUIPO_CAMPO).length > 0;
 
-            if (!EQUIPO_CAMPO[encCodStr]) {
-                alertas.push({
-                    tipo: 'encuestador',
-                    titulo: 'No oficial',
-                    mensaje: `Encuestador no oficial (${encCodStr})`
-                });
-            } else {
-                const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCodStr];
-                if (supCodOriginal && supCodOriginal !== supEsperado) {
+            if (hayNominaOficial) {
+                if (!EQUIPO_CAMPO[encCodStr]) {
                     alertas.push({
-                        tipo: 'supervisor',
-                        titulo: 'Supervisor erróneo',
-                        mensaje: `Sup. ${supCodOriginal} en vez de ${supEsperado}`
+                        tipo: 'encuestador',
+                        titulo: 'No oficial',
+                        mensaje: `Encuestador no oficial (${encCodStr})`
                     });
+                } else {
+                    const supEsperado = ENCUESTADOR_A_SUPERVISOR[encCodStr];
+                    if (supCodOriginal && supEsperado && supCodOriginal !== supEsperado) {
+                        alertas.push({
+                            tipo: 'supervisor',
+                            titulo: 'Supervisor erróneo',
+                            mensaje: `Sup. ${supCodOriginal} en vez de ${supEsperado}`
+                        });
+                    }
                 }
             }
 
