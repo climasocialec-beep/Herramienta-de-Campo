@@ -983,6 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!AppState.encuestas) return;
 
         let totalAlertas = 0;
+        let totalAtipicas = 0;
         AppState.encuestas.forEach(enc => {
             const alertas = [];
 

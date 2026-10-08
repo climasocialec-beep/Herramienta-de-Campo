@@ -1,6 +1,6 @@
 /* Modo de contingencia Clima Social: conserva aplicación base y cartografía.
  * No almacena respuestas de Kobo ni coordenadas de encuestas en el teléfono. */
-const CACHE_NAME = 'clima-social-v94-clean-supervisor-roster';
+const CACHE_NAME = 'clima-social-v95-fix-atipicas-ref';
 const APP_SHELL = [
   '/',
   '/index.html',
