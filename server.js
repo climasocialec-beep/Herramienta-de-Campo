@@ -84,6 +84,12 @@ function obtenerParametrosActivos() {
 
     const choicesParroquias = (config.kobo && config.kobo.choices_parroquias) || {};
     const choicesCantones = (config.kobo && config.kobo.choices_cantones) || {};
+    const choicesProvincias = (config.kobo && config.kobo.choices_provincias) || {
+        "4": "Carchi",
+        "8": "Esmeraldas",
+        "10": "Imbabura",
+        "17": "Pichincha"
+    };
     const choicesTipologias = (config.kobo && config.kobo.choices_tipologias) || {
         "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "6": "F", "7": "G", "8": "H",
         "a": "A", "b": "B", "c": "C", "d": "D", "e": "E", "f": "F", "g": "G", "h": "H"
@@ -98,6 +104,7 @@ function obtenerParametrosActivos() {
         campoSup,
         choicesParroquias,
         choicesCantones,
+        choicesProvincias,
         choicesTipologias
     };
 }
@@ -246,6 +253,27 @@ function normalizarEncuesta(raw, params) {
     const cantonDefecto = params.config.canton || "Territorio";
     const canton = params.choicesCantones[rawCanton] || (rawCanton ? String(rawCanton).trim() : cantonDefecto);
 
+    const rawProvincia = extraerValor(raw, ["provincia", "PROVINCIA", "nom_provincia", "prov"]) || "";
+    let provincia = params.choicesProvincias[rawProvincia] || (rawProvincia ? String(rawProvincia).trim() : "");
+    if (!provincia) {
+        const canNorm = String(canton || rawCanton).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (["80", "81", "82", "ELOY ALFARO", "RIOVERDE", "SAN LORENZO"].some(k => canNorm.includes(k))) {
+            provincia = "Esmeraldas";
+        } else if (["40", "41", "42", "43", "44", "BOLIVAR", "ESPEJO", "MIRA", "MONTUFAR", "SAN PEDRO DE HUACA", "TULCAN", "HUACA"].some(k => canNorm.includes(k))) {
+            provincia = "Carchi";
+        } else if (["101", "102", "103", "104", "105", "106", "ANTONIO ANTE", "COTACACHI", "IBARRA", "OTAVALO", "PIMAMPIRO", "SAN MIGUEL DE URCUQUI", "URCUQUI"].some(k => canNorm.includes(k))) {
+            provincia = "Imbabura";
+        } else if (["171", "PEDRO MONCAYO", "QUITO", "MEJIA", "CAYAMBE", "RUMINAHUI"].some(k => canNorm.includes(k))) {
+            provincia = "Pichincha";
+        } else {
+            const parNorm = String(parroquia || rawParroquia).trim();
+            if (parNorm.startsWith("8")) provincia = "Esmeraldas";
+            else if (parNorm.startsWith("4")) provincia = "Carchi";
+            else if (parNorm.startsWith("10")) provincia = "Imbabura";
+            else if (parNorm.startsWith("17")) provincia = "Pichincha";
+        }
+    }
+
     const rawCirc = extraerValor(raw, ["circunscripcion", "circ", "CIRCUNSCRIPCION"]) || "";
     const CIRCUNSCRIPCIONES = { "1": "CIRCUNSCRIPCION URBANA 1", "2": "CIRCUNSCRIPCION URBANA 2", "3": "CIRCUNSCRIPCION RURAL" };
     const circunscripcion = CIRCUNSCRIPCIONES[rawCirc] || String(rawCirc).trim();
@@ -294,6 +322,7 @@ function normalizarEncuesta(raw, params) {
         sc,
         tipologia,
         barrio,
+        provincia,
         parroquia,
         canton,
         circunscripcion,
@@ -376,11 +405,16 @@ async function obtenerDatosKobo() {
             throw new Error("Respuesta de Kobo incompleta: el conteo no coincide con las boletas recibidas.");
         }
 
+        const provinciaObjetivo = (params.config.provincia || "").trim().toUpperCase();
+
         const resultados = resultadosRaw
             .map(raw => normalizarEncuesta(raw, params))
             .filter(e => {
                 if (String(e.encuestador).trim() === "98" || String(e.supervisor).trim() === "98") return false;
                 if (e.consentimiento === "NO" || String(e.consen).trim() === "2") return false;
+                if (provinciaObjetivo && e.provincia && e.provincia.trim().toUpperCase() !== provinciaObjetivo) {
+                    return false;
+                }
                 return true;
             });
 
