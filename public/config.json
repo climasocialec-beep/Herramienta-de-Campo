@@ -1,37 +1,63 @@
 {
   "estado": "ACTIVO",
   "version": "1.0.0",
-  "proyecto": "Piloto Movidelnor · Ibarra 2026",
-  "canton": "Ibarra",
-  "provincia": "Imbabura",
+  "proyecto": "Movilidad Movidelnor · Esmeraldas 2026",
+  "canton": "",
+  "provincia": "Esmeraldas",
   "modalidad": "sectores",
-  "meta": 90,
+  "meta": 490,
   "bounds": [
     [
-      -78.135,
-      0.34
+      -79.52,
+      0.65
     ],
     [
-      -78.11,
-      0.37
+      -78.45,
+      1.48
     ]
   ],
   "kobo": {
     "asset_id": "ag7L7pRAqLCwckTTgAYiTT",
-    "campo_encuestador": "codenc",
+    "campo_encuestador": "codencu",
     "campo_supervisor": "codsup",
+    "choices_provincias": {
+      "4": "Carchi",
+      "8": "Esmeraldas",
+      "10": "Imbabura",
+      "17": "Pichincha"
+    },
     "choices_cantones": {
-      "103": "IBARRA",
-      "Ibarra": "IBARRA",
-      "IBARRA": "IBARRA"
+      "80": "ELOY ALFARO",
+      "81": "RIOVERDE",
+      "82": "SAN LORENZO",
+      "ELOY ALFARO": "ELOY ALFARO",
+      "RIOVERDE": "RIOVERDE",
+      "SAN LORENZO": "SAN LORENZO",
+      "Eloy Alfaro": "ELOY ALFARO",
+      "Rioverde": "RIOVERDE",
+      "San Lorenzo": "SAN LORENZO"
     },
     "choices_parroquias": {
-      "1039": "SAGRARIO",
-      "10312": "SAN FRANCISCO",
-      "Sagrario": "SAGRARIO",
-      "SAGRARIO": "SAGRARIO",
-      "San Francisco": "SAN FRANCISCO",
-      "SAN FRANCISCO": "SAN FRANCISCO"
+      "801": "ANCHAYACU",
+      "802": "BORBÓN",
+      "803": "COLÓN ELOY DEL MARÍA",
+      "804": "LA TOLA",
+      "805": "MALDONADO",
+      "808": "SANTA LUCÍA DE LAS PEÑAS",
+      "8010": "SELVA ALEGRE",
+      "8011": "TELEMBÍ",
+      "8012": "VALDEZ",
+      "814": "CHUMUNDÉ",
+      "815": "LAGARTO",
+      "816": "MONTALVO",
+      "817": "RIOVERDE",
+      "821": "ALTO TAMBO",
+      "822": "ANCÓN",
+      "823": "CONCEPCIÓN",
+      "824": "SAN LORENZO",
+      "825": "SANTA RITA",
+      "826": "TAMBILLO",
+      "827": "TULULBÍ"
     },
     "choices_tipologias": {
       "1": "A",
