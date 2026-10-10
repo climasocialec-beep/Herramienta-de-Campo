@@ -523,13 +523,13 @@
         if ('caches' in window) {
           caches.keys().then(names => {
             names.forEach(name => {
-              if (name !== 'clima-social-v99-esmeraldas-operativo') {
+              if (name !== 'clima-social-v100-esmeraldas-fix') {
                 caches.delete(name);
               }
             });
           });
         }
-        navigator.serviceWorker.register('/service-worker.js?v=99.0.0').then(reg => {
+        navigator.serviceWorker.register('/service-worker.js?v=100.0.0').then(reg => {
           if (!reg) return;
           if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });
